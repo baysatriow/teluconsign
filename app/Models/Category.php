@@ -10,11 +10,11 @@ class Category extends Model
 {
     use HasFactory, SoftDeletes;
 
-    private $primaryKey = 'category_id';
-    private $incrementing = true;
-    private $keyType = 'int';
+    protected $primaryKey = 'category_id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
-    private $fillable = [
+    protected $fillable = [
         'parent_id',
         'name',
         'slug'

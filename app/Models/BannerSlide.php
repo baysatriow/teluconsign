@@ -9,8 +9,8 @@ class BannerSlide extends Model
 {
     use HasFactory;
 
-    private $primaryKey = 'banner_slide_id';
-    private $fillable = [
+    protected $primaryKey = 'banner_slide_id';
+    protected $fillable = [
         'title',
         'description',
         'image_path',

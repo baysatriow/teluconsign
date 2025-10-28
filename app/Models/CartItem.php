@@ -10,11 +10,11 @@ class CartItem extends Model
 {
     use HasFactory, SoftDeletes;
 
-    private $primaryKey = 'cart_item_id';
-    private $incrementing = true;
-    private $keyType = 'int';
+    protected $primaryKey = 'cart_item_id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
-    private $fillable = [
+    protected $fillable = [
         'cart_id',
         'product_id',
         'quantity',
@@ -22,7 +22,7 @@ class CartItem extends Model
         'subtotal'
     ];
 
-    private $casts = [
+    protected $casts = [
         'quantity' => 'integer',
         'unit_price' => 'decimal:2',
         'subtotal' => 'decimal:2'

@@ -9,8 +9,8 @@ class BankAccount extends Model
 {
     use HasFactory;
 
-    private $primaryKey = 'bank_account_id';
-    private $fillable = [
+    protected $primaryKey = 'bank_account_id';
+    protected $fillable = [
         'user_id',
         'bank_name',
         'account_name',

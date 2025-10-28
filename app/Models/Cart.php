@@ -10,16 +10,16 @@ class Cart extends Model
 {
     use HasFactory, SoftDeletes;
 
-    private $primaryKey = 'cart_id';
-    private $incrementing = true;
-    private $keyType = 'int';
+    protected $primaryKey = 'cart_id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
-    private $fillable = [
+    protected $fillable = [
         'buyer_id',
         'total_price'
     ];
 
-    private $casts = [
+    protected $casts = [
         'created_at' => 'datetime'
     ];
 
