@@ -9,11 +9,11 @@ class Shipment extends Model
 {
     use HasFactory;
 
-    private $primaryKey = 'shipment_id';
-    private $incrementing = true;
-    private $keyType = 'int';
+    protected $primaryKey = 'shipment_id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
-    private $fillable = [
+    protected $fillable = [
         'order_id',
         'carrier_id',
         'service_code',

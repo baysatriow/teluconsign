@@ -9,11 +9,11 @@ class ProductImage extends Model
 {
     use HasFactory;
 
-    private $primaryKey = 'product_image_id';
-    private $incrementing = true;
-    private $keyType = 'int';
+    protected $primaryKey = 'product_image_id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
-    private $fillable = [
+    protected $fillable = [
         'product_id',
         'url',
         'is_primary',

@@ -9,11 +9,11 @@ class Order extends Model
 {
     use HasFactory;
 
-    private $primaryKey = 'order_id';
-    private $incrementing = true;
-    private $keyType = 'int';
+    protected $primaryKey = 'order_id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
-    private $fillable = [
+    protected $fillable = [
         'code',
         'buyer_id',
         'seller_id',

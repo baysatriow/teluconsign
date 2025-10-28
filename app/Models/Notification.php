@@ -9,8 +9,8 @@ class Notification extends Model
 {
     use HasFactory;
 
-    private $primaryKey = 'notification_id';
-    private $fillable = [
+    protected $primaryKey = 'notification_id';
+    protected $fillable = [
         'user_id',
         'type',
         'payload',

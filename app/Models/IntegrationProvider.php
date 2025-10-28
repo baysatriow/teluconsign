@@ -9,8 +9,8 @@ class IntegrationProvider extends Model
 {
     use HasFactory;
 
-    private $primaryKey = 'integration_provider_id';
-    private $fillable = [
+    protected $primaryKey = 'integration_provider_id';
+    protected $fillable = [
         'code',
         'name'
     ];

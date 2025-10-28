@@ -9,8 +9,8 @@ class PayoutRequest extends Model
 {
     use HasFactory;
 
-    private $primaryKey = 'payout_request_id';
-    private $fillable = [
+    protected $primaryKey = 'payout_request_id';
+    protected $fillable = [
         'seller_id',
         'amount',
         'status',

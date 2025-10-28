@@ -10,10 +10,10 @@ class WalletLedger extends Model
 {
     use HasFactory;
 
-    private $table = 'wallet_ledgers';
-    private $primaryKey = 'wallet_ledger_id';
+    protected $table = 'wallet_ledgers';
+    protected $primaryKey = 'wallet_ledger_id';
 
-    private $fillable = [
+    protected $fillable = [
         'user_id',
         'direction',
         'source_type',

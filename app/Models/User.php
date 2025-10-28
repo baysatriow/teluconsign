@@ -13,11 +13,11 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, SoftDeletes;
 
-    private $primaryKey = 'user_id';
-    private $incrementing = true;
-    private $keyType = 'int';
+    protected $primaryKey = 'user_id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
-    private $fillable = [
+    protected $fillable = [
         'role',
         'status',
         'username',
@@ -27,12 +27,12 @@ class User extends Authenticatable
         'photo_url'
     ];
 
-    private $hidden = [
+    protected $hidden = [
         'password_hash',
         'remember_token',
     ];
 
-    private $casts = [
+    protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];

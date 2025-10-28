@@ -9,11 +9,11 @@ class Review extends Model
 {
     use HasFactory;
 
-    private $primaryKey = 'review_id';
-    private $incrementing = true;
-    private $keyType = 'int';
+    protected $primaryKey = 'review_id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
-    private $fillable = [
+    protected $fillable = [
         'product_id',
         'user_id',
         'rating',

@@ -9,11 +9,11 @@ class ModerationAction extends Model
 {
     use HasFactory;
 
-    private $primaryKey = 'moderation_action_id';
-    private $incrementing = true;
-    private $keyType = 'int';
+    protected $primaryKey = 'moderation_action_id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
-    private $fillable = [
+    protected $fillable = [
         'admin_id',
         'target_type',
         'target_id',

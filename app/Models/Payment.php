@@ -9,11 +9,11 @@ class Payment extends Model
 {
     use HasFactory;
 
-    private $primaryKey = 'payment_id';
-    private $incrementing = true;
-    private $keyType = 'int';
+    protected $primaryKey = 'payment_id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
-    private $fillable = [
+    protected $fillable = [
         'order_id',
         'gateway_id',
         'method_code',

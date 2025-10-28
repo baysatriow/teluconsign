@@ -9,8 +9,8 @@ class PaymentMethod extends Model
 {
     use HasFactory;
 
-    private $primaryKey = 'payment_method_id';
-    private $fillable = [
+    protected $primaryKey = 'payment_method_id';
+    protected $fillable = [
         'gateway_id',
         'code',
         'name',

@@ -9,11 +9,11 @@ class Product extends Model
 {
     use HasFactory;
 
-    private $primaryKey = 'product_id';
-    private $incrementing = true;
-    private $keyType = 'int';
+    protected $primaryKey = 'product_id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
-    private $fillable = [
+    protected $fillable = [
         'seller_id',
         'category_id',
         'title',

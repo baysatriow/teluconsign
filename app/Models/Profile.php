@@ -10,11 +10,11 @@ class Profile extends Model
 {
     use HasFactory;
 
-    private $primaryKey = 'user_id';
-    private $incrementing = false;
-    private $keyType = 'int';
+    protected $primaryKey = 'user_id';
+    public $incrementing = false;
+    protected $keyType = 'int';
 
-    private $fillable = [
+    protected $fillable = [
         'user_id',
         'phone',
         'address',
