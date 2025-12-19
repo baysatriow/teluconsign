@@ -10,7 +10,7 @@ return new class extends Migration
     {
         // 1. Users Table
         Schema::create('users', function (Blueprint $table) {
-            $table->id('user_id'); // Primary Key Custom Name sesuai SQL
+            $table->id('user_id');
             $table->string('name', 120);
             $table->string('username', 50)->unique()->nullable();
             $table->string('email', 191)->unique();
@@ -20,30 +20,39 @@ return new class extends Migration
             $table->string('photo_url')->nullable();
             $table->rememberToken();
             $table->timestamps();
-            $table->softDeletes(); // Professional practice: Data user tidak langsung hilang permanen
+            $table->softDeletes();
         });
 
-        // 2. Profiles Table (1-to-1 dengan Users)
+        // 2. Profiles Table
         Schema::create('profiles', function (Blueprint $table) {
-            // Kita gunakan user_id sebagai primary key juga untuk tabel ini
             $table->foreignId('user_id')->primary()->constrained('users', 'user_id')->onDelete('cascade');
             $table->string('phone', 30)->nullable();
             $table->string('bio')->nullable();
-            $table->string('address')->nullable(); // Alamat singkat/KTP
+            $table->string('address')->nullable();
             $table->timestamps();
         });
 
-        // 3. Addresses Table (Alamat Pengiriman - 1 User punya banyak alamat)
+        // 3. Addresses Table (REVISI FINAL)
         Schema::create('addresses', function (Blueprint $table) {
             $table->id('address_id');
             $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
+
+            // Info Penerima
             $table->string('label', 60); // Rumah, Kantor
             $table->string('recipient', 120);
-            $table->string('phone', 30)->nullable();
-            $table->string('city', 100);
-            $table->string('province', 100);
-            $table->string('postal_code', 20)->nullable();
-            $table->text('full_address'); // Gabungan line1 & line2
+            $table->string('phone', 30);
+
+            // Data Wilayah (Dari API/Pilihan)
+            $table->string('province', 100);  // Jawa Barat
+            $table->string('city', 100);      // Bandung
+            $table->string('district', 100);  // Bojongsoang (Kecamatan)
+            $table->string('village', 100);   // Lengkong (Desa/Kelurahan)
+            $table->string('postal_code', 10);
+
+            // Data Manual (Ketik Sendiri)
+            $table->text('detail_address');   // Jl. Telekomunikasi No. 1, RT 02/RW 03
+
+            $table->string('country', 2)->default('ID');
             $table->boolean('is_default')->default(false);
             $table->timestamps();
         });
@@ -52,8 +61,8 @@ return new class extends Migration
         Schema::create('notifications', function (Blueprint $table) {
             $table->id('notification_id');
             $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
-            $table->string('type', 80); // system, order, promo
-            $table->json('payload')->nullable(); // Data dinamis (link, message, id)
+            $table->string('type', 80);
+            $table->json('payload')->nullable();
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
         });

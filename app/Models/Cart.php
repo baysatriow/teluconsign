@@ -4,11 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
+// use Illuminate\Database\Eloquent\SoftDeletes; // HAPUS INI
 
 class Cart extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory; // HAPUS SoftDeletes DARI SINI
 
     protected $primaryKey = 'cart_id';
     public $incrementing = true;
@@ -23,6 +23,18 @@ class Cart extends Model
         'created_at' => 'datetime'
     ];
 
+    // Relasi ke Item Keranjang
+    public function items()
+    {
+        return $this->hasMany(CartItem::class, 'cart_id', 'cart_id');
+    }
+
+    // Relasi ke Pembeli
+    public function buyer()
+    {
+        return $this->belongsTo(User::class, 'buyer_id', 'user_id');
+    }
+
     public function addItem(int $product_id, int $quantity): void
     {
         $item = CartItem::where('cart_id', $this->cart_id)
@@ -31,12 +43,16 @@ class Cart extends Model
 
         if ($item) {
             $item->quantity += $quantity;
+            $item->calculateSubtotal(); // Pastikan method ini ada di CartItem model
             $item->save();
         } else {
+            $product = Product::find($product_id);
             CartItem::create([
                 'cart_id' => $this->cart_id,
                 'product_id' => $product_id,
                 'quantity' => $quantity,
+                'unit_price' => $product->price,
+                'subtotal' => $product->price * $quantity
             ]);
         }
 
@@ -54,19 +70,22 @@ class Cart extends Model
 
     public function updateQuantity(int $product_id, int $quantity): void
     {
-        CartItem::where('cart_id', $this->cart_id)
+        $item = CartItem::where('cart_id', $this->cart_id)
             ->where('product_id', $product_id)
-            ->update(['quantity' => $quantity]);
+            ->first();
+
+        if ($item) {
+            $item->quantity = $quantity;
+            $item->calculateSubtotal();
+            $item->save();
+        }
 
         $this->calculateTotal();
     }
 
     public function calculateTotal()
     {
-        $total = CartItem::where('cart_id', $this->cart_id)
-            ->join('products', 'cart_items.product_id', '=', 'products.product_id')
-            ->sum(\DB::raw('cart_items.quantity * products.price'));
-
+        $total = $this->items()->sum('subtotal');
         $this->update(['total_price' => $total]);
 
         return $total;
@@ -74,7 +93,7 @@ class Cart extends Model
 
     public function clearCart(): void
     {
-        CartItem::where('cart_id', $this->cart_id)->delete();
+        $this->items()->delete();
         $this->update(['total_price' => 0]);
     }
 }

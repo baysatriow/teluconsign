@@ -65,14 +65,42 @@ class DatabaseSeeder extends Seeder
         // 3. Addresses
         $addresses = [
             [
-                'address_id' => 1, 'user_id' => 4, 'label' => 'Rumah Utama', 'recipient' => 'Aldi Kurniawan',
-                'phone' => '085000111222', 'city' => 'Jakarta Barat', 'province' => 'DKI Jakarta',
-                'full_address' => 'Jl. Kebon Jeruk Raya No. 15', 'is_default' => 1
+                'user_id' => 4, // Aldi
+                'label' => 'Rumah Utama',
+                'recipient' => 'Aldi Kurniawan',
+                'phone' => '085000111222',
+
+                // Data Wilayah
+                'province' => 'DKI Jakarta',
+                'city' => 'Jakarta Barat',
+                'district' => 'Kebon Jeruk',
+                'village' => 'Sukabumi Utara',
+                'postal_code' => '11530',
+
+                // Data Manual
+                'detail_address' => 'Jl. Anggrek Cakra No. 15, RT 005/RW 06',
+
+                'country' => 'ID',
+                'is_default' => true,
+                'created_at' => now(), 'updated_at' => now()
             ],
             [
-                'address_id' => 2, 'user_id' => 3, 'label' => 'Toko Fisik', 'recipient' => 'Gadget Surabaya',
-                'phone' => '087654321098', 'city' => 'Surabaya', 'province' => 'Jawa Timur',
-                'full_address' => 'Ruko Mulyosari Blok B10', 'is_default' => 1
+                'user_id' => 2, // Seller
+                'label' => 'Gudang Bandung',
+                'recipient' => 'Admin Gudang',
+                'phone' => '081234567890',
+
+                'province' => 'Jawa Barat',
+                'city' => 'Bandung',
+                'district' => 'Bojongsoang',
+                'village' => 'Lengkong',
+                'postal_code' => '40287',
+
+                'detail_address' => 'Jl. Telekomunikasi No. 1, Kawasan Telkom University',
+
+                'country' => 'ID',
+                'is_default' => true,
+                'created_at' => now(), 'updated_at' => now()
             ],
         ];
         DB::table('addresses')->insert($addresses);

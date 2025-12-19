@@ -10,7 +10,7 @@ class BaseIntegrationService
 {
     /**
      * Mengambil kredensial aktif berdasarkan kode provider.
-     * * @param string $providerCode contoh: 'midtrans', 'fonnte'
+     * @param string $providerCode contoh: 'midtrans', 'whatsapp'
      * @return object|null Data credentials
      * @throws Exception Jika provider tidak ditemukan atau tidak aktif
      */
@@ -22,7 +22,8 @@ class BaseIntegrationService
             ->first();
 
         if (!$provider) {
-            throw new Exception("Provider dengan kode '{$providerCode}' tidak ditemukan di database.");
+            // Kita return null agar service anak (FonnteService) bisa handle fallback (simulasi)
+            return null;
         }
 
         // 2. Cari Key yang Aktif
@@ -32,18 +33,15 @@ class BaseIntegrationService
             ->first();
 
         if (!$key) {
-            // Fallback: Bisa return null atau throw error tergantung kebutuhan
-            // Disini kita throw agar developer sadar belum setup key
-            throw new Exception("Tidak ada API Key aktif untuk provider '{$provider->name}'. Harap konfigurasi di Admin Panel.");
+            return null;
         }
 
         // 3. Decrypt Server Key jika ada (karena di database encrypted_k)
-        // Asumsi: Anda menyimpan 'encrypted_k' menggunakan Crypt::encryptString() saat simpan data
         if (!empty($key->encrypted_k)) {
             try {
-                // Jika error decrypt (misal data dummy manual), kembalikan raw value saja untuk dev environment
                 $key->secret_key = Crypt::decryptString($key->encrypted_k);
             } catch (\Exception $e) {
+                // Fallback jika decrypt gagal (misal data dummy manual)
                 $key->secret_key = $key->encrypted_k;
             }
         } else {

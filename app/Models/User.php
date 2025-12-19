@@ -20,18 +20,24 @@ class User extends Authenticatable
         'username',
         'name',
         'email',
-        'password_hash',
+        'password',
         'photo_url',
+        'otp_code', // Baru
+        'otp_expires_at', // Baru
+        'is_verified', // Baru
     ];
 
     protected $hidden = [
-        'password_hash',
+        'password',
         'remember_token',
+        'otp_code', // Sembunyikan OTP
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'otp_expires_at' => 'datetime', // Casting
+        'is_verified' => 'boolean',
     ];
 
     public function profile(): HasOne
@@ -49,21 +55,32 @@ class User extends Authenticatable
         return $this->hasMany(BankAccount::class, 'user_id', 'user_id');
     }
 
+        public function generateOtp()
+    {
+        $this->otp_code = rand(100000, 999999);
+        $this->otp_expires_at = now()->addMinutes(10); // OTP berlaku 10 menit
+        $this->save();
+
+        return $this->otp_code;
+    }
+
+    // Updated register method to use 'password'
     public function register(string $name, string $email, string $password): bool
     {
         return (bool) self::create([
             'name' => $name,
             'email' => $email,
-            'password_hash' => $password,
+            'password' => $password, // Changed from password_hash
             'status' => 'active',
             'role' => 'buyer',
         ]);
     }
 
+    // Updated login method to use 'password'
     public function login(string $email, string $password): bool
     {
         return self::where('email', $email)
-            ->where('password_hash', $password)
+            ->where('password', $password) // Changed from password_hash
             ->exists();
     }
 
