@@ -1335,7 +1335,7 @@ var classes = [
                 "_type": "Hal\\Metric\\FunctionMetric"
             },
             {
-                "name": "getFullAddressAttribute",
+                "name": "getFullAddress",
                 "role": null,
                 "public": true,
                 "private": false,

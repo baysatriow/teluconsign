@@ -16,7 +16,7 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'product_id',
-        'product_title',
+        'product_title_snapshot',
         'unit_price',
         'quantity',
         'subtotal'
@@ -27,6 +27,16 @@ class OrderItem extends Model
         'subtotal' => 'decimal:2',
         'quantity' => 'integer',
     ];
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id', 'product_id');
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class, 'order_id', 'order_id');
+    }
 
     public function calculateSubtotal(): float
     {
@@ -48,9 +58,18 @@ class OrderItem extends Model
         $product = Product::find($product_id);
 
         if ($product) {
-            $this->product_title = $product->title;
-            $this->unit_price = $product->price;
+            $this->product_title_snapshot = $product->title;
+            // $this->unit_price = $product->price; // existing
             $this->calculateSubtotal();
         }
+    }
+
+    /**
+     * Accessor untuk kompatibilitas backward
+     * $item->product_title akan mengembalikan product_title_snapshot
+     */
+    public function getProductTitleAttribute()
+    {
+        return $this->product_title_snapshot;
     }
 }

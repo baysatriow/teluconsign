@@ -37,49 +37,41 @@
         </div>
     </div>
 
-    <!-- 2. Kategori Pilihan (Fixed 5 Categories) -->
-    <div class="mb-10">
-        <h2 class="text-xl font-bold text-gray-900 mb-5">Kategori Pilihan</h2>
-        
-        <!-- Logic to map Categories by Name if ID is unknown, or use search param names -->
-        @php
-            $fixedCats = [
-                ['name' => 'Semua', 'param' => '', 'icon' => 'M4 6h16M4 12h16M4 18h16'],
-                ['name' => 'Pakaian', 'slug' => 'pakaian', 'icon' => 'M3 13h1l3 8h10l3-8h1M2 10h20M5 21h14'], // Shirt-like
-                ['name' => 'Aksesoris', 'slug' => 'aksesoris', 'icon' => 'M12 8c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'], // Simple user/acc
-                ['name' => 'Elektronik', 'slug' => 'elektronik', 'icon' => 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'], // Monitor
-                ['name' => 'Perabotan', 'slug' => 'perabotan', 'icon' => 'M3 13h18M5 13v8h14v-8M5 13l2-10h10l2 10'], // Sofa-ish
-                ['name' => 'Otomotif', 'slug' => 'otomotif', 'icon' => 'M5 13l4 4L19 7'], // Checkmark/Simple
-            ];
-            
-            // Try to find IDs for these names (Case insensitive)
-            // Use Helper or loop
-            $catMap = [];
-            foreach($categories as $c) {
-                $catMap[strtolower($c->name)] = $c->category_id;
-            }
-        @endphp
 
-        <div class="flex flex-wrap gap-3">
-            @foreach($fixedCats as $fcat)
-                @php
-                    $isActive = !request('category') && $fcat['name'] === 'Semua';
-                    if($fcat['name'] !== 'Semua') {
-                        // Find matching ID from DB categories
-                        $matchId = $catMap[strtolower($fcat['name'])] ?? null;
-                        // Determine active
-                        $isActive = request('category') == $matchId;
-                        // Url
-                        $url = $matchId ? route('search.index', ['category' => $matchId]) : route('search.index', ['q' => $fcat['name']]);
-                    } else {
-                        $url = route('home');
-                    }
-                @endphp
-                
-                <a href="{{ $url }}" class="flex items-center gap-2 px-6 py-3 rounded-full text-base font-medium transition-all shadow-sm border {{ $isActive ? 'bg-[#EC1C25] text-white border-[#EC1C25]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#EC1C25] hover:text-[#EC1C25] hover:shadow-md' }}">
-                    {{ $fcat['name'] }}
+    <!-- 2. Category Cards - Premium Design -->
+    <div class="mb-12">
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">Kategori Pilihan</h2>
+            <p class="text-gray-600 text-sm mt-1">Temukan barang sesuai kebutuhanmu</p>
+        </div>
+        
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            @php
+                $categoryIcons = [
+                    'pakaian' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h8a4 4 0 004-4V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4z"/>',
+                    'aksesoris' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>',
+                    'elektronik' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>',
+                    'perabotan' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>',
+                    'otomotif' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>',
+                ];
+            @endphp
+            
+            @forelse($categories as $category)
+                <a href="{{ route('search.index', ['category' => $category->slug]) }}" 
+                   class="group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col items-center">
+                    <div class="w-16 h-16 mb-4 bg-gradient-to-br from-red-50 to-red-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            {!! $categoryIcons[strtolower($category->slug)] ?? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>' !!}
+                        </svg>
+                    </div>
+                    <h3 class="text-center font-bold text-gray-900 text-sm mb-1">{{ $category->name }}</h3>
+                    <p class="text-center text-xs text-gray-500">{{ number_format($category->products_count) }} items</p>
                 </a>
-            @endforeach
+            @empty
+                <div class="col-span-full text-center py-8 text-gray-500">
+                    Belum ada kategori tersedia
+                </div>
+            @endforelse
         </div>
     </div>
 

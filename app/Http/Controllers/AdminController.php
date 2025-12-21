@@ -13,11 +13,11 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Models\Profile;
 use App\Models\WalletLedger;
-use App\Models\PaymentGateway;
 use App\Models\IntegrationProvider;
 use App\Models\IntegrationKey;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 class AdminController extends Controller
 {
     // ... (method dashboard tetap sama) ...
@@ -138,6 +138,7 @@ class AdminController extends Controller
     public function toggleProductStatus(Request $request, $id)
     {
         $product = Product::findOrFail($id);
+        $reason = $request->input('reason');
 
         // Jika statusnya suspended -> kembalikan ke active
         // Jika statusnya active/lainnya -> ubah ke suspended
@@ -147,7 +148,9 @@ class AdminController extends Controller
             $msg = 'Produk berhasil diaktifkan kembali.';
         } else {
             $product->status = ProductStatus::Suspended;
-            $msg = 'Produk berhasil disuspend (ditangguhkan).';
+            // Simpan alasan ke database
+            $product->suspension_reason = $reason; 
+            $msg = 'Produk berhasil disuspend' . ($reason ? " (Alasan: $reason)" : '.');
         }
 
         $product->save();
@@ -158,25 +161,56 @@ class AdminController extends Controller
 /**
      * Manajemen Pengguna (Admin & User Biasa)
      */
-    public function users()
+    public function users(Request $request)
     {
-        // 1. Ambil Semua Admin
+        // 1. Ambil Semua Admin (tidak perlu pagination karena jumlahnya sedikit)
         $admins = User::where('role', 'admin')->latest()->get();
 
-        // 2. Ambil Semua User Biasa (DataTables akan handle search/paging di frontend jika data < 10k)
-        // Jika data sangat besar (>10k), sebaiknya gunakan Server-Side DataTables (yajra/laravel-datatables)
-        // Untuk saat ini kita load semua user biasa agar fitur search JS DataTables jalan full
-        $users = User::where('role', '!=', 'admin')->latest()->get();
+        // 2. Query Users (Biasa/Seller) dengan Filter
+        $query = User::where('role', '!=', 'admin');
 
-        // Statistik
+        // Filter Pencarian
+        if ($request->has('q') && $request->q != '') {
+            $search = $request->q;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('username', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter Status
+        if ($request->has('status') && $request->status != '') {
+            $query->where('status', $request->status);
+        }
+        
+        // Filter Role
+        if ($request->has('role') && $request->role != '') {
+            $query->where('role', $request->role);
+        }
+
+        $users = $query->latest()->paginate(10)->withQueryString();
+
+        // Statistik (Count langsung dari DB agar akurat meski ada pagination)
         $stats = [
-            'total_users' => $users->count(),
+            'total_users' => User::where('role', '!=', 'admin')->count(),
             'total_admins' => $admins->count(),
-            'active_users' => $users->where('status', 'active')->count(),
-            'suspended_users' => $users->where('status', 'suspended')->count(),
+            'active_users' => User::where('role', '!=', 'admin')->where('status', 'active')->count(),
+            'suspended_users' => User::where('role', '!=', 'admin')->where('status', 'suspended')->count(),
         ];
 
         return view('admin.users.index', compact('admins', 'users', 'stats'));
+    }
+
+    public function usersShow($id)
+    {
+        $user = User::with(['profile', 'addresses', 'products', 'bankAccounts'])->findOrFail($id);
+        
+        // Data pendukung
+        $products = $user->products; 
+        $orders = \App\Models\Order::where('buyer_id', $user->user_id)->orWhere('seller_id', $user->user_id)->latest()->get();
+
+        return view('admin.users.show', compact('user', 'products', 'orders'));
     }
 
     /**
@@ -244,18 +278,38 @@ class AdminController extends Controller
      /**
      * Manajemen Payout Request
      */
-    public function payouts()
+    public function payouts(Request $request)
     {
-        // Ambil semua payout request dengan relasi seller dan bank
-        $payouts = PayoutRequest::with(['seller', 'bankAccount'])
-            ->latest('requested_at')
-            ->get();
+        // Query Dasar
+        $query = PayoutRequest::with(['seller', 'bankAccount']);
+
+        // Filter Pencarian (Seller Name / Bank Account)
+        if ($request->has('q') && $request->q != '') {
+            $search = $request->q;
+            $query->where(function($q) use ($search) {
+                $q->whereHas('seller', function($sq) use ($search) {
+                    $sq->where('name', 'like', "%{$search}%");
+                })
+                ->orWhereHas('bankAccount', function($bq) use ($search) {
+                    $bq->where('account_number', 'like', "%{$search}%")
+                       ->orWhere('bank_name', 'like', "%{$search}%")
+                       ->orWhere('account_holder', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        // Filter Status
+        if ($request->has('status') && $request->status != '') {
+            $query->where('status', $request->status);
+        }
+
+        $payouts = $query->latest('requested_at')->paginate(10)->withQueryString();
 
         $stats = [
-            'total_requests' => $payouts->count(),
-            'pending_requests' => $payouts->where('status', 'requested')->count(),
-            'approved_requests' => $payouts->whereIn('status', ['approved', 'paid'])->count(),
-            'rejected_requests' => $payouts->where('status', 'rejected')->count(),
+            'total_requests' => PayoutRequest::count(),
+            'pending_requests' => PayoutRequest::where('status', 'requested')->count(),
+            'approved_requests' => PayoutRequest::whereIn('status', ['approved', 'paid'])->count(),
+            'rejected_requests' => PayoutRequest::where('status', 'rejected')->count(),
         ];
 
         return view('admin.payouts.index', compact('payouts', 'stats'));
@@ -326,44 +380,298 @@ class AdminController extends Controller
         }
     }
         /**
-     * Halaman Integrasi API (Payment Gateway, Shipping, dll)
+     * Halaman Payment Gateway (Midtrans)
      */
-    public function integrations()
+    /**
+     * Halaman Payment Gateway (Midtrans)
+     */
+    public function paymentGateway()
     {
-        // 1. Midtrans (PaymentGateway Model)
-        $midtrans = PaymentGateway::firstOrCreate(
-            ['code' => 'midtrans'],
-            ['name' => 'Midtrans', 'is_enabled' => false, 'config_json' => []]
-        );
-
-        // 2. RajaOngkir (IntegrationProvider Model)
-        $rajaongkirProvider = IntegrationProvider::firstOrCreate(
-            ['code' => 'rajaongkir'],
-            ['name' => 'RajaOngkir']
-        );
-        // Ambil key aktif pertama atau buat baru dummy
-        $rajaongkir = IntegrationKey::where('provider_id', $rajaongkirProvider->integration_provider_id)->first();
-        if(!$rajaongkir) {
-            $rajaongkir = new IntegrationKey(); // Object kosong agar view tidak error
-            $rajaongkir->meta_json = [];
+        // 1. Midtrans
+        $midtransProvider = IntegrationProvider::firstOrCreate(['code' => 'midtrans'], ['name' => 'Midtrans Payment Gateway']);
+        $midtrans = IntegrationKey::where('provider_id', $midtransProvider->integration_provider_id)->first();
+        if(!$midtrans) {
+            $midtrans = new IntegrationKey();
+            $midtrans->meta_json = ['merchant_id' => '', 'environment' => 'sandbox'];
+        } else {
+             if(is_string($midtrans->meta_json)) $midtrans->meta_json = json_decode($midtrans->meta_json, true);
+             try {
+                $midtrans->server_key = Crypt::decryptString($midtrans->encrypted_k);
+             } catch (\Exception $e) { $midtrans->server_key = $midtrans->encrypted_k; }
         }
 
-        // 3. Fonnte (IntegrationProvider Model)
-        $fonnteProvider = IntegrationProvider::firstOrCreate(
-            ['code' => 'whatsapp'], // Sesuai dengan seed: 'whatsapp'
-            ['name' => 'WhatsApp (Fonnte)']
-        );
+        return view('admin.integrations.payment', compact('midtrans'));
+    }
+
+    /**
+     * Halaman Logistik (RajaOngkir)
+     */
+    public function shipping()
+    {
+        // 2. RajaOngkir
+        $rajaongkirProvider = IntegrationProvider::firstOrCreate(['code' => 'rajaongkir'], ['name' => 'RajaOngkir']);
+        $rajaongkir = IntegrationKey::where('provider_id', $rajaongkirProvider->integration_provider_id)->first();
+        if(!$rajaongkir) {
+            $rajaongkir = new IntegrationKey();
+            $rajaongkir->meta_json = ['base_url' => 'https://pro.rajaongkir.com/api', 'type' => 'pro'];
+        } else {
+            if(is_string($rajaongkir->meta_json)) $rajaongkir->meta_json = json_decode($rajaongkir->meta_json, true);
+        }
+
+        // List Carriers with pagination
+        $shippingCarriers = \App\Models\ShippingCarrier::paginate(10);
+
+        return view('admin.integrations.shipping', compact('rajaongkir', 'shippingCarriers'));
+    }
+
+    /**
+     * Halaman WhatsApp (Fonnte)
+     */
+    public function whatsapp()
+    {
+        // 3. Fonnte
+        $fonnteProvider = IntegrationProvider::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp (Fonnte)']);
         $fonnte = IntegrationKey::where('provider_id', $fonnteProvider->integration_provider_id)->first();
         if(!$fonnte) {
             $fonnte = new IntegrationKey();
         }
 
-        return view('admin.integrations.index', compact('midtrans', 'rajaongkir', 'fonnte'));
+        return view('admin.integrations.whatsapp', compact('fonnte'));
     }
 
+    // --- PAYMENT GATEWAY UTILS ---
+
     /**
-     * Update Payment Gateway (Midtrans)
+     * Get Token for Admin Test (JSON Response)
      */
+    public function getPaymentTestToken(Request $request) 
+    {
+        try {
+            $midtrans = new \App\Services\MidtransService();
+            
+            $amount = $request->input('amount', 10000); 
+            $dummyId = 'TEST-' . time();
+
+            $params = [
+                'transaction_details' => [
+                    'order_id' => $dummyId,
+                    'gross_amount' => (int) $amount,
+                ],
+                'customer_details' => [
+                    'first_name' => 'Admin Tester',
+                    'email' => 'admin@tester.com',
+                ],
+            ];
+
+            // Use the service method to get token (createSnapToken returns array with token)
+            $result = $midtrans->createSnapToken($params);
+
+            if ($result && isset($result['token'])) {
+                
+                // Log Midtrans Test
+                \App\Models\WebhookLog::create([
+                    'provider_code' => 'midtrans',
+                    'event_type' => 'token_request_test',
+                    'related_id' => $dummyId,
+                    'payload' => [
+                        'order_id' => $dummyId,
+                        'amount' => $amount,
+                        'result_token' => $result['token']
+                    ],
+                    'received_at' => now()
+                ]);
+
+                return response()->json([
+                    'status' => 'success',
+                    'token' => $result['token']
+                ]);
+            }
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to obtain Snap Token from Midtrans (Check credentials/logs).'
+            ], 500);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    // --- LOGISTIK UTILS ---
+    
+    public function storeCarrier(Request $request)
+    {
+        $request->validate(['code' => 'required', 'name' => 'required']);
+        \App\Models\ShippingCarrier::create([
+            'code' => strtolower($request->code),
+            'name' => $request->name,
+            'is_enabled' => true
+        ]);
+        return back()->with('success', 'Kurir berhasil ditambahkan.');
+    }
+
+    public function updateCarrier(Request $request, $id)
+    {
+        $request->validate(['code' => 'required', 'name' => 'required']);
+        $carrier = \App\Models\ShippingCarrier::findOrFail($id);
+        $carrier->update([
+            'code' => strtolower($request->code),
+            'name' => $request->name
+        ]);
+        return back()->with('success', 'Informasi kurir berhasil diperbarui.');
+    }
+
+    public function toggleCarrierStatus($id)
+    {
+        $carrier = \App\Models\ShippingCarrier::findOrFail($id);
+        $carrier->is_enabled = !$carrier->is_enabled;
+        $carrier->save();
+
+        $status = $carrier->is_enabled ? 'diaktifkan' : 'dinonaktifkan';
+        return back()->with('success', "Kurir {$carrier->name} berhasil {$status}.");
+    }
+
+    public function deleteCarrier($id)
+    {
+        \App\Models\ShippingCarrier::destroy($id);
+        return back()->with('success', 'Kurir dihapus.');
+    }
+
+    public function checkShippingCostTest(Request $request)
+    {
+        $request->validate([
+            'origin' => 'required|numeric',
+            'destination' => 'required|numeric', 
+            'weight' => 'required|numeric',
+            'courier' => 'required'
+        ]);
+
+        try {
+            $rajaOngkir = new \App\Services\RajaOngkirService();
+            $result = $rajaOngkir->checkCost(
+                $request->origin,
+                'subdistrict',
+                $request->destination,
+                'subdistrict',
+                $request->weight,
+                $request->courier
+            );
+
+            if($result['status'] && !empty($result['data'])) {
+                // Modified: Data is a flat array of services
+                $costs = $result['data'];
+                // Get name from first item if available
+                $courierName = $costs[0]['name'] ?? strtoupper($request->courier);
+                
+                // Fallback names (since API might not return details in this specific structure)
+                $originName = 'ID: ' . $request->origin;
+                $destName = 'ID: ' . $request->destination;
+                
+                // Log Request
+                \App\Models\WebhookLog::create([
+                    'provider_code' => 'rajaongkir',
+                    'event_type' => 'cost_check_test',
+                    'related_id' => 'ADMIN-TEST-' . time(),
+                    'payload' => [
+                        'origin' => $request->origin,
+                        'destination' => $request->destination,
+                        'weight' => $request->weight,
+                        'courier' => $request->courier,
+                        'result' => $result
+                    ],
+                    'received_at' => now()
+                ]);
+
+                return back()
+                    ->with('cost_results', $costs)
+                    ->with('origin_name', $originName)
+                    ->with('dest_name', $destName)
+                    ->with('courier_name', $courierName)
+                    ->withInput();
+
+            } else {
+                 $errMsg = $result['message'] ?? 'Data ongkir tidak ditemukan.';
+                 
+                 // Log Error
+                 \App\Models\WebhookLog::create([
+                    'provider_code' => 'rajaongkir',
+                    'event_type' => 'cost_check_test_failed',
+                    'payload' => ['error' => $errMsg, 'request' => $request->all()],
+                    'received_at' => now()
+                 ]);
+
+                 return back()->with('error', 'Cek Ongkir Gagal: ' . $errMsg)->withInput();
+            }
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi Kesalahan API: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    // --- WHATSAPP UTILS ---
+    
+    public function sendTestWhatsapp(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required',
+            'message' => 'nullable|string'
+        ]);
+
+        $fonnte = new \App\Services\FonnteService();
+        $target = $request->phone;
+        $message = $request->message ?? "Test Notification from Admin Panel.\nTime: " . now();
+
+        $result = $fonnte->sendMessage($target, $message);
+
+        // Log WA
+        \App\Models\WebhookLog::create([
+            'provider_code' => 'whatsapp',
+            'event_type' => 'send_message_test',
+            'related_id' => $target,
+            'payload' => [
+                'target' => $target,
+                'message' => $message,
+                'result' => $result
+            ],
+            'received_at' => now()
+        ]);
+
+        if ($result['status']) {
+            return back()->with('success', 'Pesan Test Terkirim ke ' . $target);
+        } else {
+            return back()->with('error', 'Gagal kirim pesan: ' . ($result['error'] ?? 'Unknown Error'));
+        }
+    }
+
+    // --- WEBHOOK LOGS ---
+    public function webhookLogs(Request $request) 
+    {
+        // Default Date: First day of current month to Today
+        $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', now()->format('Y-m-d'));
+
+        $query = \App\Models\WebhookLog::latest('received_at');
+
+        if ($request->has('provider') && $request->provider != '') {
+            $query->where('provider_code', $request->provider);
+        }
+
+        // Apply Date Filter
+        $query->whereDate('received_at', '>=', $startDate)
+              ->whereDate('received_at', '<=', $endDate);
+
+        $logs = $query->paginate(10);
+        
+        // Get unique providers for filter
+        $providers = \App\Models\WebhookLog::select('provider_code')->distinct()->pluck('provider_code');
+
+        return view('admin.integrations.webhook_logs', compact('logs', 'providers', 'startDate', 'endDate'));
+    }
+
+    // --- PAYMENT GATEWAY UTILS ---
     public function updatePaymentGateway(Request $request)
     {
         $request->validate([
@@ -373,21 +681,68 @@ class AdminController extends Controller
             'mode' => 'required|in:sandbox,production',
         ]);
 
-        $gateway = PaymentGateway::where('code', 'midtrans')->firstOrFail();
-        $config = [
-            'server_key' => $request->server_key,
-            'client_key' => $request->client_key,
+        $provider = IntegrationProvider::where('code', 'midtrans')->firstOrFail();
+
+        // Config JSON Structure
+        $meta = [
             'merchant_id' => $request->merchant_id,
-            'mode' => $request->mode,
-            'is_production' => $request->mode === 'production'
+            'environment' => $request->mode
         ];
 
-        $gateway->update([
-            'config_json' => $config,
-            'is_enabled' => $request->has('is_enabled')
-        ]);
+        IntegrationKey::updateOrCreate(
+            ['provider_id' => $provider->integration_provider_id],
+            [
+                'label' => 'Midtrans ' . ucfirst($request->mode),
+                'public_k' => $request->client_key, // Client Key
+                'encrypted_k' => Crypt::encryptString($request->server_key), // Server Key Encrypted
+                'is_active' => true, // Auto active on save
+                'meta_json' => $meta
+            ]
+        );
 
         return back()->with('success', 'Konfigurasi Midtrans berhasil diperbarui.');
+    }
+
+    /**
+     * Test Koneksi Midtrans (Dummy Request)
+     */
+    public function testPaymentConnection()
+    {
+        try {
+            $midtrans = new \App\Services\MidtransService();
+            
+            $dummyId = 'TEST-CONN-' . time();
+            $params = [
+                'transaction_details' => [
+                    'order_id' => $dummyId,
+                    'gross_amount' => 10000,
+                ],
+                // Item details optional here, but good practice
+                'item_details' => [
+                    [
+                        'id' => 'TEST-1',
+                        'price' => 10000,
+                        'quantity' => 1,
+                        'name' => 'Connection Test'
+                    ]
+                ],
+                'customer_details' => [
+                    'first_name' => 'Admin Tester',
+                    'email' => 'admin@tester.com',
+                ]
+            ];
+
+            $result = $midtrans->createSnapToken($params);
+
+            if ($result) {
+                 return back()->with('success', 'Koneksi Berhasil! Token diterima: ' . (is_array($result) ? $result['token'] : $result));
+            } else {
+                 return back()->with('error', 'Koneksi Gagal. Cek Log Laravel untuk detail error.');
+            }
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Exception: ' . $e->getMessage());
+        }
     }
 
     /**

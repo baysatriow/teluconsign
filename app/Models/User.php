@@ -55,7 +55,13 @@ class User extends Authenticatable
         return $this->hasMany(BankAccount::class, 'user_id', 'user_id');
     }
 
-        public function generateOtp()
+    // Relationship yang sebelumnya hilang/salah
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class, 'seller_id', 'user_id');
+    }
+
+    public function generateOtp()
     {
         $this->otp_code = rand(100000, 999999);
         $this->otp_expires_at = now()->addMinutes(10); // OTP berlaku 10 menit

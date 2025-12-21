@@ -108,4 +108,28 @@ class Order extends Model
         $this->status = 'completed';
         $this->save();
     }
+
+    /**
+     * Buyer relationship
+     */
+    public function buyer()
+    {
+        return $this->belongsTo(User::class, 'buyer_id', 'user_id');
+    }
+
+    /**
+     * Seller relationship
+     */
+    public function seller()
+    {
+        return $this->belongsTo(User::class, 'seller_id', 'user_id');
+    }
+
+    /**
+     * Order items relationship
+     */
+    public function items()
+    {
+        return $this->hasMany(OrderItem::class, 'order_id', 'order_id');
+    }
 }

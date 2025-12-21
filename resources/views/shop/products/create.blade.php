@@ -48,14 +48,18 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-3 gap-4">
                         <div>
                             <label class="block mb-2 text-sm font-medium text-gray-900">Harga (Rp) <span class="text-red-500">*</span></label>
                             <input type="number" name="price" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5" placeholder="100000" required>
                         </div>
                         <div>
+                            <label class="block mb-2 text-sm font-medium text-gray-900">Berat (Gram) <span class="text-red-500">*</span></label>
+                            <input type="number" name="weight" value="1000" min="1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5" required>
+                        </div>
+                         <div>
                             <label class="block mb-2 text-sm font-medium text-gray-900">Stok <span class="text-red-500">*</span></label>
-                            <input type="number" name="stock" value="1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5" required>
+                            <input type="number" name="stock" value="1" min="1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5" required>
                         </div>
                     </div>
 

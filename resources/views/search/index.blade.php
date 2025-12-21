@@ -27,12 +27,28 @@
                             </label>
                             @foreach($categories as $cat)
                                 <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="radio" name="category" value="{{ $cat->category_id }}" class="text-[#EC1C25] focus:ring-[#EC1C25] rounded-full border-gray-300" {{ request('category') == $cat->category_id ? 'checked' : '' }} onchange="this.form.submit()">
+                                    <input type="radio" name="category" value="{{ $cat->slug }}" class="text-[#EC1C25] focus:ring-[#EC1C25] rounded-full border-gray-300" {{ request('category') == $cat->slug ? 'checked' : '' }} onchange="this.form.submit()">
                                     <span class="text-sm text-gray-600 group-hover:text-[#EC1C25]">{{ $cat->name }}</span>
                                 </label>
                             @endforeach
                         </div>
                     </div>
+
+                    <!-- Subcategory Filter (only show if category selected and has children) -->
+                    @if(isset($selectedCategory) && $selectedCategory->children->count() > 0)
+                    <div class="mb-6 pt-6 border-t border-gray-200">
+                        <h4 class="text-sm font-semibold text-gray-800 mb-3">Sub Kategori</h4>
+                        <div class="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                            @foreach($selectedCategory->children as $child)
+                                <label class="flex items-center gap-2 cursor-pointer group">
+                                    <input type="checkbox" name="subcategory[]" value="{{ $child->category_id }}" class="rounded text-[#EC1C25] focus:ring-[#EC1C25] border-gray-300" {{ in_array($child->category_id, (array)request('subcategory', [])) ? 'checked' : '' }}>
+                                    <span class="text-sm text-gray-600 group-hover:text-[#EC1C25]">{{ $child->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <button type="submit" class="w-full mt-3 bg-gray-100 text-gray-700 font-medium py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors">Terapkan Filter</button>
+                    </div>
+                    @endif
 
                     <!-- Kondisi -->
                     <div class="mb-6">
@@ -65,6 +81,19 @@
 
         <!-- MAIN CONTENT -->
         <div class="flex-grow">
+            <!-- Category Breadcrumb Header (if category selected) -->
+            @if(isset($selectedCategory))
+            <div class="mb-6">
+                <div class="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                    <a href="{{ route('home') }}" class="hover:text-[#EC1C25]">Home</a>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    <span class="text-gray-900 font-medium">{{ $selectedCategory->name }}</span>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900 mb-1">{{ $selectedCategory->name }}</h1>
+                <p class="text-gray-600 text-sm">{{ $products->total() }} produk ditemukan</p>
+            </div>
+            @endif
+
             <!-- Header Result -->
             <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
                 <div>

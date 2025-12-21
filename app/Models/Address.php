@@ -26,6 +26,7 @@ class Address extends Model
         'postal_code',
         'detail_address', // Alamat manual
 
+        'location_id', // Added
         'country',
         'is_default',
     ];
@@ -48,7 +49,7 @@ class Address extends Model
     }
 
     // Helper untuk menampilkan alamat lengkap satu baris
-    public function getFullAddressAttribute(): string
+    public function getFullAddress(): string
     {
         return "{$this->detail_address}, {$this->village}, {$this->district}, {$this->city}, {$this->province} {$this->postal_code}";
     }

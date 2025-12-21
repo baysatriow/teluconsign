@@ -297,8 +297,28 @@
         });
     }
 
-    // Init Recalculate on Load (jika browser menyimpan state checkbox saat refresh)
-    document.addEventListener('DOMContentLoaded', recalculateTotal);
+    // Init Recalculate on Load
+    document.addEventListener('DOMContentLoaded', function() {
+        recalculateTotal();
+
+        // Auto-select item from query param (Buy Now)
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedId = urlParams.get('selected_item');
+        
+        if(selectedId) {
+            const checkbox = document.querySelector(`.item-checkbox[value="${selectedId}"]`);
+            if(checkbox) {
+                checkbox.checked = true;
+                // Trigger change event to update parent store checkbox and totals
+                checkbox.dispatchEvent(new Event('change'));
+                
+                // Scroll to item
+                setTimeout(() => {
+                    checkbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 500);
+            }
+        }
+    });
 
 </script>
 @endsection

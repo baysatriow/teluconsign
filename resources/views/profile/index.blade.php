@@ -288,46 +288,35 @@
                             <input type="number" name="phone" id="addr_phone" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5 transition-shadow" placeholder="08..." required>
                         </div>
 
-                        <!-- Area API Wilayah (Background Halus) -->
-                        <div class="col-span-2 bg-gray-50/80 p-5 rounded-xl border border-gray-200 grid grid-cols-2 gap-5">
-                            <div class="col-span-2">
-                                <h4 class="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-1">
+                            <!-- Area Cari Lokasi (Autocomplete) -->
+                            <div class="col-span-2 bg-gray-50/80 p-5 rounded-xl border border-gray-200">
+                                <h4 class="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-3">
                                     <svg class="w-4 h-4 text-[#EC1C25]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                    Lokasi Wilayah
+                                    Cari Lokasi (Kecamatan / Kota)
                                 </h4>
-                                <!-- Info Saat Edit -->
-                                <p id="current-location-info" class="text-xs text-gray-500 hidden mb-2">Lokasi saat ini: <span class="font-medium text-gray-700" id="current-location-text"></span>. Pilih ulang di bawah jika ingin mengubah.</p>
-                            </div>
 
-                            <div class="col-span-2 sm:col-span-1">
-                                <label class="block mb-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Provinsi</label>
-                                <select id="select-province" name="province_name" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5 cursor-pointer hover:border-gray-400 transition-colors">
-                                    <option value="">Pilih Provinsi</option>
-                                </select>
+                                <div class="relative">
+                                    <input type="text" id="location-search" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5 transition-shadow" placeholder="Ketik nama kecamatan atau kota (Min. 3 huruf)..." autocomplete="off">
+                                    
+                                    <!-- Spinner -->
+                                    <div id="loading-spinner" class="absolute right-3 top-2.5 hidden">
+                                        <svg class="animate-spin h-5 w-5 text-[#EC1C25]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    </div>
+
+                                    <!-- Dropdown Results -->
+                                    <ul id="location-results" class="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto hidden">
+                                        <!-- Hasil JS Disini -->
+                                    </ul>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">Pilih lokasi dari daftar yang muncul untuk mengisi otomatis detail wilayah.</p>
+
+                                <!-- Hidden Inputs untuk Simpan ke DB -->
+                                <input type="hidden" name="location_id" id="input-location-id">
                                 <input type="hidden" name="province_name" id="input-province">
-                            </div>
-                            <div class="col-span-2 sm:col-span-1">
-                                <label class="block mb-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kota/Kabupaten</label>
-                                <select id="select-city" name="city_name" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5 cursor-pointer hover:border-gray-400 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed" disabled>
-                                    <option value="">Pilih Kota</option>
-                                </select>
                                 <input type="hidden" name="city_name" id="input-city">
-                            </div>
-                            <div class="col-span-2 sm:col-span-1">
-                                <label class="block mb-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kecamatan</label>
-                                <select id="select-district" name="district_name" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5 cursor-pointer hover:border-gray-400 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed" disabled>
-                                    <option value="">Pilih Kecamatan</option>
-                                </select>
                                 <input type="hidden" name="district_name" id="input-district">
+                                <input type="hidden" name="village_name" id="input-subdistrict"> <!-- subdistrict di API = village/kelurahan di DB kita? atau kecamatan? Komerce: district=kecamatan, subdistrict=kelurahan? kita cek nanti response nya. Untuk aman: district=kecamatan city=kota -->
                             </div>
-                            <div class="col-span-2 sm:col-span-1">
-                                <label class="block mb-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Desa/Kelurahan</label>
-                                <select id="select-village" name="village_name" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5 cursor-pointer hover:border-gray-400 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed" disabled>
-                                    <option value="">Pilih Desa</option>
-                                </select>
-                                <input type="hidden" name="village_name" id="input-village">
-                            </div>
-                        </div>
 
                         <!-- Detail Lainnya -->
                         <div class="col-span-2 sm:col-span-1">
@@ -485,8 +474,6 @@
     const addrForm = document.getElementById('address-form');
     const addrTitle = document.getElementById('address-modal-title');
     const addrMethod = document.getElementById('address-method');
-    const locInfo = document.getElementById('current-location-info');
-    const locText = document.getElementById('current-location-text');
 
     // Instance Modal Flowbite
     let modalAddr = null;
@@ -503,13 +490,14 @@
         addrForm.action = "{{ route('profile.address.add') }}";
         addrTitle.innerText = "Tambah Alamat Baru";
         addrMethod.innerHTML = ""; // Hapus input hidden PUT
-        locInfo.classList.add('hidden'); // Sembunyikan info lokasi lama
-
-        // Reset Dropdowns
-        document.getElementById('select-province').value = "";
-        document.getElementById('select-city').innerHTML = '<option value="">Pilih Kota</option>';
-        document.getElementById('select-city').disabled = true;
-        // ... (reset other dropdowns if needed) ...
+        
+        // Reset Search Input & Hidden Fields explicitly
+        document.getElementById('location-search').value = "";
+        document.getElementById('input-location-id').value = "";
+        document.getElementById('input-province').value = "";
+        document.getElementById('input-city').value = "";
+        document.getElementById('input-district').value = "";
+        document.getElementById('input-subdistrict').value = "";
 
         const modal = new Flowbite.default.Modal(addrModal);
         modal.show();
@@ -528,13 +516,18 @@
         document.getElementById('addr_postal').value = data.postal_code;
         document.getElementById('addr_detail').value = data.detail_address;
 
+        // Reset & Fill Location Hidden Inputs
+        document.getElementById('input-location-id').value = data.location_id ?? ''; // Default empty if null
+        document.getElementById('input-province').value = data.province;
+        document.getElementById('input-city').value = data.city;
+        document.getElementById('input-district').value = data.district;
+        document.getElementById('input-subdistrict').value = data.village;
+        
+        // Fill Search Input with Readable Text
+        document.getElementById('location-search').value = `${data.village}, ${data.district}, ${data.city}, ${data.province}`;
+
         // Handle Default Toggle
         document.getElementById('addr_default').checked = data.is_default;
-
-        // Handle Location Info
-        // Karena dropdown diload via API, kita tampilkan teks lokasi lama saja
-        locText.innerText = `${data.village}, ${data.district}, ${data.city}, ${data.province}`;
-        locInfo.classList.remove('hidden');
 
         const modal = new Flowbite.default.Modal(addrModal);
         modal.show();
@@ -579,106 +572,85 @@
         modal.hide();
     }
 
-    // --- Logic API Wilayah Indonesia (EMSIFA) ---
+    // --- Logic Autocomplete Location (Komerce Proxy) ---
     document.addEventListener('DOMContentLoaded', function() {
-        const provinceSelect = document.getElementById('select-province');
-        const citySelect = document.getElementById('select-city');
-        const districtSelect = document.getElementById('select-district');
-        const villageSelect = document.getElementById('select-village');
-
+        const searchInput = document.getElementById('location-search');
+        const resultsList = document.getElementById('location-results');
+        const spinner = document.getElementById('loading-spinner');
+        
+        // Hidden Inputs
+        const inputLocId = document.getElementById('input-location-id');
         const inputProvince = document.getElementById('input-province');
         const inputCity = document.getElementById('input-city');
-        const inputDistrict = document.getElementById('input-district');
-        const inputVillage = document.getElementById('input-village');
+        const inputDistrict = document.getElementById('input-district'); // Kecamatan
+        const inputSubdistrict = document.getElementById('input-subdistrict'); // Kelurahan (optional/text)
+        const inputZip = document.getElementById('addr_postal');
 
-        if(provinceSelect) {
-            fetch('https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json')
-                .then(response => response.json())
-                .then(provinces => {
-                    provinces.forEach(province => {
-                        let option = document.createElement('option');
-                        option.value = province.id;
-                        option.text = province.name;
-                        provinceSelect.add(option);
+        let debounceTimer;
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            const query = this.value;
+
+            if (query.length < 3) {
+                resultsList.classList.add('hidden');
+                return;
+            }
+
+            spinner.classList.remove('hidden');
+
+            debounceTimer = setTimeout(() => {
+                fetch(`/location/search?q=${encodeURIComponent(query)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        resultsList.innerHTML = '';
+                        spinner.classList.add('hidden');
+
+                        if (data.length === 0) {
+                            resultsList.innerHTML = '<li class="px-4 py-2 text-sm text-gray-500">Lokasi tidak ditemukan</li>';
+                            resultsList.classList.remove('hidden');
+                            return;
+                        }
+
+                        data.forEach(item => {
+                            // Item structure from Komerce:
+                            // {id: 4866, label: "BATUNUNGGAL, BANDUNG KIDUL, BANDUNG, JAWA BARAT, 40266", ...}
+                            
+                            const li = document.createElement('li');
+                            li.className = 'px-4 py-2 text-sm text-gray-700 hover:bg-red-50 cursor-pointer border-b border-gray-100 last:border-0';
+                            li.textContent = item.label;
+                            
+                            li.addEventListener('click', () => {
+                                // Set Values
+                                searchInput.value = item.label;
+                                inputLocId.value = item.id;
+                                inputProvince.value = item.province_name;
+                                inputCity.value = item.city_name;
+                                inputDistrict.value = item.district_name; // Kecamatan
+                                inputSubdistrict.value = item.subdistrict_name; // Kelurahan
+                                inputZip.value = item.zip_code;
+
+                                resultsList.classList.add('hidden');
+                            });
+
+                            resultsList.appendChild(li);
+                        });
+
+                        resultsList.classList.remove('hidden');
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        spinner.classList.add('hidden');
                     });
-                });
+            }, 500); // 500ms debounce
+        });
 
-            provinceSelect.addEventListener('change', function() {
-                const provinceId = this.value;
-                inputProvince.value = this.options[this.selectedIndex].text;
-
-                citySelect.innerHTML = '<option value="">Pilih Kota</option>';
-                citySelect.disabled = true;
-                districtSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
-                districtSelect.disabled = true;
-                villageSelect.innerHTML = '<option value="">Pilih Desa</option>';
-                villageSelect.disabled = true;
-
-                if (provinceId) {
-                    citySelect.disabled = false;
-                    fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${provinceId}.json`)
-                        .then(response => response.json())
-                        .then(cities => {
-                            cities.forEach(city => {
-                                let option = document.createElement('option');
-                                option.value = city.id;
-                                option.text = city.name;
-                                citySelect.add(option);
-                            });
-                        });
-                }
-            });
-
-            citySelect.addEventListener('change', function() {
-                const cityId = this.value;
-                inputCity.value = this.options[this.selectedIndex].text;
-
-                districtSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
-                districtSelect.disabled = true;
-                villageSelect.innerHTML = '<option value="">Pilih Desa</option>';
-                villageSelect.disabled = true;
-
-                if (cityId) {
-                    districtSelect.disabled = false;
-                    fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${cityId}.json`)
-                        .then(response => response.json())
-                        .then(districts => {
-                            districts.forEach(district => {
-                                let option = document.createElement('option');
-                                option.value = district.id;
-                                option.text = district.name;
-                                districtSelect.add(option);
-                            });
-                        });
-                }
-            });
-
-            districtSelect.addEventListener('change', function() {
-                const districtId = this.value;
-                inputDistrict.value = this.options[this.selectedIndex].text;
-
-                villageSelect.innerHTML = '<option value="">Pilih Desa</option>';
-                villageSelect.disabled = true;
-
-                if (districtId) {
-                    villageSelect.disabled = false;
-                    fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/villages/${districtId}.json`)
-                        .then(response => response.json())
-                        .then(villages => {
-                            villages.forEach(village => {
-                                let option = document.createElement('option');
-                                option.value = village.id;
-                                option.text = village.name;
-                                villageSelect.add(option);
-                            });
-                        });
-                }
-            });
-
-            villageSelect.addEventListener('change', function() {
-                inputVillage.value = this.options[this.selectedIndex].text;
-            });
-        }
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !resultsList.contains(e.target)) {
+                resultsList.classList.add('hidden');
+            }
+        });
     });
 
     // Helper function for Password Modal

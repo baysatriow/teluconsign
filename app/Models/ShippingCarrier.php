@@ -26,19 +26,11 @@ class ShippingCarrier extends Model
         'config_json' => 'array',
     ];
 
-    public function services()
-    {
-        return $this->hasMany(ShippingService::class, 'carrier_id', 'shipping_carrier_id');
-    }
-
+    // Services relationship removed as table is dropped
+    
     public function registerCarrier(ShippingCarrier $data): bool
     {
         return $data->save();
-    }
-
-    public function getServices(): array
-    {
-        return $this->services()->get()->toArray();
     }
 
     public function enableCarrier(): void

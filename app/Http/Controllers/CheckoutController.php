@@ -82,7 +82,13 @@ class CheckoutController extends Controller
         $platformFee = 5000;
         $totalPayment = $subtotal + $platformFee;
 
-        $couriers = ['jne', 'pos', 'tiki'];
+        // Ambil Kurir dari Database
+        $couriers = \App\Models\ShippingCarrier::where('is_enabled', true)->pluck('code')->toArray();
+
+        // Fallback jika kosong
+        if(empty($couriers)) {
+            $couriers = ['jne', 'pos', 'tiki']; 
+        }
 
         return view('checkout.index', compact('groupedItems', 'mainAddress', 'subtotal', 'platformFee', 'totalPayment', 'couriers'));
     }
@@ -129,19 +135,20 @@ class CheckoutController extends Controller
             $totalWeight += ($weight * $item->quantity);
         }
 
-        // Integrasi RajaOngkir
-        // Logic: Jika kolom 'city' menyimpan ID (integer), gunakan langsung.
-        // Jika menyimpan Nama Kota (string), idealnya cari ID-nya.
-        // Disini kita gunakan fallback dummy ID untuk demo agar tidak error jika data masih string.
-
-        $origin = is_numeric($sellerAddress->city) ? $sellerAddress->city : 501; // 501 = Yogyakarta (Dummy)
-        $destination = is_numeric($buyerAddress->city) ? $buyerAddress->city : 114; // 114 = Denpasar (Dummy)
+        // Integrasi RajaOngkir (Komerce)
+        // Prioritaskan location_id (ID Kecamatan/Kelurahan dari Autocomplete)
+        
+        $origin = $sellerAddress->location_id 
+            ?? (is_numeric($sellerAddress->district) ? $sellerAddress->district : (is_numeric($sellerAddress->city) ? $sellerAddress->city : 501));
+            
+        $destination = $buyerAddress->location_id 
+            ?? (is_numeric($buyerAddress->district) ? $buyerAddress->district : (is_numeric($buyerAddress->city) ? $buyerAddress->city : 114));
 
         $result = $this->rajaOngkir->checkCost(
             origin: $origin,
-            originType: 'city', // Sesuaikan dengan tipe akun RajaOngkir Anda (Starter=city, Pro=subdistrict)
+            originType: 'subdistrict', // Komerce uses subdistrict ID usually
             destination: $destination,
-            destinationType: 'city',
+            destinationType: 'subdistrict',
             weight: $totalWeight,
             courier: $request->courier
         );
@@ -149,6 +156,21 @@ class CheckoutController extends Controller
         if (!$result['status']) {
             return response()->json(['status' => 'error', 'message' => $result['message']]);
         }
+
+        // Log Shipping Cost Check
+        \App\Models\WebhookLog::create([
+            'provider_code' => 'rajaongkir',
+            'event_type' => 'cost_check',
+            'related_id' => 'CHK-' . $user->user_id . '-' . time(),
+            'payload' => [
+                'origin' => $origin,
+                'destination' => $destination,
+                'weight' => $totalWeight,
+                'courier' => $request->courier,
+                'result' => $result['data'] ?? 'error'
+            ],
+            'received_at' => now()
+        ]);
 
         return response()->json([
             'status' => 'success',
@@ -221,7 +243,7 @@ class CheckoutController extends Controller
                     OrderItem::create([
                         'order_id' => $order->order_id,
                         'product_id' => $item->product_id,
-                        'product_title' => $item->product->title,
+                        'product_title_snapshot' => $item->product->title,
                         'unit_price' => $item->unit_price,
                         'quantity' => $item->quantity,
                         'subtotal' => $item->subtotal
@@ -292,6 +314,20 @@ class CheckoutController extends Controller
 
             // Return Token (handle array/string return type from service)
             $tokenString = is_array($snapToken) ? ($snapToken['token'] ?? '') : $snapToken;
+
+            // Log Checkout Payment Request
+            \App\Models\WebhookLog::create([
+                'provider_code' => 'midtrans',
+                'event_type' => 'token_request',
+                'related_id' => $paymentCode,
+                'payload' => [
+                    'order_id' => $paymentCode,
+                    'gross_amount' => $grossAmount,
+                    'customer' => $user->email,
+                    'result_token' => $tokenString
+                ],
+                'received_at' => now()
+            ]);
 
             return response()->json([
                 'status' => 'success',

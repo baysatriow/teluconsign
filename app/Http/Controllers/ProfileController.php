@@ -101,6 +101,7 @@ class ProfileController extends Controller
             'village' => $request->village_name,
             'postal_code' => $request->postal_code,
             'detail_address' => $request->detail_address,
+            'location_id' => $request->location_id, // Added
             'country' => 'ID',
             'is_default' => $isDefault
         ]);
@@ -143,6 +144,7 @@ class ProfileController extends Controller
             $dataToUpdate['city'] = $request->city_name;
             $dataToUpdate['district'] = $request->district_name;
             $dataToUpdate['village'] = $request->village_name;
+            $dataToUpdate['location_id'] = $request->location_id; // Added
         }
 
         // Handle Toggle Default saat Edit
@@ -255,9 +257,10 @@ class ProfileController extends Controller
             'province_name' => 'required',
             'city_name' => 'required',
             'district_name' => 'required',
-            'village_name' => 'required',
+            // 'village_name' => 'required', // Optional depending on API
             'postal_code' => 'required|numeric',
             'detail_address' => 'required|string',
+            // location_id is optional but recommended
         ]);
     }
 

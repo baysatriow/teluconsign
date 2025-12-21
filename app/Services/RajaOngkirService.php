@@ -23,55 +23,38 @@ class RajaOngkirService extends BaseIntegrationService
     {
         try {
             $cred = $this->getCredential($this->providerCode);
-
-            // Base URL baru Komerce
+            // URL dari dokumentasi Komerce / User Snippet
             $baseUrl = $cred->config['base_url'] ?? 'https://rajaongkir.komerce.id/api/v1';
-
-            // Payload untuk /calculate/domestic-cost
-            $payload = [
-                'origin' => $origin,
-                'originType' => $originType,
-                'destination' => $destination,
-                'destinationType' => $destinationType,
+            
+            // Endpoint: /calculate/domestic-cost (sesuai snippet user)
+            // Content-Type: application/x-www-form-urlencoded
+            $response = Http::asForm()->withHeaders([
+                'key' => $cred->public_k,
+            ])->post("{$baseUrl}/calculate/domestic-cost", [
+                'origin' => $origin,        
+                'destination' => $destination, 
                 'weight' => $weight,
-                'courier' => $courier,
-            ];
-
-            $response = Http::withHeaders([
-                'key' => $cred->public_k, // API Key Komerce
-            ])->post("{$baseUrl}/calculate/domestic-cost", $payload);
+                'courier' => $courier
+            ]);
 
             if ($response->failed()) {
-                $body = $response->json();
-                // Komerce kadang mengembalikan error di meta.message atau data.message
-                $errorMsg = $body['meta']['message'] ?? $body['rajaongkir']['status']['description'] ?? 'Gagal koneksi ke API Komerce.';
-
-                Log::error("RajaOngkir Komerce Error [{$courier}]: " . $errorMsg, $payload);
-                return ['status' => false, 'message' => $errorMsg];
+                Log::error("RajaOngkir Error: " . $response->body());
+                return ['status' => false, 'message' => 'Gagal koneksi API Ongkir.'];
             }
 
             $result = $response->json();
 
-            // Struktur response Komerce biasanya: { meta: {...}, data: [...] }
-            // Namun wrapper RajaOngkir kadang mempertahankan struktur lama { rajaongkir: { results: ... } }
-            // Kita handle kedua kemungkinan agar aman.
-
-            $costs = [];
-            if (isset($result['data'][0]['costs'])) {
-                // Struktur Baru Komerce Murni
-                $costs = $result['data'][0]['costs'];
-            } elseif (isset($result['rajaongkir']['results'][0]['costs'])) {
-                // Struktur Wrapper Legacy
-                $costs = $result['rajaongkir']['results'][0]['costs'];
-            }
+            // Struktur Komerce: { meta: {...}, data: [ ... ] }
+            // API ini mengembalikan data langsung dalam array
+            $data = $result['data'] ?? [];
 
             return [
                 'status' => true,
-                'data' => $costs
+                'data' => $data
             ];
-
+            
         } catch (\Exception $e) {
-            Log::error('RajaOngkir Service Exception: ' . $e->getMessage());
+            Log::error('RajaOngkir Exception: ' . $e->getMessage());
             return ['status' => false, 'message' => $e->getMessage()];
         }
     }

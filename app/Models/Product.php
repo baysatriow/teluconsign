@@ -18,10 +18,12 @@ class Product extends Model
         'title',
         'description',
         'price',
+        'weight',
         'stock',
         'location',
         'condition',
         'status',
+        'suspension_reason',
         'main_image',
     ];
 
@@ -29,6 +31,7 @@ class Product extends Model
         'status' => ProductStatus::class, // Casting ke Enum
         'price' => 'decimal:2',
         'stock' => 'integer',
+        'weight' => 'integer',
     ];
 
     /* =======================

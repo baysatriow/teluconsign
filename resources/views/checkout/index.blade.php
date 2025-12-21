@@ -173,12 +173,30 @@
             
             if(data.status === 'success') {
                 data.costs.forEach(cost => {
-                    // cost = { service: "REG", description: "Layanan Reguler", cost: [{value: 10000, etd: "1-2"}] }
-                    const detail = cost.cost[0];
+                    // Normalize Data Structure
+                    // Helper to handle Komerce (Direct Value) vs RajaOngkir (Array of values)
+                    let serviceName = cost.service;
+                    let serviceCost = 0;
+                    let serviceEtd = '';
+                    let serviceDesc = cost.description || serviceName;
+
+                    if (cost.cost && Array.isArray(cost.cost)) {
+                         // Standard RajaOngkir Structure: { service: "REG", cost: [{value:10000, etd:"1-2"}] }
+                         const detail = cost.cost[0];
+                         serviceCost = detail.value;
+                         serviceEtd = detail.etd;
+                    } else if (typeof cost.cost === 'number') {
+                         // Komerce Flattened Structure (User Snippet): { service: "REG", cost: 10000, etd: "1-2" }
+                         serviceCost = cost.cost;
+                         serviceEtd = cost.etd;
+                    } else {
+                        return; // Skip invalid format
+                    }
+
                     const option = document.createElement('option');
-                    option.value = detail.value;
-                    option.dataset.etd = detail.etd;
-                    option.textContent = `${cost.service} - Rp${new Intl.NumberFormat('id-ID').format(detail.value)} (${detail.etd} hari)`;
+                    option.value = serviceCost;
+                    option.dataset.etd = serviceEtd;
+                    option.textContent = `${serviceName} - Rp${new Intl.NumberFormat('id-ID').format(serviceCost)} (${serviceEtd} hari)`;
                     serviceSelect.appendChild(option);
                 });
                 serviceSelect.disabled = false;

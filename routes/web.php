@@ -23,6 +23,7 @@ use App\Http\Controllers\CheckoutController;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->name('search.index');
 Route::get('/product/{id}', [ProductController::class, 'show'])->name('product.show');
+Route::get('/shop/{id}', [ShopController::class, 'show'])->name('shop.show');
 
 // ==============================================================================
 // 2. GUEST ROUTES (Hanya untuk yang BELUM login)
@@ -80,6 +81,10 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
     Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
 
+
+    // --- FITUR AUTOCOMPLETE LOKASI ---
+    Route::get('/location/search', [App\Http\Controllers\LocationController::class, 'search'])->name('location.search');
+
     // Kelola Alamat (CRUD)
     Route::post('/profile/address', [ProfileController::class, 'addAddress'])->name('profile.address.add');
     Route::put('/profile/address/{id}', [ProfileController::class, 'updateAddress'])->name('profile.address.update');
@@ -92,10 +97,12 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
     Route::delete('/profile/bank/{id}', [ProfileController::class, 'deleteBank'])->name('profile.bank.delete');
 
     // --- FITUR TOKO (PENJUAL) ---
+    // 1. Dashboard & Core
     Route::get('/myshop', [ShopController::class, 'index'])->name('shop.index');
-    Route::post('/myshop/register', [ShopController::class, 'registerStore'])->name('shop.register'); // Daftar jadi seller
+    Route::post('/myshop/register', [ShopController::class, 'registerStore'])->name('shop.register');
 
-    // Kelola Produk (CRUD)
+    // 2. Produk (CRUD & List)
+    Route::get('/myshop/products', [ShopController::class, 'products'])->name('shop.products.index');
     Route::get('/myshop/products/create', [ShopController::class, 'createProduct'])->name('shop.products.create');
     Route::post('/myshop/products', [ShopController::class, 'storeProduct'])->name('shop.products.store');
     Route::get('/myshop/products/{id}/edit', [ShopController::class, 'editProduct'])->name('shop.products.edit');
@@ -103,17 +110,21 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
     Route::delete('/myshop/products/{id}', [ShopController::class, 'deleteProduct'])->name('shop.products.delete');
     Route::delete('/myshop/products/image/{id}', [ShopController::class, 'deleteProductImage'])->name('shop.products.image.delete');
 
-    // Kelola Pesanan Toko
+    // 3. Pesanan
     Route::get('/myshop/orders', [ShopController::class, 'orders'])->name('shop.orders');
 
-    // Placeholder Halaman Orders Pembeli
-    Route::get('/orders', function () {
-        $orders = \App\Models\Order::where('buyer_id', auth()->id())
-                    ->with(['items', 'seller'])
-                    ->latest()
-                    ->get();
-        return view('orders.index', compact('orders'));
-    })->name('orders.index');
+    // 4. Laporan
+    Route::get('/myshop/reports', [ShopController::class, 'reports'])->name('shop.reports');
+
+    // 5. Saldo & Penarikan
+    Route::get('/myshop/payouts', [ShopController::class, 'payouts'])->name('shop.payouts');
+    Route::post('/myshop/payouts', [ShopController::class, 'storePayout'])->name('shop.payouts.store');
+    Route::post('/myshop/banks', [ShopController::class, 'storeBank'])->name('shop.banks.store');
+    Route::delete('/myshop/banks/{id}', [ShopController::class, 'deleteBank'])->name('shop.banks.delete');
+
+    // Halaman Orders Pembeli
+    Route::get('/orders', [App\Http\Controllers\OrdersController::class, 'index'])->name('orders.index');
+    Route::post('/orders/{id}/pay', [App\Http\Controllers\OrdersController::class, 'pay'])->name('orders.pay');
     // --- CHECKOUT ---
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout/check-shipping', [CheckoutController::class, 'checkShippingCost'])->name('checkout.check_shipping'); // NEW ROUTE
@@ -130,6 +141,7 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
 
         // Manajemen User
         Route::get('/users', [AdminController::class, 'users'])->name('users');
+        Route::get('/users/{id}', [AdminController::class, 'usersShow'])->name('users.show'); // Show Route
         Route::post('/users', [AdminController::class, 'storeAdmin'])->name('users.store_admin');
         Route::patch('/users/{id}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle_status');
 
@@ -137,11 +149,32 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
         Route::get('/payouts', [AdminController::class, 'payouts'])->name('payouts');
         Route::patch('/payouts/{id}', [AdminController::class, 'updatePayoutStatus'])->name('payouts.update');
 
-        // Manajemen Integrasi
-        Route::get('/integrations', [AdminController::class, 'integrations'])->name('integrations');
-        Route::patch('/integrations/payment-gateway', [AdminController::class, 'updatePaymentGateway'])->name('integrations.payment.update');
-        Route::post('/integrations/shipping', [AdminController::class, 'updateShippingApi'])->name('integrations.shipping.update');
-        Route::post('/integrations/whatsapp', [AdminController::class, 'updateWhatsappApi'])->name('integrations.whatsapp.update');
+        // --- INTEGRASI & SETTINGS ---
+    // --- INTEGRASI & SETTINGS ---
+    
+    // 1. Payment Gateway
+    Route::get('/integrations/payment', [AdminController::class, 'paymentGateway'])->name('integrations.payment');
+    Route::patch('/integrations/payment-gateway', [AdminController::class, 'updatePaymentGateway'])->name('integrations.payment.update');
+
+    // Test Routes
+    Route::get('/integrations/payment/test-token', [AdminController::class, 'getPaymentTestToken'])->name('integrations.payment.test-token'); // JSON for JS Popup
+
+    // 2. Logistik
+    Route::get('/integrations/logistics', [AdminController::class, 'shipping'])->name('integrations.shipping');
+    Route::post('/integrations/shipping', [AdminController::class, 'updateShippingApi'])->name('integrations.shipping.update');
+    Route::post('/integrations/shipping-carrier', [AdminController::class, 'storeCarrier'])->name('integrations.carrier.store');
+    Route::put('/integrations/shipping-carrier/{id}', [AdminController::class, 'updateCarrier'])->name('integrations.carrier.update');
+    Route::patch('/integrations/shipping-carrier/{id}/toggle', [AdminController::class, 'toggleCarrierStatus'])->name('integrations.carrier.toggle');
+    Route::delete('/integrations/shipping-carrier/{id}', [AdminController::class, 'deleteCarrier'])->name('integrations.carrier.delete');
+    Route::post('/integrations/shipping/test-cost', [AdminController::class, 'checkShippingCostTest'])->name('integrations.shipping.test-cost');
+
+    // 3. WhatsApp
+    Route::get('/integrations/whatsapp', [AdminController::class, 'whatsapp'])->name('integrations.whatsapp');
+    Route::post('/integrations/whatsapp', [AdminController::class, 'updateWhatsappApi'])->name('integrations.whatsapp.update');
+    Route::post('/integrations/whatsapp/test-send', [AdminController::class, 'sendTestWhatsapp'])->name('integrations.whatsapp.test-send');
+    
+    // 4. Webhook Logs
+    Route::get('/integrations/webhook-logs', [AdminController::class, 'webhookLogs'])->name('integrations.webhook-logs');
     });
 });
 

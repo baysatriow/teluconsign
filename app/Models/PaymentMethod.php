@@ -12,10 +12,10 @@ class PaymentMethod extends Model
     protected $primaryKey = 'payment_method_id';
 
     protected $fillable = [
-        'gateway_id',
-        'code',
-        'name',
-        'is_enabled',
+        'provider_id', // Changed from gateway_id
+        'code', // Original
+        'name', // Original
+        'is_active', // Changed from is_enabled (based on controller usage, checking db schema in mind)
         'min_amount',
         'max_amount',
         'extra_config',
@@ -23,28 +23,25 @@ class PaymentMethod extends Model
 
     protected $casts = [
         'extra_config' => 'array',
+        'is_active' => 'boolean'
     ];
 
     /**
-     * Relasi ke PaymentGateway.
+     * Relasi ke IntegrationProvider.
      */
-    public function gateway()
+    public function provider()
     {
-        return $this->belongsTo(PaymentGateway::class, 'gateway_id');
+        return $this->belongsTo(IntegrationProvider::class, 'provider_id');
     }
 
     public function enableMethod(): void
     {
-        $this->update([
-            'is_enabled' => 1,
-        ]);
+        $this->update(['is_active' => 1]);
     }
 
     public function disableMethod(): void
     {
-        $this->update([
-            'is_enabled' => 0,
-        ]);
+        $this->update(['is_active' => 0]);
     }
 
     public function validateAmountRange(float $amount): bool
@@ -58,10 +55,5 @@ class PaymentMethod extends Model
         }
 
         return true;
-    }
-
-    public function getGatewayInfo(): ?PaymentGateway
-    {
-        return $this->gateway()->first();
     }
 }

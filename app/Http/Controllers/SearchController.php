@@ -16,6 +16,9 @@ class SearchController extends Controller
         $query = Product::with('seller')
             ->where('status', 'active');
 
+        // Initialize selected category variable
+        $selectedCategory = null;
+
         // 1. Keyword Search
         if ($request->has('q') && $request->q != '') {
             $search = $request->q;
@@ -25,15 +28,23 @@ class SearchController extends Controller
             });
         }
 
-        // 2. Category Filter
+        // 2. Category Filter (Handle Parent + Children Hierarchically)
         if ($request->has('category') && $request->category != '') {
-            $categoryId = $request->category;
-            $query->where(function($q) use ($categoryId) {
-                $q->where('category_id', $categoryId)
-                  ->orWhereHas('category', function($sub) use ($categoryId) {
-                      $sub->where('parent_id', $categoryId);
-                  });
-            });
+            $categorySlug = $request->category;
+            
+            // Find category by slug
+            $category = Category::where('slug', $categorySlug)->first();
+            
+            if ($category) {
+                // Get all child IDs (including parent itself) recursively
+                $categoryIds = $category->getAllChildIds();
+                
+                // Filter products by category IDs
+                $query->whereIn('category_id', $categoryIds);
+                
+                // Pass to view for breadcrumb and subcategory filter
+                $selectedCategory = $category;
+            }
         }
 
         // 3. Price Filter
@@ -65,9 +76,9 @@ class SearchController extends Controller
 
         $products = $query->paginate(24)->withQueryString();
         
-        // Ambil semua kategori untuk filter sidebar
+        // Get all parent categories with children for filter sidebar
         $categories = Category::whereNull('parent_id')->with('children')->get();
         
-        return view('search.index', compact('products', 'categories'));
+        return view('search.index', compact('products', 'categories', 'selectedCategory'));
     }
 }

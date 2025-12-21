@@ -28,19 +28,25 @@ class MidtransService extends BaseIntegrationService
             $serverKey = $cred->secret_key;
             $authKey = base64_encode($serverKey . ':');
 
-            $payload = [
-                'transaction_details' => [
-                    'order_id' => $orderData['code'], // INV/2025/...
-                    'gross_amount' => (int) $orderData['total_amount'],
-                ],
-                'customer_details' => [
-                    'first_name' => $orderData['customer_name'],
-                    'email' => $orderData['customer_email'],
-                    'phone' => $orderData['customer_phone'],
-                ],
-                'item_details' => $orderData['items'] ?? [],
-                // 'callbacks' => [ ... ]
-            ];
+            // Jika input array sudah memiliki key 'transaction_details', kita asumsikan itu raw payload siap kirim
+            if (isset($orderData['transaction_details'])) {
+                $payload = $orderData;
+            } else {
+                // Legacy: construct payload from generic data keys
+                $payload = [
+                    'transaction_details' => [
+                        'order_id' => $orderData['code'], // INV/2025/...
+                        'gross_amount' => (int) $orderData['total_amount'],
+                    ],
+                    'customer_details' => [
+                        'first_name' => $orderData['customer_name'],
+                        'email' => $orderData['customer_email'],
+                        'phone' => $orderData['customer_phone'],
+                    ],
+                    'item_details' => $orderData['items'] ?? [],
+                    // 'callbacks' => [ ... ]
+                ];
+            }
 
             $response = Http::withHeaders([
                 'Authorization' => 'Basic ' . $authKey,

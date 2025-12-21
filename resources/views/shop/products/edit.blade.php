@@ -43,10 +43,14 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-3 gap-4">
                         <div>
                             <label class="block mb-2 text-sm font-medium text-gray-900">Harga (Rp)</label>
                             <input type="number" name="price" value="{{ (int)$product->price }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5" required>
+                        </div>
+                        <div>
+                            <label class="block mb-2 text-sm font-medium text-gray-900">Berat (Gram)</label>
+                            <input type="number" name="weight" value="{{ $product->weight }}" min="1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5" required>
                         </div>
                         <div>
                             <label class="block mb-2 text-sm font-medium text-gray-900">Stok</label>

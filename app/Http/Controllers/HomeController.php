@@ -13,10 +13,10 @@ class HomeController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Ambil Kategori Induk Saja (Parent Categories)
-        // Ambil kategori yang tidak punya parent_id (parent_id IS NULL)
+        // 1. Get Parent Categories with Product Count
         $categories = Category::whereNull('parent_id')
             ->where('is_active', 1)
+            ->withCount('products')
             ->limit(8)
             ->get();
 
