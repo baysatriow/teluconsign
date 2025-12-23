@@ -23,15 +23,15 @@ class HomeController extends Controller
         // 2. Query Produk (Limit 20 Terbaru)
         $products = Product::with('seller')
             ->where('status', 'active')
+            ->withAvg('reviews', 'rating')
+            ->withSum(['orderItems' => function($query) {
+                $query->whereHas('order', function($q) {
+                    $q->where('status', 'completed');
+                });
+            }], 'quantity')
             ->latest()
-            ->limit(20)
-            ->get(); // Use get() directly, no pagination on home for clean look, or keep paginate if preferred. Let's keep paginate(20) but without filters.
-
-        // Actually, user wants simplified Home. Just latest items.
-        $products = Product::with('seller')
-            ->where('status', 'active')
-            ->latest()
-            ->paginate(15);
+            ->take(20)
+            ->get();
 
         return view('home', compact('products', 'categories'));
     }

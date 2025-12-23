@@ -38,6 +38,11 @@ class RajaOngkirService extends BaseIntegrationService
             ]);
 
             if ($response->failed()) {
+                // Jika error 400-499 (misal 404 rute tidak ada), anggap sukses tapi data kosong
+                if ($response->clientError()) {
+                    return ['status' => true, 'data' => []];
+                }
+
                 Log::error("RajaOngkir Error: " . $response->body());
                 return ['status' => false, 'message' => 'Gagal koneksi API Ongkir.'];
             }

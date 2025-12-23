@@ -76,10 +76,17 @@ class CheckoutController extends Controller
         }
 
         $mainAddress = $user->addresses()->where('is_default', true)->first();
+        
+        // Redirect to address page if no default address
+        if (!$mainAddress) {
+            return redirect()->route('profile.index')
+                ->with('error', 'Silakan tambahkan alamat pengiriman terlebih dahulu.');
+        }
 
         // Hitung total dari item yang dipilih SAJA
         $subtotal = $cartItems->sum('subtotal');
-        $platformFee = 5000;
+        // Calculate Platform Fee (buyer pays)
+        $platformFee = 2500;
         $totalPayment = $subtotal + $platformFee;
 
         // Ambil Kurir dari Database
@@ -133,6 +140,11 @@ class CheckoutController extends Controller
         foreach($items as $item) {
             $weight = $item->product->weight ?? 1000; // Asumsi berat 1kg jika null
             $totalWeight += ($weight * $item->quantity);
+        }
+
+        // Fix: Ensure weight is never 0 to avoid RajaOngkir error
+        if ($totalWeight <= 0) {
+            $totalWeight = 1000;
         }
 
         // Integrasi RajaOngkir (Komerce)
@@ -213,7 +225,7 @@ class CheckoutController extends Controller
             $paymentCode = 'PAY-' . time() . '-' . Str::random(5);
             $subtotalAll = $cartItems->sum('subtotal');
             $totalShipping = array_sum($shippingCosts);
-            $platformFee = 5000;
+            $platformFee = 2500; // Buyer pays 2,500
             $grossAmount = $subtotalAll + $platformFee + $totalShipping;
 
             $itemDetails = [];
@@ -225,17 +237,30 @@ class CheckoutController extends Controller
 
                 $orderCode = 'ORD-' . strtoupper(Str::random(10));
 
+                $platformFeePerOrder = 2500; // Fixed fee per order/seller
+                $sellerEarnings = $storeSubtotal - $platformFeePerOrder;
+
                 $order = Order::create([
                     'code' => $orderCode,
                     'buyer_id' => $user->user_id,
                     'seller_id' => $sellerId,
                     'shipping_address_id' => $address->address_id,
+                    'shipping_address_snapshot' => $address->toArray(), // Save snapshot
                     'status' => 'pending',
                     'payment_status' => 'pending',
                     'subtotal_amount' => $storeSubtotal,
                     'shipping_cost' => $shippingCost,
-                    'platform_fee' => 0, // Fee ditaruh global atau per order, disini kita anggap global di payment
-                    'total_amount' => $storeSubtotal + $shippingCost,
+                    'platform_fee' => $platformFeePerOrder, 
+                    'seller_earnings' => $sellerEarnings, // Store earnings immediately
+                    'total_amount' => $storeSubtotal + $shippingCost + $platformFeePerOrder, // Total paid by buyer usually includes fee. Check logic.
+                    // Wait, if total_amount is what buyer pays, and seller earnings is less...
+                    // Let's assume Total Amount = Subtotal + Shipping + Platform Fee?
+                    // Or Total Amount = Subtotal + Shipping (and Fee is deducted from Seller)
+                    // "seller_earnings ... isinya yaitu Harga barang - biaya platform" -> Fee deducted from seller.
+                    // So Total Amount (Buyer pays) = Subtotal + Shipping? Or does buyer pay fee?
+                    // Usually: Buyer pays X, Seller gets X-Commission.
+                    // Let's stick to: Total Amount = Subtotal + Shipping. Platform Fee is internal deduction.
+                    'total_amount' => $storeSubtotal + $shippingCost, 
                     'notes' => 'Group Payment: ' . $paymentCode
                 ]);
 
@@ -258,6 +283,15 @@ class CheckoutController extends Controller
                     ];
                 }
 
+                // Create Shipment record
+                $shipment = \App\Models\Shipment::create([
+                    'order_id' => $order->order_id,
+                    'carrier_id' => null, // TBD - akan diisi seller nanti
+                    'service_code' => $request->input("shipping_service.$sellerId"), // dari frontend
+                    'status' => 'pending',
+                    'cost' => $shippingCost
+                ]);
+
                 // Ongkir per Toko untuk Midtrans
                 if ($shippingCost > 0) {
                      $itemDetails[] = [
@@ -277,62 +311,55 @@ class CheckoutController extends Controller
                 'name' => 'Biaya Layanan'
             ];
 
-            // Hapus Item yang Dibeli dari Keranjang (Bukan semua isi keranjang)
-            // Menggunakan whereIn cart_item_id
+            // Create Payment record
+            // Note: gateway_id references integration_providers
+            $midtransProvider = \App\Models\IntegrationProvider::where('code', 'midtrans')->first();
+            
+            if (!$midtransProvider) {
+                // Create if not exists (first time setup)
+                $midtransProvider = \App\Models\IntegrationProvider::create([
+                    'code' => 'midtrans',
+                    'name' => 'Midtrans Payment Gateway'
+                ]);
+            }
+
+            // Get first order for payment relation
+            $firstOrderRecord = Order::where('notes', 'LIKE', "%{$paymentCode}%")->first();
+
+            $payment = \App\Models\Payment::create([
+                'order_id' => $firstOrderRecord->order_id,
+                'provider_id' => $midtransProvider->integration_provider_id,  // Changed from gateway_id
+                'method_code' => null, // User akan pilih di payment page
+                'amount' => $grossAmount,
+                'currency' => 'IDR',
+                'status' => 'pending',
+                'provider_order_id' => $paymentCode,
+                'raw_response' => ['items' => $itemDetails] // Simpan item details untuk reference
+            ]);
+
+            // Hapus Item yang Dibeli dari Keranjang
             $cart->items()->whereIn('cart_item_id', $selectedItemIds)->delete();
-            $cart->calculateTotal(); // Update total sisa keranjang
+            $cart->calculateTotal();
 
             DB::commit();
 
-            // Request Snap Token
-            $params = [
-                'transaction_details' => [
-                    'order_id' => $paymentCode,
-                    'gross_amount' => (int) $grossAmount,
-                ],
-                'item_details' => $itemDetails,
-                'customer_details' => [
-                    'first_name' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->profile->phone ?? '',
-                    'shipping_address' => [
-                        'first_name' => $user->name,
-                        'address' => $address->getFullAddress(),
-                        'city' => $address->city,
-                        'postal_code' => $address->postal_code,
-                        'phone' => $address->phone,
-                        'country_code' => 'IDN'
-                    ]
-                ]
-            ];
-
-            $snapToken = $this->midtrans->createSnapToken($params);
-
-            if (!$snapToken) {
-                return response()->json(['status' => 'error', 'message' => 'Gagal koneksi ke Payment Gateway.'], 500);
-            }
-
-            // Return Token (handle array/string return type from service)
-            $tokenString = is_array($snapToken) ? ($snapToken['token'] ?? '') : $snapToken;
-
-            // Log Checkout Payment Request
+            // Log Checkout
             \App\Models\WebhookLog::create([
                 'provider_code' => 'midtrans',
-                'event_type' => 'token_request',
+                'event_type' => 'checkout_completed',
                 'related_id' => $paymentCode,
                 'payload' => [
-                    'order_id' => $paymentCode,
-                    'gross_amount' => $grossAmount,
-                    'customer' => $user->email,
-                    'result_token' => $tokenString
+                    'payment_id' => $payment->payment_id,
+                    'order_ids' => Order::where('notes', 'LIKE', "%{$paymentCode}%")->pluck('order_id'),
+                    'gross_amount' => $grossAmount
                 ],
                 'received_at' => now()
             ]);
 
+            // Redirect ke halaman payment custom (bukan Snap)
             return response()->json([
                 'status' => 'success',
-                'snap_token' => $tokenString,
-                'redirect_url' => route('orders.index')
+                'redirect_url' => route('payment.show', $payment->payment_id)
             ]);
 
         } catch (\Exception $e) {

@@ -12,6 +12,22 @@ class Product extends Model
 
     protected $primaryKey = 'product_id';
 
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($product) {
+            if (empty($product->slug)) {
+                $product->slug = \Illuminate\Support\Str::slug($product->title) . '-' . \Illuminate\Support\Str::random(8); // Randomize for security
+            }
+        });
+    }
+
     protected $fillable = [
         'seller_id',
         'category_id',
@@ -20,7 +36,6 @@ class Product extends Model
         'price',
         'weight',
         'stock',
-        'location',
         'condition',
         'status',
         'suspension_reason',
@@ -61,6 +76,42 @@ class Product extends Model
     public function reviews()
     {
         return $this->hasMany(Review::class, 'product_id', 'product_id');
+    }
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class, 'product_id', 'product_id');
+    }
+
+    /**
+     * Get the total number of items sold (only completed orders).
+     */
+    public function getSoldCountAttribute()
+    {
+        // Check if the attribute is already loaded via withSum
+        if (array_key_exists('order_items_sum_quantity', $this->attributes)) {
+            return (int) $this->attributes['order_items_sum_quantity'];
+        }
+
+        // Fallback or lazy load
+        return (int) $this->orderItems()
+            ->whereHas('order', function ($query) {
+                $query->where('status', 'completed');
+            })
+            ->sum('quantity');
+    }
+
+    /**
+     * Get the average rating.
+     */
+    public function getRatingAttribute()
+    {
+         // Check if the attribute is already loaded via withAvg
+        if (array_key_exists('reviews_avg_rating', $this->attributes)) {
+            return (float) $this->attributes['reviews_avg_rating'];
+        }
+
+        return (float) $this->reviews()->avg('rating') ?? 0.0;
     }
 
 
@@ -109,5 +160,24 @@ class Product extends Model
     {
         $avg = $this->reviews()->avg('rating');
         return $avg ? (float) $avg : 0.0;
+    }
+
+    /**
+     * Get dynamic location from Shop Default Address.
+     * Format: Title Case, remove "KOTA"/"KABUPATEN".
+     */
+    public function getLocationAttribute()
+    {
+        $address = $this->seller->addresses()->where('is_shop_default', true)->first();
+        
+        if (!$address) return 'Indonesia';
+
+        $city = $address->city;
+        
+        // Remove "KOTA " or "KABUPATEN " (Case Insensitive)
+        $city = preg_replace('/^(KOTA|KABUPATEN)\s+/i', '', $city);
+        
+        // Convert to Title Case
+        return \Illuminate\Support\Str::title(strtolower($city));
     }
 }

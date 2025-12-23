@@ -58,9 +58,12 @@
                                 <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                     <span class="text-gray-500 font-bold">Rp</span>
                                 </div>
-                                <input type="number" name="amount" min="10000" max="{{ $currentBalance }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-telu-red focus:border-telu-red block w-full pl-10 p-2.5" placeholder="0" required>
+                                <input type="text" id="amount_input" name="amount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-telu-red focus:border-telu-red block w-full pl-10 p-2.5" placeholder="0" required>
                             </div>
-                            <p class="mt-1 text-xs text-gray-500">Maksimal: Rp{{ number_format($currentBalance, 0, ',', '.') }}</p>
+                            <p class="mt-1 text-xs text-gray-500 flex justify-between">
+                                <span>Min: Rp10.000</span>
+                                <span>Maks: Rp{{ number_format($currentBalance, 0, ',', '.') }}</span>
+                            </p>
                         </div>
                         
                         <div class="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-100">
@@ -74,6 +77,25 @@
                             Ajukan Penarikan
                         </button>
                     </form>
+                    
+                    <script>
+                        const maxBalance = {{ $currentBalance }};
+                        const inputRaw = document.getElementById('amount_input');
+                        
+                        if(inputRaw) {
+                            inputRaw.addEventListener('input', function(e) {
+                                // Remove non-digit
+                                let valStr = this.value.replace(/\D/g, '');
+                                let val = parseInt(valStr || '0');
+                                
+                                // Cap at Max
+                                if(val > maxBalance) val = maxBalance;
+                                
+                                // Format with dots
+                                this.value = new Intl.NumberFormat('id-ID').format(val);
+                            });
+                        }
+                    </script>
                 @endif
             </div>
 
@@ -123,8 +145,26 @@
         <!-- Main Column: History -->
         <div class="lg:col-span-2 space-y-6">
             <div class="card-premium overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
                     <h3 class="font-bold text-gray-800">Riwayat Penarikan</h3>
+                    
+                    <!-- Search Filter -->
+                    <form method="GET" class="flex items-center gap-2">
+                         <div class="relative">
+                            <input type="date" name="date" value="{{ request('date') }}" class="w-32 text-xs border-gray-200 rounded-lg focus:ring-telu-red focus:border-telu-red p-2">
+                         </div>
+                         <div class="relative">
+                            <input type="text" name="q" value="{{ request('q') }}" placeholder="Cari Bank / Jumlah..." class="w-40 text-xs border-gray-200 rounded-lg focus:ring-telu-red focus:border-telu-red p-2">
+                         </div>
+                         <button type="submit" class="px-3 py-2 bg-telu-red text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors">
+                            Cari
+                         </button>
+                         @if(request('date') || request('q'))
+                         <a href="{{ route('shop.payouts') }}" class="px-3 py-2 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-200 transition-colors">
+                            Reset
+                         </a>
+                         @endif
+                    </form>
                 </div>
                 <div class="relative overflow-x-auto">
                     <table class="w-full text-sm text-left">
@@ -177,9 +217,9 @@
                                         {{ $statusLabel }}
                                     </span>
                                     @if($payout->status == 'rejected' && $payout->notes)
-                                        <p class="text-xs text-red-600 mt-1 max-w-[150px] mx-auto truncate" title="{{ $payout->notes }}">
-                                            {{ $payout->notes }}
-                                        </p>
+                                        <button onclick="showRejectionReason('{{ addslashes($payout->notes) }}')" class="mt-1 text-xs text-red-600 hover:text-red-800 font-medium underline">
+                                            Lihat Detail
+                                        </button>
                                     @endif
                                 </td>
                             </tr>
@@ -201,4 +241,33 @@
     </div>
 
 </div>
+
+<script>
+    function showRejectionReason(reason) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Penarikan Ditolak',
+            html: '<div class="text-left"><strong>Alasan:</strong><br>' + reason + '</div>',
+            confirmButtonColor: '#EC1C25',
+            confirmButtonText: 'OK'
+        });
+    }
+    
+    function confirmDelete(formId) {
+        Swal.fire({
+            title: 'Hapus Rekening?',
+            text: "Rekening yang dihapus tidak dapat dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById(formId).submit();
+            }
+        });
+    }
+</script>
 @endsection

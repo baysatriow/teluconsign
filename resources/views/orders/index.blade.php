@@ -4,59 +4,52 @@
 <div class="max-w-screen-xl mx-auto px-4 py-8">
     <h1 class="text-2xl font-bold text-gray-900 mb-6">Riwayat Pembelian</h1>
 
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <!-- Total Pesanan -->
-        <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900">{{ $stats['total'] }}</p>
-                    <p class="text-xs text-gray-600">Total Pesanan</p>
-                </div>
-            </div>
-        </div>
+    <!-- Tabs Navigation -->
+    <div class="border-b border-gray-200 mb-6 overflow-x-auto">
+        <nav class="-mb-px flex space-x-8 min-w-max" aria-label="Tabs">
+            <a href="{{ route('orders.index', ['status' => 'all']) }}" 
+               class="{{ $status === 'all' ? 'border-[#EC1C25] text-[#EC1C25]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
+                Semua
+                <span class="{{ $status === 'all' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600' }} py-0.5 px-2.5 rounded-full text-xs ml-1">{{ $stats['total'] }}</span>
+            </a>
 
-        <!-- Belum Bayar -->
-        <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-yellow-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900">{{ $stats['pending_payment'] }}</p>
-                    <p class="text-xs text-gray-600">Belum Bayar</p>
-                </div>
-            </div>
-        </div>
+            <a href="{{ route('orders.index', ['status' => 'pending']) }}" 
+               class="{{ $status === 'pending' ? 'border-[#EC1C25] text-[#EC1C25]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
+                Belum Bayar
+                @if($stats['pending_payment'] > 0)
+                    <span class="bg-yellow-100 text-yellow-800 py-0.5 px-2.5 rounded-full text-xs ml-1">{{ $stats['pending_payment'] }}</span>
+                @endif
+            </a>
 
-        <!-- Lunas -->
-        <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900">{{ $stats['paid'] }}</p>
-                    <p class="text-xs text-gray-600">Lunas</p>
-                </div>
-            </div>
-        </div>
+            <a href="{{ route('orders.index', ['status' => 'processed']) }}" 
+               class="{{ $status === 'processed' ? 'border-[#EC1C25] text-[#EC1C25]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
+                Dikemas
+                @if($stats['processed'] > 0)
+                    <span class="bg-blue-100 text-blue-800 py-0.5 px-2.5 rounded-full text-xs ml-1">{{ $stats['processed'] }}</span>
+                @endif
+            </a>
 
-        <!-- Selesai -->
-        <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900">{{ $stats['completed'] }}</p>
-                    <p class="text-xs text-gray-600">Selesai</p>
-                </div>
-            </div>
-        </div>
+            <a href="{{ route('orders.index', ['status' => 'shipped']) }}" 
+               class="{{ $status === 'shipped' ? 'border-[#EC1C25] text-[#EC1C25]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
+                Dikirim
+                @if($stats['shipped'] > 0)
+                    <span class="bg-purple-100 text-purple-800 py-0.5 px-2.5 rounded-full text-xs ml-1">{{ $stats['shipped'] }}</span>
+                @endif
+            </a>
+
+            <a href="{{ route('orders.index', ['status' => 'completed']) }}" 
+               class="{{ $status === 'completed' ? 'border-[#EC1C25] text-[#EC1C25]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
+                Selesai
+                @if($stats['completed'] > 0)
+                    <span class="bg-green-100 text-green-800 py-0.5 px-2.5 rounded-full text-xs ml-1">{{ $stats['completed'] }}</span>
+                @endif
+            </a>
+
+            <a href="{{ route('orders.index', ['status' => 'cancelled']) }}" 
+               class="{{ $status === 'cancelled' ? 'border-[#EC1C25] text-[#EC1C25]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Dibatalkan
+            </a>
+        </nav>
     </div>
 
     @if($orders->isEmpty())
@@ -126,16 +119,14 @@
                                 <p class="text-lg font-bold text-[#EC1C25] mb-2">Rp{{ number_format($order->total_amount, 0, ',', '.') }}</p>
                                 
                                 @if($order->payment_status == 'pending')
-                                    <button onclick="payNow('{{ $order->order_id }}')" class="text-xs text-white bg-[#EC1C25] hover:bg-[#c4161e] px-4 py-2 rounded transition-colors font-bold shadow-md">
+                                    <button onclick="payNow('{{ $order->order_id }}')" class="w-full mb-2 text-xs text-white bg-[#EC1C25] hover:bg-[#c4161e] px-4 py-2 rounded transition-colors font-bold shadow-md">
                                         Bayar Sekarang
                                     </button>
                                 @endif
                                 
-                                @if($order->status == 'shipped')
-                                    <button class="mt-2 text-xs text-white bg-green-500 hover:bg-green-600 px-4 py-2 rounded transition-colors font-bold shadow-md">
-                                        Pesanan Diterima
-                                    </button>
-                                @endif
+                                <a href="{{ route('orders.show', $order->order_id) }}" class="w-full text-xs text-center border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded transition-colors font-medium">
+                                    Lihat Detail
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -171,21 +162,23 @@
         .then(data => {
             Swal.close();
             if(data.status === 'success') {
-                window.snap.pay(data.snap_token, {
-                    onSuccess: function(result) {
-                        Swal.fire('Berhasil', 'Pembayaran berhasil!', 'success').then(() => location.reload());
-                    },
-                    onPending: function(result) {
-                        Swal.fire('Pending', 'Menunggu pembayaran...', 'info').then(() => location.reload());
-                    },
-                    onError: function(result) {
-                        Swal.fire('Gagal', 'Pembayaran gagal.', 'error');
-                    },
-                    onClose: function() {
-                        // Do nothing
-                        console.log('closed');
-                    }
-                });
+                if(data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else if(data.snap_token) {
+                    // Fallback for legacy support (if any)
+                    window.snap.pay(data.snap_token, {
+                        onSuccess: function(result) {
+                            Swal.fire('Berhasil', 'Pembayaran berhasil!', 'success').then(() => location.reload());
+                        },
+                        onPending: function(result) {
+                            Swal.fire('Pending', 'Menunggu pembayaran...', 'info').then(() => location.reload());
+                        },
+                        onError: function(result) {
+                            Swal.fire('Gagal', 'Pembayaran gagal.', 'error');
+                        },
+                        onClose: function() { console.log('closed'); }
+                    });
+                }
             } else {
                 Swal.fire('Gagal', data.message, 'error');
             }

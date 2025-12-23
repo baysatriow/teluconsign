@@ -19,7 +19,7 @@
                     <div class="text-gray-700">
                         <p class="font-bold">{{ Auth::user()->name }} <span class="font-normal text-gray-500">({{ $mainAddress->phone }})</span></p>
                         <p class="mt-1">{{ $mainAddress->getFullAddress() }}</p>
-                        <p class="text-sm text-gray-500 mt-1">{{ $mainAddress->city_name }}, {{ $mainAddress->province_name }} {{ $mainAddress->postal_code }}</p>
+                        <p class="text-sm text-gray-500 mt-1">{{ $mainAddress->city }}, {{ $mainAddress->province }} {{ $mainAddress->postal_code }}</p>
                     </div>
                     <button type="button" class="mt-4 text-sm font-medium text-[#EC1C25] hover:text-[#c4161e] hover:underline">
                         Ganti Alamat
@@ -45,7 +45,7 @@
                             <img src="{{ $seller->photo_url ?? 'https://ui-avatars.com/api/?name='.urlencode($seller->name) }}" class="w-full h-full object-cover">
                         </div>
                         <span class="font-bold text-gray-800">{{ $seller->name }}</span>
-                        <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">{{ $seller->city_name ?? 'Kota Toko' }}</span>
+                        <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">{{ $seller->addresses->first()->city ?? 'Kota Toko' }}</span>
                     </div>
 
                     <!-- List Item -->
@@ -67,35 +67,40 @@
                     </div>
 
                     <!-- PENGIRIMAN -->
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <h4 class="text-sm font-bold text-gray-800 mb-3">Pilih Pengiriman</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 rounded-lg p-6 mt-4">
+                        <!-- 1. Pilih Kurir -->
+                        <h4 class="text-sm font-bold text-gray-800 mb-3">Pilih Kurir</h4>
+                        <div class="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-6">
+                            @foreach($couriers as $courier)
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="courier-{{ $sellerId }}" value="{{ $courier }}" class="peer sr-only" onchange="checkOngkir('{{ $sellerId }}', this.value)">
+                                    <div class="flex flex-col items-center justify-center p-3 border-2 border-gray-200 rounded-xl hover:border-red-200 bg-white transition-all peer-checked:border-[#EC1C25] peer-checked:bg-red-50">
+                                        <!-- Placeholder Logo / Text -->
+                                        <span class="font-bold text-sm text-gray-700 peer-checked:text-[#EC1C25]">{{ strtoupper($courier) }}</span>
+                                        
+                                        <!-- Check Icon -->
+                                        <div class="absolute top-1 right-1 opacity-0 peer-checked:opacity-100 transition-opacity">
+                                            <svg class="w-4 h-4 text-[#EC1C25]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                        </div>
+                                    </div>
+                                </label>
+                            @endforeach
+                        </div>
+
+                        <!-- 2. Pilih Layanan (Dynamic by AJAX) -->
+                        <div id="service-container-{{ $sellerId }}" class="hidden">
+                            <h4 class="text-sm font-bold text-gray-800 mb-3">Pilih Layanan</h4>
                             
-                            <!-- 1. Pilih Kurir -->
-                            <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Kurir</label>
-                                <select class="courier-select w-full border-gray-300 rounded-lg text-sm focus:ring-[#EC1C25] focus:border-[#EC1C25]" onchange="checkOngkir('{{ $sellerId }}', this.value)">
-                                    <option value="" disabled selected>Pilih Kurir</option>
-                                    @foreach($couriers as $courier)
-                                        <option value="{{ $courier }}">{{ strtoupper($courier) }}</option>
-                                    @endforeach
-                                </select>
+                            <!-- Loading Indicator -->
+                            <div id="loading-{{ $sellerId }}" class="hidden text-center py-4">
+                                <svg class="animate-spin h-6 w-6 text-[#EC1C25] mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <p class="text-xs text-gray-500 mt-2">Cek Ongkir...</p>
                             </div>
 
-                            <!-- 2. Pilih Layanan (Dynamic by AJAX) -->
-                            <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Layanan</label>
-                                <select class="service-select w-full border-gray-300 rounded-lg text-sm focus:ring-[#EC1C25] focus:border-[#EC1C25] disabled:bg-gray-100 disabled:text-gray-400" 
-                                    id="service-{{ $sellerId }}" disabled onchange="selectService('{{ $sellerId }}')">
-                                    <option value="">Pilih kurir dulu</option>
-                                </select>
+                            <!-- Service List Grid -->
+                            <div id="service-list-{{ $sellerId }}" class="grid grid-cols-1 gap-3">
+                                <!-- Items injected by JS -->
                             </div>
-                        </div>
-                        
-                        <!-- Info Estimasi & Harga -->
-                        <div id="shipping-info-{{ $sellerId }}" class="mt-3 hidden justify-between items-center text-sm">
-                            <span class="text-gray-600" id="estimasi-{{ $sellerId }}">Estimasi: -</span>
-                            <span class="font-bold text-[#EC1C25]" id="cost-{{ $sellerId }}">Rp0</span>
                         </div>
                     </div>
 
@@ -139,7 +144,6 @@
 </div>
 
 <!-- SCRIPTS -->
-<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}"></script>
 <script>
     const subtotal = {{ $subtotal }};
     const platformFee = {{ $platformFee }};
@@ -147,13 +151,14 @@
     
     // --- 1. CHECK ONGKIR (AJAX) ---
     function checkOngkir(sellerId, courier) {
-        const serviceSelect = document.getElementById(`service-${sellerId}`);
-        const infoDiv = document.getElementById(`shipping-info-${sellerId}`);
+        const container = document.getElementById(`service-container-${sellerId}`);
+        const listDiv = document.getElementById(`service-list-${sellerId}`);
+        const loadingDiv = document.getElementById(`loading-${sellerId}`);
         
         // Reset UI
-        serviceSelect.innerHTML = '<option>Loading...</option>';
-        serviceSelect.disabled = true;
-        infoDiv.classList.add('hidden');
+        container.classList.remove('hidden');
+        listDiv.innerHTML = ''; 
+        loadingDiv.classList.remove('hidden');
         
         // Hapus cost lama
         delete shippingCosts[sellerId];
@@ -169,72 +174,79 @@
         })
         .then(res => res.json())
         .then(data => {
-            serviceSelect.innerHTML = '<option value="">Pilih Layanan</option>';
+            loadingDiv.classList.add('hidden');
             
             if(data.status === 'success') {
-                data.costs.forEach(cost => {
-                    // Normalize Data Structure
-                    // Helper to handle Komerce (Direct Value) vs RajaOngkir (Array of values)
+                if(data.costs.length === 0) {
+                     listDiv.innerHTML = '<p class="text-sm text-center text-gray-500 py-2">Tidak ada Layanan di Lokasi ini.</p>';
+                     return;
+                }
+
+                data.costs.forEach((cost, index) => {
                     let serviceName = cost.service;
                     let serviceCost = 0;
                     let serviceEtd = '';
                     let serviceDesc = cost.description || serviceName;
 
                     if (cost.cost && Array.isArray(cost.cost)) {
-                         // Standard RajaOngkir Structure: { service: "REG", cost: [{value:10000, etd:"1-2"}] }
                          const detail = cost.cost[0];
                          serviceCost = detail.value;
                          serviceEtd = detail.etd;
                     } else if (typeof cost.cost === 'number') {
-                         // Komerce Flattened Structure (User Snippet): { service: "REG", cost: 10000, etd: "1-2" }
                          serviceCost = cost.cost;
                          serviceEtd = cost.etd;
                     } else {
-                        return; // Skip invalid format
+                        return;
                     }
 
-                    const option = document.createElement('option');
-                    option.value = serviceCost;
-                    option.dataset.etd = serviceEtd;
-                    option.textContent = `${serviceName} - Rp${new Intl.NumberFormat('id-ID').format(serviceCost)} (${serviceEtd} hari)`;
-                    serviceSelect.appendChild(option);
+                    // Create Radio Selection Card
+                    const wrapper = document.createElement('div');
+                    const costFormatted = new Intl.NumberFormat('id-ID').format(serviceCost);
+                    
+                    wrapper.innerHTML = `
+                        <label class="cursor-pointer relative block">
+                            <input type="radio" name="service-${sellerId}" value="${serviceCost}" class="peer sr-only" onchange="selectService('${sellerId}', ${serviceCost})">
+                            <div class="flex items-center justify-between p-4 border-2 border-gray-100 rounded-xl hover:border-red-100 bg-white transition-all peer-checked:border-[#EC1C25] peer-checked:bg-red-50">
+                                <div class="flex items-center gap-3">
+                                    <div class="text-[#EC1C25]">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-gray-800 text-sm">${serviceName}</p>
+                                        <p class="text-xs text-gray-500">Estimasi ${serviceEtd} hari</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-[#EC1C25]">Rp${costFormatted}</p>
+                                </div>
+                                
+                                <!-- Check Icon -->
+                                <div class="absolute top-1/2 -translate-y-1/2 left-3 opacity-0 peer-checked:opacity-0 hidden">
+                                   <!-- Optional check indicator -->
+                                </div>
+                            </div>
+                        </label>
+                    `;
+                    listDiv.appendChild(wrapper);
                 });
-                serviceSelect.disabled = false;
             } else {
-                serviceSelect.innerHTML = '<option value="">Tidak tersedia</option>';
-                Swal.fire('Info', data.message || 'Ongkir tidak ditemukan', 'warning');
+                listDiv.innerHTML = `<p class="text-sm text-center text-red-500 py-2">${data.message || 'Tidak ada Layanan di Lokasi ini'}</p>`;
             }
         })
         .catch(err => {
             console.error(err);
-            serviceSelect.innerHTML = '<option value="">Error</option>';
+            loadingDiv.classList.add('hidden');
+            listDiv.innerHTML = '<p class="text-sm text-center text-red-500">Gagal memuat ongkir.</p>';
         });
     }
 
     // --- 2. SELECT SERVICE ---
-    function selectService(sellerId) {
-        const select = document.getElementById(`service-${sellerId}`);
-        const infoDiv = document.getElementById(`shipping-info-${sellerId}`);
-        const etdSpan = document.getElementById(`estimasi-${sellerId}`);
-        const costSpan = document.getElementById(`cost-${sellerId}`);
-        
-        const cost = parseInt(select.value);
+    function selectService(sellerId, cost) {
         if(!isNaN(cost)) {
-            const etd = select.options[select.selectedIndex].dataset.etd;
-            
-            // Update UI Toko
-            infoDiv.classList.remove('hidden');
-            infoDiv.classList.add('flex');
-            etdSpan.textContent = `Estimasi: ${etd} hari`;
-            costSpan.textContent = `Rp${new Intl.NumberFormat('id-ID').format(cost)}`;
-            
-            // Update Global Logic
             shippingCosts[sellerId] = cost;
         } else {
-            infoDiv.classList.add('hidden');
             delete shippingCosts[sellerId];
         }
-        
         updateTotal();
     }
 
@@ -242,7 +254,7 @@
     function updateTotal() {
         let totalShipping = 0;
         let countFilled = 0;
-        const totalStores = {{ $groupedItems->count() }}; // PHP Value
+        const totalStores = {{ $groupedItems->count() }};
         
         for (let key in shippingCosts) {
             totalShipping += shippingCosts[key];
@@ -270,7 +282,7 @@
         }
     }
 
-    // --- 4. PROCESS PAYMENT ---
+    // --- 4. PROCESS PAYMENT (REDIRECT TO CUSTOM PAGE) ---
     function processPayment() {
         const btn = document.getElementById('pay-btn');
         btn.disabled = true;
@@ -289,24 +301,8 @@
         .then(res => res.json())
         .then(data => {
             if(data.status === 'success') {
-                // Show Snap Popup
-                snap.pay(data.snap_token, {
-                    onSuccess: function(result){
-                        window.location.href = data.redirect_url;
-                    },
-                    onPending: function(result){
-                        window.location.href = data.redirect_url;
-                    },
-                    onError: function(result){
-                        Swal.fire('Error', 'Pembayaran gagal.', 'error');
-                        btn.disabled = false;
-                        btn.textContent = 'Bayar Sekarang';
-                    },
-                    onClose: function(){
-                        btn.disabled = false;
-                        btn.textContent = 'Bayar Sekarang';
-                    }
-                });
+                // ✅ NEW: Direct redirect to custom payment page
+                window.location.href = data.redirect_url;
             } else {
                 Swal.fire('Gagal', data.message, 'error');
                 btn.disabled = false;

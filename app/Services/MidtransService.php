@@ -62,7 +62,75 @@ class MidtransService extends BaseIntegrationService
             return $response->json(); // Berisi 'token' dan 'redirect_url'
 
         } catch (\Exception $e) {
-            Log::error('Midtrans Service Exception: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Create Charge via Core API (for custom payment page)
+     */
+    public function createCharge(array $chargeData)
+    {
+        try {
+            $cred = $this->getCredential($this->providerCode);
+
+            // Cek Environment
+            $isProduction = $cred->config['environment'] === 'production';
+            $baseUrl = $isProduction
+                ? 'https://api.midtrans.com/v2/charge'
+                : 'https://api.sandbox.midtrans.com/v2/charge';
+
+            $serverKey = $cred->secret_key;
+            $authKey = base64_encode($serverKey . ':');
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . $authKey,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])->post($baseUrl, $chargeData);
+
+            if ($response->failed()) {
+                Log::error('Midtrans Charge Error:', $response->json());
+                throw new \Exception($response->json()['status_message'] ?? 'Gagal membuat charge.');
+            }
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Midtrans Charge Exception: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Check transaction status via Core API
+     */
+    public function checkStatus(string $orderId)
+    {
+        try {
+            $cred = $this->getCredential($this->providerCode);
+
+            $isProduction = $cred->config['environment'] === 'production';
+            $baseUrl = $isProduction
+                ? "https://api.midtrans.com/v2/{$orderId}/status"
+                : "https://api.sandbox.midtrans.com/v2/{$orderId}/status";
+
+            $serverKey = $cred->secret_key;
+            $authKey = base64_encode($serverKey . ':');
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . $authKey,
+                'Accept' => 'application/json',
+            ])->get($baseUrl);
+
+            if ($response->failed()) {
+                return null;
+            }
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Midtrans Status Check Exception: ' . $e->getMessage());
             return null;
         }
     }

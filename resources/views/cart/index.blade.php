@@ -46,7 +46,7 @@
                                     <div class="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:bg-gray-50/50 transition-colors item-row" data-id="{{ $item->cart_item_id }}" data-price="{{ $item->unit_price }}">
                                         <!-- Checkbox Item -->
                                         <!-- Name array 'selected_items[]' agar bisa dikirim ke checkout -->
-                                        <input type="checkbox" name="selected_items[]" value="{{ $item->cart_item_id }}" data-seller="{{ $sellerId }}" class="w-4 h-4 text-[#EC1C25] bg-gray-100 border-gray-300 rounded focus:ring-[#EC1C25] item-checkbox seller-{{ $sellerId }}">
+                                        <input type="checkbox" name="selected_items[]" value="{{ $item->cart_item_id }}" data-seller="{{ $sellerId }}" data-product-id="{{ $item->product_id }}" class="w-4 h-4 text-[#EC1C25] bg-gray-100 border-gray-300 rounded focus:ring-[#EC1C25] item-checkbox seller-{{ $sellerId }}">
 
                                         <!-- Gambar Produk -->
                                         <div class="w-20 h-20 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden flex-shrink-0">
@@ -65,10 +65,11 @@
                                         <!-- Aksi Qty & Delete -->
                                         <div class="flex flex-col items-end gap-3">
                                             <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden">
-                                                <button type="button" onclick="updateQty({{ $item->cart_item_id }}, -1)" class="px-3 py-1 bg-gray-50 hover:bg-gray-200 text-gray-600 transition-colors">-</button>
-                                                <input type="text" id="qty-{{ $item->cart_item_id }}" value="{{ $item->quantity }}" class="w-12 text-center border-0 py-1 text-sm text-gray-900 focus:ring-0 item-qty" readonly>
-                                                <button type="button" onclick="updateQty({{ $item->cart_item_id }}, 1)" class="px-3 py-1 bg-gray-50 hover:bg-gray-200 text-gray-600 transition-colors">+</button>
+                                                <button type="button" onclick="updateQty({{ $item->cart_item_id }}, -1, {{ $item->product->stock }})" class="px-3 py-1 bg-gray-50 hover:bg-gray-200 text-gray-600 transition-colors">-</button>
+                                                <input type="text" id="qty-{{ $item->cart_item_id }}" value="{{ $item->quantity }}" class="w-12 text-center border-0 py-1 text-sm text-gray-900 focus:ring-0 item-qty" readonly data-max="{{ $item->product->stock }}">
+                                                <button type="button" onclick="updateQty({{ $item->cart_item_id }}, 1, {{ $item->product->stock }})" class="px-3 py-1 bg-gray-50 hover:bg-gray-200 text-gray-600 transition-colors" @if($item->quantity >= $item->product->stock) disabled class="opacity-50 cursor-not-allowed" @endif>+</button>
                                             </div>
+                                            <p class="text-xs text-gray-400">(Max: {{ $item->product->stock }})</p>
 
                                             <div class="flex items-center gap-3">
                                                 <span class="text-sm font-bold text-[#EC1C25] item-subtotal" id="subtotal-{{ $item->cart_item_id }}">
@@ -220,11 +221,27 @@
 
     // --- 3. LOGIKA UPDATE QTY (AJAX) ---
 
-    function updateQty(itemId, change) {
+    function updateQty(itemId, change, maxStock) {
         const input = document.getElementById('qty-' + itemId);
         let newQty = parseInt(input.value) + change;
 
-        if (newQty < 1) return; // Minimal 1
+        // Minimal 1
+        if (newQty < 1) return;
+        
+        // Auto-adjust if exceeds max stock
+        if (newQty > maxStock) {
+            newQty = maxStock;
+            Swal.fire({
+                icon: 'warning', 
+                title: 'Maksimal Stock',
+                text: `Quantity telah disesuaikan ke maksimal stock: ${maxStock}`,
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false,
+                timerProgressBar: true
+            });
+        }
 
         // Disable UI sementara
         input.disabled = true;
@@ -243,6 +260,16 @@
                 input.value = newQty;
                 // Update subtotal text di baris item
                 document.getElementById('subtotal-' + itemId).innerText = 'Rp' + data.subtotal;
+
+                // Update button state
+                const plusBtn = input.nextElementSibling;
+                if (newQty >= maxStock) {
+                    plusBtn.disabled = true;
+                    plusBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    plusBtn.disabled = false;
+                    plusBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
 
                 // Recalculate Grand Total (karena qty berubah)
                 recalculateTotal();
@@ -303,10 +330,10 @@
 
         // Auto-select item from query param (Buy Now)
         const urlParams = new URLSearchParams(window.location.search);
-        const selectedId = urlParams.get('selected_item');
+        const selectedProductId = urlParams.get('selected_product');
         
-        if(selectedId) {
-            const checkbox = document.querySelector(`.item-checkbox[value="${selectedId}"]`);
+        if(selectedProductId) {
+            const checkbox = document.querySelector(`.item-checkbox[data-product-id="${selectedProductId}"]`);
             if(checkbox) {
                 checkbox.checked = true;
                 // Trigger change event to update parent store checkbox and totals
@@ -314,7 +341,10 @@
                 
                 // Scroll to item
                 setTimeout(() => {
-                    checkbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    checkbox.closest('.item-row').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Highlight effect
+                    checkbox.closest('.item-row').classList.add('bg-red-50');
+                    setTimeout(() => checkbox.closest('.item-row').classList.remove('bg-red-50'), 2000);
                 }, 500);
             }
         }

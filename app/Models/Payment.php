@@ -15,7 +15,7 @@ class Payment extends Model
 
     protected $fillable = [
         'order_id',
-        'gateway_id',
+        'provider_id',  // Changed from gateway_id
         'method_code',
         'amount',
         'currency',
@@ -38,9 +38,9 @@ class Payment extends Model
         return $this->belongsTo(Order::class, 'order_id');
     }
 
-    public function gateway()
+    public function provider()
     {
-        return $this->belongsTo(PaymentGateway::class, 'gateway_id');
+        return $this->belongsTo(IntegrationProvider::class, 'provider_id', 'integration_provider_id');
     }
 
     public function initiatePayment(int $order_id, string $method_code): bool

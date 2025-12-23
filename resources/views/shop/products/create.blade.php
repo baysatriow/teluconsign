@@ -1,105 +1,174 @@
-@extends('layouts.app')
+@extends('layouts.seller')
 
 @section('content')
-<div class="max-w-screen-lg mx-auto px-4 py-8">
-
-    <div class="flex items-center justify-between mb-6">
+<div class="max-w-4xl mx-auto px-4 py-8">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">Tambah Produk Baru</h1>
-            <p class="text-sm text-gray-500 mt-1">Lengkapi detail produk semenarik mungkin untuk memikat pembeli.</p>
+            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Tambah Produk Baru</h1>
+            <p class="text-sm text-gray-500 mt-2">Buat produk anda semenarik mungkin untuk memikat pembeli.</p>
         </div>
-        <a href="{{ route('shop.index') }}" class="text-sm text-gray-500 hover:text-[#EC1C25] font-medium transition-colors">
-            &larr; Kembali ke Dashboard
+        <a href="{{ route('shop.products.index') }}" class="group flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-telu-red transition-colors">
+            <span class="p-1 rounded-full group-hover:bg-red-50 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            </span>
+            Kembali
         </a>
     </div>
 
-    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-
+    <!-- Main Card -->
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
         <form action="{{ route('shop.products.store') }}" method="POST" enctype="multipart/form-data" id="createProductForm">
             @csrf
-
-            <!-- Input Hidden untuk Status (Active/Archived) -->
+            
+            <!-- Hidden Status & Real Numeric Values are handled via request merge, but we keep text inputs for format -->
             <input type="hidden" name="status_input" id="status_input" value="active">
 
-            <div class="p-6 md:p-8 grid gap-8 md:grid-cols-2">
-                <!-- Kiri: Info Dasar -->
-                <div class="space-y-6">
-                    <div>
-                        <label class="block mb-2 text-sm font-medium text-gray-900">Nama Produk <span class="text-red-500">*</span></label>
-                        <input type="text" name="title" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5" placeholder="Contoh: Laptop Gaming ASUS ROG Bekas" required>
-                    </div>
+            <div class="p-8 space-y-10">
+                
+                <!-- Section 1: Informasi Dasar -->
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 border-b border-gray-100 pb-3 mb-6 flex items-center gap-2">
+                        <span class="w-1 h-6 bg-telu-red rounded-full"></span>
+                        Informasi Dasar
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        <!-- Nama Produk -->
+                        <div>
+                            <label class="block mb-2 text-sm font-semibold text-gray-900">Nama Produk <span class="text-red-500">*</span></label>
+                            <input type="text" name="title" value="{{ old('title') }}"
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-3 transition-shadow placeholder-gray-400" 
+                                placeholder="Contoh: Laptop Gaming ASUS ROG Zephyrus G14 (Bekas)" required>
+                        </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block mb-2 text-sm font-medium text-gray-900">Kategori <span class="text-red-500">*</span></label>
-                            <select name="category_id" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5 cursor-pointer" required>
-                                <option value="">Pilih Kategori</option>
-                                @foreach($categories as $cat)
-                                    <option value="{{ $cat->category_id }}">{{ $cat->name }}</option>
-                                @endforeach
-                            </select>
+                        <!-- Kategori (Searchable) & Kondisi -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Custom Searchable Select -->
+                            <div class="relative" x-data="{ open: false, search: '', selected: '', selectedId: '' }">
+                                <label class="block mb-2 text-sm font-semibold text-gray-900">Kategori <span class="text-red-500">*</span></label>
+                                
+                                <!-- Hidden Input for Form Submission -->
+                                <input type="hidden" name="category_id" id="category_id_input" required>
+
+                                <!-- Search Input -->
+                                <input type="text" id="category_search" 
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-3 cursor-pointer"
+                                    placeholder="Cari Kategori..." autocomplete="off">
+                                
+                                <!-- Dropdown List -->
+                                <div id="category_dropdown" class="absolute z-10 w-full bg-white rounded-lg shadow-lg border border-gray-200 mt-1 max-h-60 overflow-y-auto hidden">
+                                    @foreach($categories as $cat)
+                                    <div class="category-option p-3 hover:bg-red-50 cursor-pointer text-sm text-gray-700 transition-colors" 
+                                         data-id="{{ $cat->category_id }}" 
+                                         data-name="{{ $cat->name }}"
+                                         onclick="selectCategory(this)">
+                                        {{ $cat->name }}
+                                    </div>
+                                    @endforeach
+                                    <div id="no_category_found" class="p-3 text-sm text-gray-500 text-center hidden">Kategori tidak ditemukan</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block mb-2 text-sm font-semibold text-gray-900">Kondisi Barang <span class="text-red-500">*</span></label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="condition" value="used" class="peer sr-only" checked>
+                                        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center transition-all peer-checked:border-telu-red peer-checked:bg-red-50 peer-checked:text-telu-red hover:bg-gray-100">
+                                            <span class="font-medium text-sm">Bekas</span>
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="condition" value="new" class="peer sr-only">
+                                        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center transition-all peer-checked:border-telu-red peer-checked:bg-red-50 peer-checked:text-telu-red hover:bg-gray-100">
+                                            <span class="font-medium text-sm">Baru</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
+
+                        <!-- Deskripsi -->
                         <div>
-                            <label class="block mb-2 text-sm font-medium text-gray-900">Kondisi <span class="text-red-500">*</span></label>
-                            <select name="condition" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5 cursor-pointer" required>
-                                <option value="used">Bekas (Preloved)</option>
-                                <option value="new">Baru</option>
-                            </select>
+                            <label class="block mb-2 text-sm font-semibold text-gray-900">Deskripsi Lengkap <span class="text-red-500">*</span></label>
+                            <textarea name="description" rows="6" 
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-3 transition-shadow placeholder-gray-400" 
+                                placeholder="Jelaskan spesifikasi, kelengkapan, minus (jika produk bekas), dan alasan jual..." required>{{ old('description') }}</textarea>
                         </div>
                     </div>
+                </div>
 
-                    <div class="grid grid-cols-3 gap-4">
+                <!-- Section 2: Harga & Stok (Auto Format) -->
+                <div>
+                     <h3 class="text-lg font-bold text-gray-900 border-b border-gray-100 pb-3 mb-6 flex items-center gap-2">
+                        <span class="w-1 h-6 bg-telu-red rounded-full"></span>
+                        Harga & Inventaris
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
-                            <label class="block mb-2 text-sm font-medium text-gray-900">Harga (Rp) <span class="text-red-500">*</span></label>
-                            <input type="number" name="price" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5" placeholder="100000" required>
+                            <label class="block mb-2 text-sm font-semibold text-gray-900">Harga (Rp) <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-bold text-sm">Rp</span>
+                                <input type="text" name="price" value="{{ old('price') }}" 
+                                    class="numeric-input bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full pl-10 p-3 font-mono" 
+                                    placeholder="0" required oninput="formatNumber(this)">
+                            </div>
                         </div>
                         <div>
-                            <label class="block mb-2 text-sm font-medium text-gray-900">Berat (Gram) <span class="text-red-500">*</span></label>
-                            <input type="number" name="weight" value="1000" min="1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5" required>
+                            <label class="block mb-2 text-sm font-semibold text-gray-900">Stok Barang <span class="text-red-500">*</span></label>
+                             <input type="text" name="stock" value="{{ old('stock', 1) }}" 
+                                class="numeric-input bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-3 font-mono" 
+                                placeholder="0" required oninput="formatNumber(this)">
                         </div>
                          <div>
-                            <label class="block mb-2 text-sm font-medium text-gray-900">Stok <span class="text-red-500">*</span></label>
-                            <input type="number" name="stock" value="1" min="1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-2.5" required>
+                            <label class="block mb-2 text-sm font-semibold text-gray-900">Berat (Gram) <span class="text-red-500">*</span></label>
+                             <div class="relative">
+                                <input type="text" name="weight" value="{{ old('weight', '1.000') }}" 
+                                    class="numeric-input bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-3 font-mono pr-12" 
+                                    placeholder="0" required oninput="formatNumber(this)">
+                                <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 text-xs font-bold uppercase">gram</span>
+                            </div>
                         </div>
-                    </div>
-
-                    <div>
-                        <label class="block mb-2 text-sm font-medium text-gray-900">Deskripsi Lengkap <span class="text-red-500">*</span></label>
-                        <textarea name="description" rows="6" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-[#EC1C25] focus:border-[#EC1C25]" placeholder="Jelaskan spesifikasi, kelengkapan, minus (jika ada), dan alasan jual..." required></textarea>
                     </div>
                 </div>
 
-                <!-- Kanan: Upload -->
-                <div class="space-y-6">
-                    <div>
-                        <label class="block mb-2 text-sm font-medium text-gray-900">Foto Produk <span class="text-red-500">*</span></label>
-                        <p class="text-xs text-gray-500 mb-3">Upload minimal 1 foto. Foto pertama akan menjadi sampul utama.</p>
+                <!-- Section 3: Media (Unified Grid & Logic) -->
+                <div>
+                     <h3 class="text-lg font-bold text-gray-900 border-b border-gray-100 pb-3 mb-6 flex items-center gap-2">
+                        <span class="w-1 h-6 bg-telu-red rounded-full"></span>
+                        Foto Produk <span class="text-gray-400 font-normal text-xs ml-2">(Max 5 Foto)</span>
+                    </h3>
+                    
+                    <!-- File Input (Hidden) -->
+                    <input id="hidden-file-input" type="file" class="hidden" accept="image/*" multiple>
 
-                        <div class="flex items-center justify-center w-full">
-                            <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors relative overflow-hidden">
-                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                    <svg class="w-8 h-8 mb-3 text-gray-400" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
-                                    <p class="mb-1 text-sm text-gray-500 text-center"><span class="font-semibold">Klik untuk upload</span></p>
-                                    <p class="text-xs text-gray-500 text-center">PNG, JPG, WEBP (Max. 2MB)</p>
-                                </div>
-                                <input id="dropzone-file" name="images[]" type="file" class="hidden" accept="image/*" multiple required onchange="previewImages(this)" />
-                            </label>
+                    <!-- Main Grid -->
+                    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4" id="media-grid">
+                        
+                        <!-- Upload Button (Always Last, Hidden if Full) -->
+                        <div id="upload-button-card" class="aspect-square bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 hover:border-[#EC1C25] hover:bg-red-50/30 transition-all cursor-pointer flex flex-col items-center justify-center group" onclick="document.getElementById('hidden-file-input').click()">
+                            <div class="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                <svg class="w-6 h-6 text-gray-400 group-hover:text-[#EC1C25]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            </div>
+                            <span class="text-xs font-medium text-gray-500 group-hover:text-[#EC1C25]">Tambah Foto</span>
                         </div>
+
                     </div>
-                    <div id="image-preview-container" class="grid grid-cols-3 gap-3 hidden"></div>
+                    <!-- Actual Files Container to be submitted -->
+                    <div id="file-inputs-container"></div>
                 </div>
+
             </div>
 
-            <!-- Footer Buttons -->
-            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3">
-
-                <!-- Tombol Draft -->
-                <button type="button" onclick="submitForm('archived')" class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-gray-200 transition-colors">
+             <!-- Footer Actions -->
+            <div class="px-8 py-5 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3">
+                 <button type="button" onclick="submitForm('archived')" class="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-gray-200 transition-all">
                     Simpan Draft
                 </button>
-
-                <!-- Tombol Terbitkan -->
-                <button type="button" onclick="submitForm('active')" id="btn-publish" class="text-white bg-[#EC1C25] hover:bg-[#c4161e] focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-8 py-2.5 text-center shadow-lg transition-all">
+                <button type="button" onclick="submitForm('active')" id="btn-publish" class="text-white bg-[#EC1C25] hover:bg-[#c4161e] focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-8 py-2.5 text-center shadow-lg shadow-red-500/30 transition-all transform hover:-translate-y-0.5">
                     Terbitkan Produk
                 </button>
             </div>
@@ -108,91 +177,154 @@
 </div>
 
 <script>
-    // Preview Logic (Sama seperti sebelumnya)
-    function previewImages(input) {
-        const container = document.getElementById('image-preview-container');
-        container.innerHTML = '';
-        if (input.files && input.files.length > 0) {
-            if(input.files.length > 5) {
-                Swal.fire({icon: 'warning', title: 'Terlalu Banyak', text: 'Maks 5 foto.', confirmButtonColor: '#EC1C25'});
-                input.value = ''; container.classList.add('hidden'); return;
-            }
-            container.classList.remove('hidden');
-            Array.from(input.files).forEach((file, index) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const div = document.createElement('div');
-                    div.className = 'relative aspect-square rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-gray-100';
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.className = 'w-full h-full object-cover';
-                    if (index === 0) {
-                        const badge = document.createElement('span');
-                        badge.className = 'absolute top-1 left-1 bg-[#EC1C25] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm';
-                        badge.innerText = 'UTAMA';
-                        div.appendChild(badge);
-                    }
-                    div.appendChild(img);
-                    container.appendChild(div);
-                }
-                reader.readAsDataURL(file);
-            });
-        } else { container.classList.add('hidden'); }
-    }
+    // --- 1. Searchable Category Logic ---
+    const searchInput = document.getElementById('category_search');
+    const dropdown = document.getElementById('category_dropdown');
+    const options = document.querySelectorAll('.category-option');
+    const hiddenInput = document.getElementById('category_id_input');
+    const noResult = document.getElementById('no_category_found');
 
-    // Submit Handler (Active vs Draft)
-    function submitForm(status) {
-        // Set hidden input value
-        document.getElementById('status_input').value = status;
-
-        // Trigger submit event manually
-        const form = document.getElementById('createProductForm');
-        form.dispatchEvent(new Event('submit'));
-    }
-
-    // AJAX Handler
-    document.getElementById('createProductForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const form = this;
-        const btn = document.getElementById('btn-publish');
-        const originalText = btn.innerText;
-        btn.disabled = true;
-        btn.innerHTML = 'Memproses...';
-
-        const formData = new FormData(form);
-
-        fetch(form.action, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            }
-        })
-        .then(res => res.json().then(data => ({status: res.status, body: data})))
-        .then(({status, body}) => {
-            if (status === 200) {
-                Swal.fire({
-                    icon: 'success', title: 'Berhasil!', text: body.message, confirmButtonColor: '#EC1C25', timer: 2000
-                }).then(() => { window.location.href = body.redirect_url; });
-            } else if (status === 422) {
-                let errorHtml = '<ul style="text-align: left; font-size: 0.9em;">';
-                for (const [key, msgs] of Object.entries(body.errors)) {
-                    msgs.forEach(msg => { errorHtml += `<li class="text-red-600 mb-1">• ${msg}</li>`; });
-                }
-                errorHtml += '</ul>';
-                Swal.fire({icon: 'warning', title: 'Periksa Inputan', html: errorHtml, confirmButtonColor: '#EC1C25'});
-            } else {
-                throw new Error(body.message || 'Error server.');
-            }
-        })
-        .catch(error => {
-            Swal.fire({icon: 'error', title: 'Gagal', text: error.message, confirmButtonColor: '#EC1C25'});
-        })
-        .finally(() => {
-            btn.disabled = false;
-            btn.innerText = originalText;
-        });
+    searchInput.addEventListener('focus', () => { dropdown.classList.remove('hidden'); });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
     });
+
+    searchInput.addEventListener('input', function() {
+        const val = this.value.toLowerCase();
+        let visibleCount = 0;
+        options.forEach(opt => {
+            if(opt.dataset.name.toLowerCase().includes(val)) {
+                opt.style.display = 'block';
+                visibleCount++;
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+        
+        if(visibleCount === 0) noResult.classList.remove('hidden');
+        else noResult.classList.add('hidden');
+        
+        dropdown.classList.remove('hidden');
+    });
+
+    function selectCategory(el) {
+        searchInput.value = el.dataset.name;
+        hiddenInput.value = el.dataset.id;
+        dropdown.classList.add('hidden');
+    }
+
+    // --- 2. Number Formatting (1000 -> 1.000) ---
+    function formatNumber(input) {
+        // Remove non-numeric chars
+        let val = input.value.replace(/\D/g, '');
+        if (val === '') {
+            input.value = '';
+            return;
+        }
+        // Format with dots
+        input.value = new Intl.NumberFormat('id-ID').format(val);
+    }
+
+    // --- 3. Unified Image Grid Logic ---
+     const fileInput = document.getElementById('hidden-file-input');
+     const grid = document.getElementById('media-grid');
+     const uploadBtnCard = document.getElementById('upload-button-card');
+     const fileInputsContainer = document.getElementById('file-inputs-container');
+     
+     // Store files in a DataTransfer object to simulate a single input or manage individual inputs
+     // Better strategy: Create individual input[type=file] for each selected file and append to form
+     
+     let totalImages = 0; 
+     const MAX_IMAGES = 5;
+
+     fileInput.addEventListener('change', function(e) {
+         if (this.files && this.files.length > 0) {
+             
+            if (totalImages + this.files.length > MAX_IMAGES) {
+                 Swal.fire('Limit Tercapai', 'Maksimal 5 foto per produk.', 'warning');
+                 this.value = '';
+                 return;
+            }
+
+            Array.from(this.files).forEach((file, index) => {
+                 // Create visual card
+                 const card = createPreviewCard(file);
+                 // Insert before upload button
+                 grid.insertBefore(card, uploadBtnCard);
+
+                 // Create hidden input for form submission
+                 const hiddenInput = document.createElement('input');
+                 hiddenInput.type = 'file';
+                 hiddenInput.name = 'images[]';
+                 hiddenInput.style.display = 'none';
+                 
+                 // Transfer file to this new input
+                 const dataTransfer = new DataTransfer();
+                 dataTransfer.items.add(file);
+                 hiddenInput.files = dataTransfer.files;
+                 
+                 card.dataset.inputId = 'file-input-' + Date.now() + '-' + index;
+                 hiddenInput.id = card.dataset.inputId;
+                 
+                 fileInputsContainer.appendChild(hiddenInput);
+                 
+                 totalImages++;
+                 updateUploadBtnVisibility();
+             });
+             
+             this.value = ''; // Reset main input
+         }
+     });
+
+     function createPreviewCard(file) {
+         const div = document.createElement('div');
+         div.className = 'relative group aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-100';
+         
+         const reader = new FileReader();
+         reader.onload = (e) => {
+             const img = document.createElement('img');
+             img.src = e.target.result;
+             img.className = 'w-full h-full object-cover';
+             div.appendChild(img);
+         };
+         reader.readAsDataURL(file);
+
+         // Helper Badge logic (First item is usually Main, but this is simple append)
+         // Complex logic to track "Main" is omitted for simplicity unless requested
+         
+         // Delete Button
+         const btn = document.createElement('button');
+         btn.type = 'button';
+         btn.className = 'absolute top-1 right-1 bg-white text-red-600 rounded-full p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50';
+         btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+         btn.onclick = function() {
+             const inputId = div.dataset.inputId;
+             const inputToRemove = document.getElementById(inputId);
+             if(inputToRemove) inputToRemove.remove();
+             div.remove();
+             totalImages--;
+             updateUploadBtnVisibility();
+         };
+
+         div.appendChild(btn);
+         return div;
+     }
+
+     function updateUploadBtnVisibility() {
+         if (totalImages >= MAX_IMAGES) {
+             uploadBtnCard.classList.add('hidden');
+         } else {
+             uploadBtnCard.classList.remove('hidden');
+         }
+     }
+
+    function submitForm(status) {
+        document.getElementById('status_input').value = status;
+        document.getElementById('createProductForm').submit();
+    }
 </script>
 @endsection

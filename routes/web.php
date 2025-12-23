@@ -22,7 +22,7 @@ use App\Http\Controllers\CheckoutController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->name('search.index');
-Route::get('/product/{id}', [ProductController::class, 'show'])->name('product.show');
+Route::get('/product/{product}', [ProductController::class, 'show'])->name('product.show');
 Route::get('/shop/{id}', [ShopController::class, 'show'])->name('shop.show');
 
 // ==============================================================================
@@ -74,7 +74,7 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
     Route::post('/cart/update/{itemId}', [CartController::class, 'updateItem'])->name('cart.update');
     Route::delete('/cart/item/{itemId}', [CartController::class, 'deleteItem'])->name('cart.deleteItem');
     Route::delete('/cart/store/{sellerId}', [CartController::class, 'deleteStoreItems'])->name('cart.deleteStore');
-    Route::post('/product/{id}/buy', [ProductController::class, 'buyNow'])->name('product.buy');
+    Route::post('/product/{product}/buy', [ProductController::class, 'buyNow'])->name('product.buy');
 
     // --- FITUR PROFIL (USER BIASA) ---
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
@@ -101,17 +101,28 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
     Route::get('/myshop', [ShopController::class, 'index'])->name('shop.index');
     Route::post('/myshop/register', [ShopController::class, 'registerStore'])->name('shop.register');
 
+    // Alamat Toko
+    Route::get('/myshop/address', [ShopController::class, 'addressIndex'])->name('shop.address.index');
+    Route::get('/myshop/address/create', [ShopController::class, 'addressCreate'])->name('shop.address.create'); // NEW
+    Route::post('/myshop/address', [ShopController::class, 'addressStore'])->name('shop.address.store'); // NEW
+    Route::get('/myshop/address/{id}/edit', [ShopController::class, 'addressEdit'])->name('shop.address.edit'); // NEW
+    Route::put('/myshop/address/{id}', [ShopController::class, 'addressUpdate'])->name('shop.address.update'); // NEW
+    Route::delete('/myshop/address/{id}', [ShopController::class, 'addressDestroy'])->name('shop.address.delete'); // NEW
+    Route::patch('/myshop/address/{id}/default', [ShopController::class, 'addressSetDefault'])->name('shop.address.setdefault');
+
     // 2. Produk (CRUD & List)
     Route::get('/myshop/products', [ShopController::class, 'products'])->name('shop.products.index');
     Route::get('/myshop/products/create', [ShopController::class, 'createProduct'])->name('shop.products.create');
     Route::post('/myshop/products', [ShopController::class, 'storeProduct'])->name('shop.products.store');
-    Route::get('/myshop/products/{id}/edit', [ShopController::class, 'editProduct'])->name('shop.products.edit');
-    Route::put('/myshop/products/{id}', [ShopController::class, 'updateProduct'])->name('shop.products.update');
-    Route::delete('/myshop/products/{id}', [ShopController::class, 'deleteProduct'])->name('shop.products.delete');
-    Route::delete('/myshop/products/image/{id}', [ShopController::class, 'deleteProductImage'])->name('shop.products.image.delete');
+    Route::get('/myshop/products/{product}/edit', [ShopController::class, 'editProduct'])->name('shop.products.edit');
+    Route::put('/myshop/products/{product}', [ShopController::class, 'updateProduct'])->name('shop.products.update');
+    Route::delete('/myshop/products/{product}', [ShopController::class, 'deleteProduct'])->name('shop.products.delete');
+    Route::delete('/myshop/products/image/{product}', [ShopController::class, 'deleteProductImage'])->name('shop.products.image.delete');
 
     // 3. Pesanan
     Route::get('/myshop/orders', [ShopController::class, 'orders'])->name('shop.orders');
+    Route::get('/myshop/orders/{order}', [ShopController::class, 'orderDetail'])->name('shop.orders.show');
+    Route::patch('/myshop/orders/{order}/status', [ShopController::class, 'updateOrderStatus'])->name('shop.orders.update_status');
 
     // 4. Laporan
     Route::get('/myshop/reports', [ShopController::class, 'reports'])->name('shop.reports');
@@ -124,11 +135,17 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
 
     // Halaman Orders Pembeli
     Route::get('/orders', [App\Http\Controllers\OrdersController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [App\Http\Controllers\OrdersController::class, 'show'])->name('orders.show');
     Route::post('/orders/{id}/pay', [App\Http\Controllers\OrdersController::class, 'pay'])->name('orders.pay');
     // --- CHECKOUT ---
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout/check-shipping', [CheckoutController::class, 'checkShippingCost'])->name('checkout.check_shipping'); // NEW ROUTE
     Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
+
+    // --- PAYMENT (Custom Payment Page) ---
+    Route::get('/payment/{payment}', [App\Http\Controllers\PaymentController::class, 'show'])->name('payment.show');
+    Route::post('/payment/{payment}/charge', [App\Http\Controllers\PaymentController::class, 'createCharge'])->name('payment.charge');
+    Route::get('/payment/{payment}/status', [App\Http\Controllers\PaymentController::class, 'checkStatus'])->name('payment.status');
 
     // --- ADMIN ROUTES (Nested Middleware: auth + verified_otp + admin) ---
     Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
@@ -177,6 +194,12 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
     Route::get('/integrations/webhook-logs', [AdminController::class, 'webhookLogs'])->name('integrations.webhook-logs');
     });
 });
+
+// ==============================================================================
+// WEBHOOK ENDPOINTS (No Auth - Called by external services)
+// ==============================================================================
+
+Route::post('/webhook/midtrans', [App\Http\Controllers\WebhookController::class, 'midtransNotification'])->name('webhook.midtrans');
 
 // Fallback jika url ngawur
 Route::fallback(function () {

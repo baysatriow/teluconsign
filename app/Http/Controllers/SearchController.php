@@ -14,14 +14,20 @@ class SearchController extends Controller
     public function index(Request $request)
     {
         $query = Product::with('seller')
-            ->where('status', 'active');
+            ->where('status', 'active')
+            ->withAvg('reviews', 'rating')
+            ->withSum(['orderItems' => function($query) {
+                $query->whereHas('order', function($q) {
+                    $q->where('status', 'completed');
+                });
+            }], 'quantity');
 
         // Initialize selected category variable
         $selectedCategory = null;
 
         // 1. Keyword Search
-        if ($request->has('q') && $request->q != '') {
-            $search = $request->q;
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%");

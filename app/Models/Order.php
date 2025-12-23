@@ -18,6 +18,7 @@ class Order extends Model
         'buyer_id',
         'seller_id',
         'shipping_address_id',
+        'shipping_address_snapshot', // Added
         'status',
         'payment_status',
         'payment_method_id',
@@ -36,7 +37,8 @@ class Order extends Model
         'total_amount' => 'decimal:2',
         'seller_earnings' => 'decimal:2',
         'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
+        'shipping_address_snapshot' => 'array', // Cast to array
     ];
 
     public function createOrder(int $buyer_id, Cart $cart, int $address_id): bool
@@ -123,6 +125,49 @@ class Order extends Model
     public function seller()
     {
         return $this->belongsTo(User::class, 'seller_id', 'user_id');
+    }
+
+    /**
+     * Address relationship
+     */
+    public function shippingAddress()
+    {
+        return $this->belongsTo(Address::class, 'shipping_address_id', 'address_id');
+    }
+
+    /**
+     * Get formatted shipping address (Bandung style).
+     * Priorities Snapshot over Relation.
+     */
+    public function getFormattedAddressAttribute()
+    {
+        // Use snapshot if available
+        $data = $this->shipping_address_snapshot ?? $this->shippingAddress;
+
+        // If snapshot is array, convert to object/fluent access or use array keys
+        // Since we cast to array, it's an array. If it's model, it's object.
+        // Let's normalize it to object or array access.
+        
+        if (!$data) return 'N/A';
+
+        // Normalize data to object for easier property access
+        $addr = is_array($data) ? (object) $data : $data;
+
+        // Map keys based on user's snapshot vs default Address model
+        $recipient = $addr->recipient ?? $addr->recipient_name ?? $addr->name ?? 'N/A'; 
+        $phone = $addr->phone ?? $addr->phone_number ?? 'N/A';
+        $line = $addr->detail_address ?? $addr->address_line ?? $addr->address ?? 'N/A';
+        $cityRaw = $addr->city ?? '';
+        $province = $addr->province ?? '';
+        $postal = $addr->postal_code ?? '';
+
+        // Clean City
+        $city = preg_replace('/^(KOTA|KABUPATEN)\s+/i', '', $cityRaw);
+        $city = \Illuminate\Support\Str::title(strtolower($city));
+
+        return "{$recipient} ({$phone})<br>" .
+               "{$line}<br>" .
+               "{$city}, {$province}, {$postal}";
     }
 
     /**

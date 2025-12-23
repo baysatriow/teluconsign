@@ -19,6 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'verified_otp' => EnsureOtpVerified::class, // This line fixes your error
         ]);
 
+        // Exclude webhook routes from CSRF verification
+        $middleware->validateCsrfTokens(except: [
+            'webhook/*',
+        ]);
+
         $middleware->redirectGuestsTo(fn () => route('login'));
     })
     ->withExceptions(function (Exceptions $exceptions) {

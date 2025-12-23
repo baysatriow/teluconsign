@@ -22,7 +22,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Memperbarui data diri (Nama, Bio, Telepon).
+     * Memperbarui data diri (Nama, Bio, Telepon, Foto).
      */
     public function update(Request $request)
     {
@@ -30,10 +30,20 @@ class ProfileController extends Controller
             'name' => 'required|string|max:120',
             'phone' => 'nullable|string|max:20',
             'bio' => 'nullable|string|max:255',
+            'photo' => 'nullable|image|max:2048', // Max 2MB
         ]);
 
         $user = User::find(Auth::id());
-        $user->update(['name' => $request->name]);
+        
+        $dataToUpdate = ['name' => $request->name];
+
+        // Handle Photo Upload
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('profile-photos', 'public');
+            $dataToUpdate['photo_url'] = asset('storage/' . $path);
+        }
+
+        $user->update($dataToUpdate);
 
         Profile::updateOrCreate(
             ['user_id' => $user->user_id],
@@ -83,7 +93,7 @@ class ProfileController extends Controller
         // Cek apakah user sudah punya alamat
         $hasAddress = Address::where('user_id', Auth::id())->exists();
 
-        // Logika Default Address
+        // Logika Default Address (Jika belum punya alamat, otomatis default)
         $isDefault = !$hasAddress ? true : ($request->has('is_default') && $request->is_default == '1');
 
         if ($isDefault && $hasAddress) {
@@ -95,13 +105,13 @@ class ProfileController extends Controller
             'label' => $request->label,
             'recipient' => $request->recipient,
             'phone' => $request->phone,
-            'province' => $request->province_name,
-            'city' => $request->city_name,
-            'district' => $request->district_name,
-            'village' => $request->village_name,
+            'province' => $request->province,     // Corrected
+            'city' => $request->city,             // Corrected
+            'district' => $request->district,     // Corrected
+            'village' => $request->village,       // Corrected
             'postal_code' => $request->postal_code,
             'detail_address' => $request->detail_address,
-            'location_id' => $request->location_id, // Added
+            'location_id' => $request->location_id, 
             'country' => 'ID',
             'is_default' => $isDefault
         ]);
@@ -120,7 +130,6 @@ class ProfileController extends Controller
             return back()->with('error', 'Alamat tidak ditemukan.');
         }
 
-        // Validasi sebagian input (karena dropdown mungkin kosong jika tidak diubah)
         $request->validate([
             'label' => 'required|string|max:50',
             'recipient' => 'required|string',
@@ -139,12 +148,12 @@ class ProfileController extends Controller
         ];
 
         // Jika user memilih wilayah baru (dropdown tidak kosong), update juga wilayahnya
-        if ($request->filled('province_name')) {
-            $dataToUpdate['province'] = $request->province_name;
-            $dataToUpdate['city'] = $request->city_name;
-            $dataToUpdate['district'] = $request->district_name;
-            $dataToUpdate['village'] = $request->village_name;
-            $dataToUpdate['location_id'] = $request->location_id; // Added
+        if ($request->filled('province')) {
+            $dataToUpdate['province'] = $request->province;
+            $dataToUpdate['city'] = $request->city;
+            $dataToUpdate['district'] = $request->district;
+            $dataToUpdate['village'] = $request->village;
+            $dataToUpdate['location_id'] = $request->location_id; 
         }
 
         // Handle Toggle Default saat Edit
@@ -191,61 +200,6 @@ class ProfileController extends Controller
         return back()->with('success', 'Alamat utama berhasil diperbarui.');
     }
 
-    /**
-     * Menambahkan rekening bank.
-     */
-    public function addBank(Request $request)
-    {
-        $this->validateBank($request);
-
-        BankAccount::create([
-            'user_id' => Auth::id(),
-            'bank_name' => $request->bank_name,
-            'account_no' => $request->account_no,
-            'account_name' => $request->account_name,
-            'is_default' => true
-        ]);
-
-        return back()->with('success', 'Rekening Bank berhasil ditambahkan.');
-    }
-
-    /**
-     * Memperbarui rekening bank.
-     */
-    public function updateBank(Request $request, $id)
-    {
-        $bank = BankAccount::where('user_id', Auth::id())->where('bank_account_id', $id)->first();
-
-        if (!$bank) {
-            return back()->with('error', 'Rekening tidak ditemukan.');
-        }
-
-        $this->validateBank($request);
-
-        $bank->update([
-            'bank_name' => $request->bank_name,
-            'account_no' => $request->account_no,
-            'account_name' => $request->account_name,
-        ]);
-
-        return back()->with('success', 'Rekening Bank berhasil diperbarui.');
-    }
-
-    /**
-     * Menghapus rekening bank.
-     */
-    public function deleteBank($id)
-    {
-        $bank = BankAccount::where('user_id', Auth::id())->where('bank_account_id', $id)->first();
-
-        if ($bank) {
-            $bank->delete();
-            return back()->with('success', 'Rekening berhasil dihapus.');
-        }
-
-        return back()->with('error', 'Rekening tidak ditemukan.');
-    }
-
     // --- Helper Validation ---
 
     private function validateAddress(Request $request)
@@ -254,22 +208,11 @@ class ProfileController extends Controller
             'label' => 'required|string|max:50',
             'recipient' => 'required|string',
             'phone' => 'required|numeric',
-            'province_name' => 'required',
-            'city_name' => 'required',
-            'district_name' => 'required',
-            // 'village_name' => 'required', // Optional depending on API
+            'province' => 'required',
+            'city' => 'required',
+            'district' => 'required',
             'postal_code' => 'required|numeric',
             'detail_address' => 'required|string',
-            // location_id is optional but recommended
-        ]);
-    }
-
-    private function validateBank(Request $request)
-    {
-        $request->validate([
-            'bank_name' => 'required|string',
-            'account_no' => 'required|numeric',
-            'account_name' => 'required|string'
         ]);
     }
 }

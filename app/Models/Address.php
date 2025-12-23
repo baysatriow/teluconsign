@@ -26,13 +26,15 @@ class Address extends Model
         'postal_code',
         'detail_address', // Alamat manual
 
-        'location_id', // Added
+        'location_id', 
         'country',
         'is_default',
+        'is_shop_default', // Baru
     ];
 
     protected $casts = [
         'is_default' => 'boolean',
+        'is_shop_default' => 'boolean',
         'created_at' => 'datetime',
     ];
 
@@ -44,6 +46,18 @@ class Address extends Model
         DB::transaction(function () use ($address) {
             self::where('user_id', $address->user_id)->update(['is_default' => false]);
             $address->is_default = true;
+            $address->save();
+        });
+    }
+
+    public static function setShopDefault(int $id): void
+    {
+        $address = self::find($id);
+        if (!$address) return;
+
+        DB::transaction(function () use ($address) {
+            self::where('user_id', $address->user_id)->update(['is_shop_default' => false]);
+            $address->is_shop_default = true;
             $address->save();
         });
     }

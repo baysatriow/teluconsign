@@ -14,7 +14,7 @@
                 </div>
 
                 <form action="{{ route('search.index') }}" method="GET" id="filterForm">
-                    @if(request('q')) <input type="hidden" name="q" value="{{ request('q') }}"> @endif
+                    @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
                     @if(request('sort')) <input type="hidden" name="sort" value="{{ request('sort') }}"> @endif
 
                     <!-- Kategori -->
@@ -97,8 +97,8 @@
             <!-- Header Result -->
             <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
                 <div>
-                    @if(request('q'))
-                        <h1 class="text-lg text-gray-600">Hasil pencarian untuk "<span class="font-bold text-gray-900">{{ request('q') }}</span>"</h1>
+                    @if(request('search'))
+                        <h1 class="text-lg text-gray-600">Hasil pencarian untuk "<span class="font-bold text-gray-900">{{ request('search') }}</span>"</h1>
                     @else
                         <h1 class="text-lg font-bold text-gray-900">Semua Produk</h1>
                     @endif
@@ -133,7 +133,7 @@
                         <div class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group overflow-hidden relative">
                             
                             <!-- Link Full Card -->
-                            <a href="{{ route('product.show', $product->product_id) }}" class="absolute inset-0 z-10"></a>
+                            <a href="{{ route('product.show', $product->slug ?? $product->product_id) }}" class="absolute inset-0 z-10"></a>
 
                             <!-- Image -->
                             <div class="relative block h-48 overflow-hidden bg-gray-100">
@@ -150,12 +150,26 @@
 
                             <!-- Content -->
                             <div class="p-4 flex flex-col flex-grow relative z-20 pointer-events-none"> 
-                                <h5 class="text-sm font-medium text-gray-900 line-clamp-2 leading-snug min-h-[40px] group-hover:text-[#EC1C25] transition-colors mb-2">
+                                <h5 class="text-sm font-medium text-gray-900 line-clamp-2 leading-snug min-h-[40px] group-hover:text-[#EC1C25] transition-colors mb-1">
                                     {{ $product->title }}
                                 </h5>
-                                <p class="text-lg font-bold text-gray-900 mb-3">
-                                    Rp{{ number_format($product->price, 0, ',', '.') }}
-                                </p>
+
+                                <div class="flex items-center gap-2 mb-3">
+                                    <p class="text-lg font-bold text-gray-900">
+                                        Rp{{ number_format($product->price, 0, ',', '.') }}
+                                    </p>
+                                </div>
+                                
+                                <div class="mb-3 flex items-center gap-2 text-[10px] sm:text-xs">
+                                     <div class="flex items-center gap-0.5 text-yellow-400">
+                                        <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                        <span class="text-gray-700 font-semibold">{{ $product->reviews_avg_rating ? number_format($product->reviews_avg_rating, 1) : '0' }}</span>
+                                    </div>
+                                    @if($product->order_items_sum_quantity > 0)
+                                        <span class="text-gray-300">|</span>
+                                        <span class="text-gray-500 font-medium whitespace-nowrap">Terjual {{ $product->order_items_sum_quantity > 99 ? '99+' : $product->order_items_sum_quantity }}</span>
+                                    @endif
+                                </div>
 
                                 <div class="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
                                     <div class="flex items-center gap-1.5 max-w-[70%]">

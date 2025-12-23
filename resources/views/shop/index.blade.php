@@ -56,7 +56,7 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Chart Section -->
-        <div class="lg:col-span-2 card-premium p-6">
+        <div class="lg:col-span-2 card-premium p-6 overflow-hidden">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-bold text-gray-900">Analitik Penjualan</h3>
                 <span class="text-xs font-semibold text-gray-400 bg-gray-100 px-3 py-1 rounded-full">7 Hari Terakhir</span>

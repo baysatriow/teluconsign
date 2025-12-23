@@ -19,31 +19,73 @@ class OrdersController extends Controller
     /**
      * Tampilkan Daftar Pesanan dengan Statistik
      */
-    public function index()
+    public function index(Request $request)
     {
         $userId = auth()->id();
-        
-        // Calculate Statistics
+        $status = $request->query('status', 'all'); // all, pending, processed, shipped, completed, cancelled
+
+        // Calculate Statistics (Keep existing logic)
         $stats = [
             'total' => Order::where('buyer_id', $userId)->count(),
             'pending_payment' => Order::where('buyer_id', $userId)
                 ->where('payment_status', 'pending')
+                ->where('status', '!=', 'cancelled')
                 ->count(),
-            'paid' => Order::where('buyer_id', $userId)
-                ->whereIn('payment_status', ['settlement', 'paid'])
+            'processed' => Order::where('buyer_id', $userId)
+                ->where('status', 'processed')
+                ->count(),
+            'shipped' => Order::where('buyer_id', $userId)
+                ->where('status', 'shipped')
                 ->count(),
             'completed' => Order::where('buyer_id', $userId)
                 ->where('status', 'completed')
                 ->count(),
         ];
         
-        // Get Orders with Pagination
-        $orders = Order::where('buyer_id', $userId)
-                    ->with(['items.product', 'seller'])
-                    ->latest()
-                    ->paginate(10);
+        // Base Query
+        $query = Order::where('buyer_id', $userId)->with(['items.product', 'seller'])->latest();
 
-        return view('orders.index', compact('orders', 'stats'));
+        // Apply Status Filter
+        switch ($status) {
+            case 'pending':
+                $query->where('payment_status', 'pending')->where('status', '!=', 'cancelled');
+                break;
+            case 'processed': // Dikemas
+                $query->where('status', 'processed');
+                break;
+            case 'shipped': // Dikirim
+                $query->where('status', 'shipped');
+                break;
+            case 'completed': // Selesai
+                $query->where('status', 'completed');
+                break;
+            case 'cancelled': // Dibatalkan
+                $query->where('status', 'cancelled');
+                break;
+            case 'all':
+            default:
+                // No specific filter
+                break;
+        }
+
+        $orders = $query->paginate(10)->withQueryString();
+
+        return view('orders.index', compact('orders', 'stats', 'status'));
+    }
+
+    /**
+     * Tampilkan Detail Pesanan
+     */
+    public function show(Order $order)
+    {
+        // Ensure strictly buyer's order
+        if ($order->buyer_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $order->load(['items.product', 'seller', 'shippingAddress', 'buyer']);
+        
+        return view('orders.show', compact('order'));
     }
 
     /**
@@ -54,95 +96,34 @@ class OrdersController extends Controller
     {
         $order = Order::where('buyer_id', auth()->id())
             ->where('order_id', $id)
-            ->where('payment_status', 'pending')
             ->firstOrFail();
 
-        try {
-            // Gunakan Code Order (ORD-...) sebagai Transaction ID baru
-            // Jika sebelumnya Group Payment (PAY-...), kita abaikan dan buat transaksi baru per order ini.
-            
-            // Item Details
-            $itemDetails = [];
-            foreach($order->items as $item) {
-                $itemDetails[] = [
-                    'id' => $item->product_id,
-                    'price' => (int) $item->unit_price,
-                    'quantity' => $item->quantity,
-                    'name' => substr($item->product_title, 0, 50)
-                ];
-            }
+        if ($order->payment_status !== 'pending') {
+             return response()->json(['status' => 'error', 'message' => 'Pesanan sudah dibayar.'], 400);
+        }
 
-            // Ongkir
-            if($order->shipping_cost > 0) {
-                 $itemDetails[] = [
-                    'id' => 'SHIP-' . $order->seller_id,
-                    'price' => (int) $order->shipping_cost,
-                    'quantity' => 1,
-                    'name' => 'Ongkos Kirim'
-                ];
-            }
-            
-            // Fee Platform (Jika ada di order ini, atau 0)
-            if($order->platform_fee > 0) {
-                 $itemDetails[] = [
-                    'id' => 'FEE-PLATFORM',
-                    'price' => (int) $order->platform_fee,
-                    'quantity' => 1,
-                    'name' => 'Biaya Layanan'
-                ];
-            }
+        // 1. Cek Payment Record via Direct Relation (jika order ini induk/single)
+        $payment = \App\Models\Payment::where('order_id', $order->order_id)
+            ->whereIn('status', ['pending', 'challenge'])
+            ->latest()
+            ->first();
 
-            // --- MODE DEBUG / DUMMY ---
-            // Menggunakan data dummy hardcoded untuk test koneksi Midtrans
-            $dummyId = 'TEST-' . time();
-            $params = [
-                'transaction_details' => [
-                    'order_id' => $dummyId,
-                    'gross_amount' => 10000,
-                ],
-                'item_details' => [
-                    [
-                        'id' => 'DUMMY-1',
-                        'price' => 10000,
-                        'quantity' => 1,
-                        'name' => 'Test Item Midtrans'
-                    ]
-                ],
-                'customer_details' => [
-                    'first_name' => 'Tester',
-                    'email' => 'test@example.com',
-                    'phone' => '08123456789',
-                ]
-            ];
-            
-            $snapToken = $this->midtrans->createSnapToken($params);
-            // --- END DUMMY ---
+        // 2. Cek via Group Code di Notes (jika order ini bagian dari group checkout)
+        if (!$payment && preg_match('/Group Payment: (PAY-[\w\-]+)/', $order->notes, $matches)) {
+            $groupCode = $matches[1];
+            $payment = \App\Models\Payment::where('provider_order_id', $groupCode)
+                ->whereIn('status', ['pending', 'challenge'])
+                ->latest() // Ambil yang paling baru jika ada retry
+                ->first();
+        }
 
-            // $snapToken = $this->midtrans->createSnapToken($params);
-            
-            // Return Token
-            $tokenString = is_array($snapToken) ? ($snapToken['token'] ?? '') : $snapToken;
-
-            // Log Order Payment Request
-            \App\Models\WebhookLog::create([
-                'provider_code' => 'midtrans',
-                'event_type' => 'token_request_retry',
-                'related_id' => $dummyId ?? $order->code, // Use actual order code in production logic
-                'payload' => [
-                    'order_id' => $dummyId ?? $order->code,
-                    'gross_amount' => $params['transaction_details']['gross_amount'] ?? 0,
-                    'result_token' => $tokenString
-                ],
-                'received_at' => now()
-            ]);
-
+        if ($payment) {
             return response()->json([
                 'status' => 'success',
-                'snap_token' => $tokenString
+                'redirect_url' => route('payment.show', $payment->payment_id)
             ]);
-
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
+
+        return response()->json(['status' => 'error', 'message' => 'Data pembayaran tidak ditemukan. Silakan hubungi bantuan.'], 404);
     }
 }

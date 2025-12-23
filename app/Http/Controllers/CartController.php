@@ -49,12 +49,25 @@ class CartController extends Controller
         $user = Auth::user();
         $product = Product::findOrFail($request->product_id);
 
-        // 1. Cek Stok
-        if ($product->stock < $request->quantity) {
+        // 1. Cek Stok (Termasuk yang sudah ada di keranjang)
+        $cart = Cart::firstOrCreate(['buyer_id' => $user->user_id]);
+        $existingItem = CartItem::where('cart_id', $cart->cart_id)
+            ->where('product_id', $product->product_id)
+            ->first();
+            
+        $existingQty = $existingItem ? $existingItem->quantity : 0;
+        $totalQty = $existingQty + $request->quantity;
+
+        if ($product->stock < $totalQty) {
+            $remaining = max(0, $product->stock - $existingQty);
+            $msg = ($remaining > 0)
+                ? "Stok tidak mencukupi. Anda sudah memiliki $existingQty item di keranjang. Sisa yang bisa ditambah: $remaining."
+                : "Stok produk habis atau seluruh stok sudah ada di keranjang Anda.";
+
             if ($request->ajax()) {
-                return response()->json(['status' => 'error', 'message' => 'Stok produk tidak mencukupi.'], 400);
+                return response()->json(['status' => 'error', 'message' => $msg], 400);
             }
-            return back()->with('error', 'Stok produk tidak mencukupi.');
+            return back()->with('error', $msg);
         }
 
         // 2. Cek apakah user membeli produk sendiri
@@ -65,7 +78,7 @@ class CartController extends Controller
             return back()->with('error', 'Anda tidak dapat membeli produk Anda sendiri.');
         }
 
-        $cart = Cart::firstOrCreate(['buyer_id' => $user->user_id]);
+
 
         // 3. LOGIKA MAX 20 TOKO
         // Ambil daftar seller_id yang sudah ada di keranjang
