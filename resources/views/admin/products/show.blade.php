@@ -19,10 +19,16 @@
         <div class="bg-white rounded-2xl shadow-soft border border-gray-100 p-8">
             <h3 class="text-2xl font-bold text-gray-900 mb-6">{{ $product->title }}</h3>
 
+            <!-- Image Grid -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                @foreach($product->images as $img)
-                    <div class="aspect-square rounded-xl overflow-hidden border border-gray-100 bg-gray-50 group relative cursor-zoom-in">
-                        <img src="{{ asset('storage/'.$img->url) }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                @foreach($product->images as $index => $img)
+                    <div onclick="openLightbox({{ $index }})" class="aspect-square rounded-xl overflow-hidden border border-gray-100 bg-gray-50 group relative cursor-pointer">
+                        <img src="{{ asset('storage/'.$img->url) }}" 
+                             data-src="{{ asset('storage/'.$img->url) }}"
+                             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 gallery-img">
+                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                             <svg class="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                        </div>
                     </div>
                 @endforeach
                 @if($product->images->isEmpty())
@@ -127,7 +133,7 @@
                 @else
                     <div class="mb-4">
                         <label for="reason" class="block mb-2 text-xs font-bold text-gray-500 uppercase">Alasan Suspend</label>
-                        <textarea id="reason" name="reason" rows="3" class="block p-3 w-full text-sm text-gray-900 bg-gray-50 rounded-xl border border-gray-200 focus:ring-2 focus:ring-red-100 focus:border-red-500 transition-all" placeholder="Jelaskan alasan pelanggaran..."></textarea>
+                        <textarea id="reason" name="reason" rows="3" class="block p-3 w-full text-sm text-gray-900 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-500 transition-all" placeholder="Jelaskan alasan pelanggaran..."></textarea>
                     </div>
                     <button type="submit" class="w-full text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-100 font-bold rounded-xl text-sm px-5 py-3 shadow-lg shadow-red-500/20 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
@@ -174,4 +180,110 @@
 
     </div>
 </div>
+
+<!-- LIGHTBOX MODAL -->
+<div id="lightbox" class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4">
+    <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white hover:text-gray-300 focus:outline-none z-50 p-2">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    </button>
+    
+    <div class="flex items-center justify-center w-full h-[80vh] gap-4 relative">
+        <button onclick="prevImage()" class="absolute left-4 lg:left-8 text-white hover:text-gray-300 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors z-40 focus:outline-none">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        
+        <img id="lightbox-img" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-all duration-300 opacity-0 scale-95 data-[visible=true]:opacity-100 data-[visible=true]:scale-100">
+        
+        <button onclick="nextImage()" class="absolute right-4 lg:right-8 text-white hover:text-gray-300 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors z-40 focus:outline-none">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+    </div>
+
+    <div class="absolute bottom-6 flex gap-2">
+        @foreach($product->images as $index => $img)
+            <button onclick="openLightbox({{ $index }})" 
+                class="w-16 h-16 rounded-lg overflow-hidden border-2 transition-all opacity-60 hover:opacity-100 focus:outline-none lightbox-thumb border-transparent bg-gray-900" 
+                data-index="{{ $index }}">
+                <img src="{{ asset('storage/'.$img->url) }}" class="w-full h-full object-cover">
+            </button>
+        @endforeach
+    </div>
+</div>
+
+<script>
+    let currentIndex = 0;
+    const images = [
+        @foreach($product->images as $img)
+            "{{ asset('storage/'.$img->url) }}",
+        @endforeach
+    ];
+
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const thumbs = document.querySelectorAll('.lightbox-thumb');
+
+    function openLightbox(index) {
+        if (images.length === 0) return;
+        
+        currentIndex = index;
+        updateLightboxImage();
+        
+        lightbox.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Animasi masuk
+        setTimeout(() => {
+             lightboxImg.setAttribute('data-visible', 'true');
+        }, 50);
+    }
+
+    function closeLightbox() {
+        lightboxImg.setAttribute('data-visible', 'false');
+        setTimeout(() => {
+            lightbox.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }, 300);
+    }
+
+    function updateLightboxImage() {
+        // Animasi swap image
+        lightboxImg.setAttribute('data-visible', 'false');
+        
+        setTimeout(() => {
+            lightboxImg.src = images[currentIndex];
+            lightboxImg.setAttribute('data-visible', 'true');
+        }, 200);
+
+        // Update active thumb
+        thumbs.forEach((thumb, i) => {
+            if (i === currentIndex) {
+                thumb.classList.add('border-white', 'opacity-100');
+                thumb.classList.remove('border-transparent', 'opacity-60');
+            } else {
+                thumb.classList.remove('border-white', 'opacity-100');
+                thumb.classList.add('border-transparent', 'opacity-60');
+            }
+        });
+    }
+
+    function nextImage() {
+        currentIndex = (currentIndex + 1) % images.length;
+        updateLightboxImage();
+    }
+
+    function prevImage() {
+        currentIndex = (currentIndex - 1 + images.length) % images.length;
+        updateLightboxImage();
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (lightbox.classList.contains('hidden')) return;
+        
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowRight') nextImage();
+        if (e.key === 'ArrowLeft') prevImage();
+    });
+</script>
 @endsection
+

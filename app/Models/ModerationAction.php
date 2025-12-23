@@ -25,15 +25,20 @@ class ModerationAction extends Model
         'created_at' => 'datetime'
     ];
 
-    public function logAction(int $admin_id, string $target_type, int $target_id, string $action, string $reason): bool
-    {
-        return $this->create([
-            'admin_id' => $admin_id,
+    public function logAction(
+        int $admin_id,
+        string $target_type,
+        int $target_id,
+        string $action,
+        string $reason
+    ): bool {
+        return (bool) $this->create([
+            'admin_id'    => $admin_id,
             'target_type' => $target_type,
-            'target_id' => $target_id,
-            'action' => $action,
-            'reason' => $reason
-        ]) ? true : false;
+            'target_id'   => $target_id,
+            'action'      => $action,
+            'reason'      => $reason
+        ]);
     }
 
     public function getActionsByTarget(string $target_type, int $target_id)
@@ -47,17 +52,22 @@ class ModerationAction extends Model
     public function revertAction(int $id): void
     {
         $action = $this->find($id);
-        if ($action) {
-            $reverse = [
-                'takedown' => 'restore',
-                'suspend' => 'restore',
-                'hide' => 'unhide',
-                'unhide' => 'hide'
-            ];
 
-            if (isset($reverse[$action->action])) {
-                $action->update(['action' => $reverse[$action->action]]);
-            }
+        if (! $action) {
+            return;
+        }
+
+        $reverse = [
+            'takedown' => 'restore',
+            'suspend'  => 'restore',
+            'hide'     => 'unhide',
+            'unhide'   => 'hide'
+        ];
+
+        if (isset($reverse[$action->action])) {
+            $action->update([
+                'action' => $reverse[$action->action]
+            ]);
         }
     }
 }

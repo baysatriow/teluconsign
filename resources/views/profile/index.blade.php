@@ -1,110 +1,112 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     
     <!-- Page Header -->
-    <div class="mb-10">
-        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Pengaturan Akun</h1>
-        <p class="mt-2 text-gray-500">Kelola profil, keamanan, dan preferensi pengiriman Anda.</p>
+    <div class="mb-12 animate-fade-in-down">
+        <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">Pengaturan Akun</h1>
+        <p class="mt-3 text-gray-500 text-lg">Kelola profil, keamanan, dan preferensi pengiriman Anda.</p>
     </div>
 
     <div class="lg:grid lg:grid-cols-12 lg:gap-x-12">
         <!-- Sidebar Navigation -->
         <aside class="py-6 lg:col-span-3">
-            <nav class="space-y-2 sticky top-24">
-                <a href="#profile" id="nav-profile" class="group flex items-center px-3 py-2 text-sm font-medium bg-red-50 text-[#EC1C25] rounded-md hover:bg-red-50 hover:text-[#EC1C25] transition-all" aria-current="page">
-                    <svg class="flex-shrink-0 -ml-1 mr-3 h-6 w-6 text-[#EC1C25] group-hover:text-[#EC1C25]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <nav class="space-y-1.5 sticky top-28 bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 shadow-sm">
+                <a href="#profile" id="nav-profile" class="group flex items-center px-4 py-3 text-sm font-bold bg-[#EC1C25] text-white rounded-xl shadow-lg shadow-red-100 transition-all active-nav" aria-current="page">
+                    <svg class="flex-shrink-0 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span class="truncate">Profil Saya</span>
+                    Profil Saya
                 </a>
 
-                <a href="#address" id="nav-address" class="group flex items-center px-3 py-2 text-sm font-medium text-gray-900 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-all">
-                    <svg class="flex-shrink-0 -ml-1 mr-3 h-6 w-6 text-gray-400 group-hover:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                <a href="#address" id="nav-address" class="group flex items-center px-4 py-3 text-sm font-bold text-gray-600 rounded-xl hover:bg-red-50 hover:text-[#EC1C25] transition-all">
+                    <svg class="flex-shrink-0 mr-3 h-5 w-5 text-gray-400 group-hover:text-[#EC1C25] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <span class="truncate">Daftar Alamat</span>
+                    Daftar Alamat
                 </a>
 
-                <a href="#security" id="nav-security" class="group flex items-center px-3 py-2 text-sm font-medium text-gray-900 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-all">
-                    <svg class="flex-shrink-0 -ml-1 mr-3 h-6 w-6 text-gray-400 group-hover:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <a href="#security" id="nav-security" class="group flex items-center px-4 py-3 text-sm font-bold text-gray-600 rounded-xl hover:bg-red-50 hover:text-[#EC1C25] transition-all">
+                    <svg class="flex-shrink-0 mr-3 h-5 w-5 text-gray-400 group-hover:text-[#EC1C25] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
-                    <span class="truncate">Keamanan & Password</span>
+                    Keamanan
                 </a>
             </nav>
         </aside>
 
         <!-- Main Content -->
-        <div class="space-y-6 lg:col-span-9" id="main-content">
+        <div class="space-y-8 lg:col-span-9 animate-fade-in-up" id="main-content">
             
             <!-- SECTION 1: PROFIL -->
-            <section id="section-profile" class="bg-white shadow rounded-2xl overflow-hidden mb-10 border border-gray-100">
-                <div class="px-6 py-8 sm:p-10">
-                    <div class="flex items-center justify-between mb-8">
+            <section id="section-profile" class="bg-white shadow-xl shadow-gray-200/40 rounded-3xl overflow-hidden border border-gray-100 mb-8 transition-all hover:shadow-2xl hover:shadow-gray-200/50">
+                <div class="px-8 py-10 sm:p-12">
+                    <div class="mb-10 flex items-center gap-4">
+                        <div class="w-1.5 h-8 bg-[#EC1C25] rounded-full"></div>
                         <div>
-                            <h2 class="text-xl font-bold text-gray-900">Ubah Profil</h2>
-                            <p class="mt-1 text-sm text-gray-500">Update foto dan informasi data diri Anda.</p>
+                            <h2 class="text-2xl font-extrabold text-gray-900">Informasi Pribadi</h2>
+                            <p class="mt-1 text-gray-500">Update foto dan detail identitas Anda.</p>
                         </div>
                     </div>
 
                     <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
                         @csrf @method('PUT')
                         
-                        <!-- Photo Upload -->
-                        <div class="flex flex-col sm:flex-row items-center gap-8 mb-10">
+                        <!-- Photo Upload Section -->
+                        <div class="bg-gray-50/50 rounded-2xl p-6 mb-10 border border-gray-100 flex flex-col sm:flex-row items-center gap-8">
                             <div class="relative group">
-                                <img id="photo-preview" class="h-32 w-32 rounded-full object-cover ring-4 ring-white shadow-lg" 
+                                <div class="absolute inset-0 bg-red-100 rounded-full blur-2xl opacity-0 group-hover:opacity-40 transition-opacity"></div>
+                                <img id="photo-preview" class="relative z-10 h-32 w-32 rounded-full object-cover ring-4 ring-white shadow-xl" 
                                      src="{{ $user->photo_url ?? 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=EC1C25&color=fff' }}" 
                                      alt="Current profile photo">
-                                <label for="photo-input" class="absolute bottom-1 right-1 bg-gray-900 text-white p-2.5 rounded-full shadow-lg cursor-pointer hover:bg-[#EC1C25] transition-all transform hover:scale-110">
+                                <label for="photo-input" class="absolute bottom-1 right-1 z-20 bg-gray-900 text-white p-2.5 rounded-full shadow-lg cursor-pointer hover:bg-[#EC1C25] transition-all transform hover:scale-110 active:scale-95">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                     <input type="file" name="photo" id="photo-input" class="hidden" accept="image/*" onchange="previewImage(this)">
                                 </label>
                             </div>
-                            <div class="text-center sm:text-left">
-                                <h3 class="text-lg font-medium text-gray-900">Foto Profil</h3>
-                                <p class="text-sm text-gray-500 mt-1">Format: JPG, PNG, GIF. Maksimal 2MB.</p>
+                            <div class="text-center sm:text-left flex-grow">
+                                <h3 class="text-lg font-bold text-gray-900 mb-1">Foto Profil</h3>
+                                <p class="text-sm text-gray-400 mb-4 max-w-xs">Pilih foto terbaik Anda. Ukuran maks 2MB (JPG atau PNG).</p>
+                                <button type="button" onclick="document.getElementById('photo-input').click()" class="text-sm font-bold text-[#EC1C25] hover:underline transition-all">Ganti Foto</button>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                        <div class="grid grid-cols-1 gap-8 sm:grid-cols-6 mb-10">
                             <div class="sm:col-span-3">
-                                <label for="name" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
-                                <div class="mt-1">
-                                    <input type="text" name="name" id="name" value="{{ $user->name }}" class="shadow-sm focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full sm:text-sm border-gray-300 rounded-md transition-shadow">
-                                </div>
+                                <label for="name" class="block text-sm font-bold text-gray-800 mb-2">Nama Lengkap</label>
+                                <input type="text" name="name" id="name" value="{{ $user->name }}" class="input-modern block w-full bg-white border-gray-200 focus:ring-red-100 focus:border-[#EC1C25] transition-all" placeholder="Masukkan nama lengkap">
                             </div>
 
                             <div class="sm:col-span-3">
-                                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                                <div class="mt-1">
-                                    <input type="email" value="{{ $user->email }}" disabled class="bg-gray-50 shadow-sm block w-full sm:text-sm border-gray-300 rounded-md text-gray-500 cursor-not-allowed">
-                                </div>
-                            </div>
-
-                            <div class="sm:col-span-3">
-                                <label for="phone" class="block text-sm font-medium text-gray-700">Nomor Telepon / WA</label>
-                                <div class="mt-1 relative rounded-md shadow-sm">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-500 sm:text-sm">+62</span>
+                                <label for="email" class="block text-sm font-bold text-gray-800 mb-2">Alamat Email</label>
+                                <div class="relative group">
+                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none group-focus-within:text-[#EC1C25] transition-colors">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                                     </div>
-                                    <input type="text" name="phone" id="phone" value="{{ $user->profile->phone ?? '' }}" class="focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full pl-12 sm:text-sm border-gray-300 rounded-md" placeholder="81234567890">
+                                    <input type="email" value="{{ $user->email }}" disabled class="input-modern block w-full pl-11 bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed border-dashed" placeholder="email@domain.com">
+                                </div>
+                            </div>
+
+                            <div class="sm:col-span-3">
+                                <label for="phone" class="block text-sm font-bold text-gray-800 mb-2">Nomor WhatsApp</label>
+                                <div class="relative group">
+                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none group-focus-within:text-[#EC1C25] transition-colors">
+                                        <span class="text-sm font-extrabold text-gray-400">+62</span>
+                                    </div>
+                                    <input type="text" name="phone" id="phone" value="{{ $user->profile->phone ?? '' }}" class="input-modern block w-full pl-12 bg-white border-gray-200 focus:ring-red-100 focus:border-[#EC1C25] transition-all" placeholder="812-3456-7890">
                                 </div>
                             </div>
 
                             <div class="sm:col-span-6">
-                                <label for="bio" class="block text-sm font-medium text-gray-700">Bio Singkat</label>
-                                <div class="mt-1">
-                                    <textarea id="bio" name="bio" rows="3" class="shadow-sm focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full sm:text-sm border border-gray-300 rounded-md">{{ $user->profile->bio ?? '' }}</textarea>
-                                </div>
-                                <p class="mt-2 text-sm text-gray-500">Tulis sedikit tentang diri Anda untuk ditampilkan di profil.</p>
+                                <label for="bio" class="block text-sm font-bold text-gray-800 mb-2">Biografi Singkat</label>
+                                <textarea id="bio" name="bio" rows="4" class="input-modern block w-full bg-white border-gray-200 focus:ring-red-100 focus:border-[#EC1C25] transition-all resize-none" placeholder="Tulis sedikit tentang diri Anda...">{{ $user->profile->bio ?? '' }}</textarea>
+                                <p class="mt-2 text-xs text-gray-400 flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Bio akan ditampilkan pada halaman profil publik Anda.</p>
                             </div>
                         </div>
 
-                        <div class="mt-8 flex justify-end">
-                            <button type="submit" class="bg-[#EC1C25] border border-transparent rounded-md shadow-sm py-2 px-6 inline-flex justify-center text-sm font-medium text-white hover:bg-[#c4161e] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all hover:shadow-lg transform hover:-translate-y-0.5">
+                        <div class="flex justify-end pt-4 border-t border-gray-50">
+                            <button type="submit" class="bg-[#EC1C25] text-white px-8 py-3.5 rounded-2xl font-extrabold text-sm shadow-xl shadow-red-100 hover:bg-[#c4161e] hover:shadow-2xl hover:shadow-red-200 transition-all transform hover:-translate-y-1 active:translate-y-0 active:shadow-lg">
                                 Simpan Perubahan
                             </button>
                         </div>
@@ -113,71 +115,90 @@
             </section>
 
             <!-- SECTION 2: ALAMAT -->
-            <section id="section-address" class="hidden bg-white shadow rounded-2xl overflow-hidden mb-10 border border-gray-100">
-                <div class="px-6 py-8 sm:p-10">
-                    <div class="flex items-center justify-between mb-8">
-                        <div>
-                            <h2 class="text-xl font-bold text-gray-900">Daftar Alamat</h2>
-                            <p class="mt-1 text-sm text-gray-500">Kelola alamat pengiriman untuk checkout belanja.</p>
+            <section id="section-address" class="hidden bg-white shadow-xl shadow-gray-200/40 rounded-3xl overflow-hidden border border-gray-100 mb-8 transition-all hover:shadow-2xl hover:shadow-gray-200/50">
+                <div class="px-8 py-10 sm:p-12">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-12">
+                        <div class="flex items-center gap-4">
+                            <div class="w-1.5 h-8 bg-[#EC1C25] rounded-full"></div>
+                            <div>
+                                <h2 class="text-2xl font-extrabold text-gray-900">Daftar Alamat</h2>
+                                <p class="mt-1 text-gray-500">Kelola tujuan pengiriman belanjaan Anda.</p>
+                            </div>
                         </div>
-                        <button onclick="openAddressModal()" type="button" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-900 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-all">
-                            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                            </svg>
-                            Tambah Alamat
+                        <button onclick="openAddressModal()" type="button" class="group relative px-6 py-3 bg-gray-900 text-white font-extrabold rounded-2xl shadow-xl hover:bg-black transition-all transform hover:-translate-y-1 active:translate-y-0 overflow-hidden">
+                            <span class="relative z-10 flex items-center gap-2">
+                                <svg class="w-5 h-5 transition-transform group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                                Tambah Alamat
+                            </span>
+                            <div class="absolute inset-0 bg-gradient-to-r from-red-600 to-[#EC1C25] opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </button>
                     </div>
 
-                    <div class="grid gap-6 sm:grid-cols-2">
+                    <div class="grid gap-8 sm:grid-cols-2">
                         @forelse($user->addresses as $addr)
-                        <div class="relative rounded-xl border {{ $addr->is_default ? 'border-red-200 bg-red-50/20 ring-1 ring-red-200' : 'border-gray-200 bg-white hover:border-gray-300' }} p-6 shadow-sm flex flex-col transition-all">
+                        <div class="relative group rounded-3xl border-2 {{ $addr->is_default ? 'border-[#EC1C25] bg-red-50/10' : 'border-gray-50 bg-white hover:border-red-100' }} p-8 shadow-sm flex flex-col transition-all duration-300 hover:shadow-xl hover:shadow-gray-200/50">
                             @if($addr->is_default)
-                                <span class="absolute top-4 right-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                    Utama
+                                <span class="absolute -top-3 left-8 inline-flex items-center px-4 py-1.5 rounded-full text-xs font-black bg-[#EC1C25] text-white shadow-lg shadow-red-200 tracking-wider uppercase">
+                                    Alamat Utama
                                 </span>
                             @endif
                             
-                            <h3 class="text-base font-bold text-gray-900 mb-1 flex items-center gap-2">
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                                {{ $addr->label }}
-                            </h3>
+                            <div class="flex items-start justify-between mb-4 mt-2">
+                                <h3 class="text-lg font-extrabold text-gray-900 flex items-center gap-2.5">
+                                    <span class="p-2 rounded-xl {{ $addr->is_default ? 'bg-[#EC1C25] text-white' : 'bg-gray-100 text-gray-500' }} transition-colors">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                    </span>
+                                    {{ $addr->label }}
+                                </h3>
+                            </div>
                             
-                            <div class="flex-1 mt-2 text-sm text-gray-500 space-y-1">
-                                <p class="font-medium text-gray-900">{{ $addr->recipient }} <span class="text-gray-300 mx-1">|</span> {{ $addr->phone }}</p>
-                                <p>{{ $addr->detail_address }}</p>
-                                <p>{{ $addr->village }}, {{ $addr->district }}</p>
-                                <p>{{ $addr->city }}, {{ $addr->province }} {{ $addr->postal_code }}</p>
+                            <div class="flex-1 mt-4 space-y-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-base font-bold text-gray-900">{{ $addr->recipient }}</span>
+                                    <span class="text-gray-300">|</span>
+                                    <span class="text-sm font-medium text-gray-500">{{ $addr->phone }}</span>
+                                </div>
+                                <div class="text-sm text-gray-600 leading-relaxed bg-gray-50/50 p-4 rounded-2xl border border-gray-50 group-hover:bg-white group-hover:border-red-50 transition-colors">
+                                    <p class="font-medium">{{ $addr->detail_address }}</p>
+                                    <p class="text-xs mt-1 text-gray-400">{{ $addr->village }}, {{ $addr->district }}, {{ $addr->city }}, {{ $addr->province }} {{ $addr->postal_code }}</p>
+                                </div>
                             </div>
 
-                            <div class="mt-6 flex items-center gap-4 pt-4 border-t border-gray-100">
-                                <button type="button" onclick="editAddress({{ json_encode($addr) }})" class="text-sm font-medium text-gray-600 hover:text-[#EC1C25] transition-colors">Edit</button>
+                            <div class="mt-8 flex items-center justify-between gap-4 pt-6 border-t border-gray-50">
+                                <div class="flex items-center gap-5">
+                                    <button type="button" onclick="editAddress({{ json_encode($addr) }})" class="text-sm font-extrabold text-gray-500 hover:text-[#EC1C25] transition-colors flex items-center gap-1.5">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        Ubah
+                                    </button>
+                                    @if(!$addr->is_default)
+                                        <form action="{{ route('profile.address.default', $addr->address_id) }}" method="POST">
+                                            @csrf @method('PATCH')
+                                            <button type="submit" class="text-sm font-extrabold text-blue-600 hover:text-blue-800 transition-colors">Utamakan</button>
+                                        </form>
+                                    @endif
+                                </div>
                                 
                                 @if(!$addr->is_default)
-                                    <form action="{{ route('profile.address.default', $addr->address_id) }}" method="POST">
-                                        @csrf @method('PATCH')
-                                        <button type="submit" class="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">Set Utama</button>
-                                    </form>
-                                @endif
-                                
-                                <form action="{{ route('profile.address.delete', $addr->address_id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus alamat ini?');" class="ml-auto">
+                                <form action="{{ route('profile.address.delete', $addr->address_id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus alamat ini?');">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-800 transition-colors">Hapus</button>
+                                    <button type="submit" class="w-10 h-10 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
                                 </form>
+                                @endif
                             </div>
                         </div>
                         @empty
-                        <div class="sm:col-span-2 text-center py-12 rounded-xl border-2 border-dashed border-gray-300">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            <h3 class="mt-2 text-sm font-medium text-gray-900">Belum ada alamat</h3>
-                            <p class="mt-1 text-sm text-gray-500">Mulai dengan menambahkan alamat baru Anda.</p>
-                            <div class="mt-6">
-                                <button type="button" onclick="openAddressModal()" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#EC1C25] hover:bg-[#c4161e] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                                    </svg>
-                                    Tambah Alamat Baru
-                                </button>
+                        <div class="sm:col-span-2 text-center py-20 rounded-3xl border-4 border-dashed border-gray-100 bg-gray-50/30">
+                            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <svg class="h-10 w-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                             </div>
+                            <h3 class="text-xl font-extrabold text-gray-900 mb-2">Belum ada alamat tersimpan</h3>
+                            <p class="text-gray-400 max-w-sm mx-auto mb-8">Tambahkan alamat pengiriman untuk mempermudah proses checkout belanja Anda.</p>
+                            <button type="button" onclick="openAddressModal()" class="inline-flex items-center px-8 py-3.5 bg-[#EC1C25] text-white font-extrabold rounded-2xl shadow-xl shadow-red-100 hover:bg-[#c4161e] transform transition-all hover:-translate-y-1 active:translate-y-0">
+                                <svg class="mr-2.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                                Buat Alamat Baru
+                            </button>
                         </div>
                         @endforelse
                     </div>
@@ -185,42 +206,43 @@
             </section>
 
             <!-- SECTION 3: KEAMANAN -->
-            <section id="section-security" class="hidden bg-white shadow rounded-2xl overflow-hidden mb-10 border border-gray-100">
-                <div class="px-6 py-8 sm:p-10">
-                    <div class="flex items-center justify-between mb-8">
+            <section id="section-security" class="hidden bg-white shadow-xl shadow-gray-200/40 rounded-3xl overflow-hidden border border-gray-100 mb-8 transition-all hover:shadow-2xl hover:shadow-gray-200/50">
+                <div class="px-8 py-10 sm:p-12">
+                     <div class="mb-12 flex items-center gap-4">
+                        <div class="w-1.5 h-8 bg-[#EC1C25] rounded-full"></div>
                         <div>
-                            <h2 class="text-xl font-bold text-gray-900">Keamanan Akun</h2>
-                            <p class="mt-1 text-sm text-gray-500">Update password untuk menjaga keamanan akun Anda.</p>
+                            <h2 class="text-2xl font-extrabold text-gray-900">Keamanan Akun</h2>
+                            <p class="mt-1 text-gray-500">Update password Anda secara berkala demi keamanan.</p>
                         </div>
                     </div>
 
-                    <form action="{{ route('profile.password.update') }}" method="POST" class="max-w-xl">
+                    <form action="{{ route('profile.password.update') }}" method="POST" class="max-w-2xl">
                         @csrf @method('PUT')
-                        <div class="space-y-6">
+                        <div class="space-y-8">
                             <div>
-                                <label for="current_password" class="block text-sm font-medium text-gray-700">Password Saat Ini</label>
-                                <div class="mt-1">
-                                    <input type="password" name="current_password" id="current_password" class="shadow-sm focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full sm:text-sm border-gray-300 rounded-md" required>
+                                <label for="current_password" class="block text-sm font-bold text-gray-800 mb-2">Password Saat Ini</label>
+                                <div class="relative group">
+                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none group-focus-within:text-[#EC1C25] transition-colors">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                    </div>
+                                    <input type="password" name="current_password" id="current_password" class="input-modern block w-full pl-11 bg-white border-gray-200 focus:ring-red-100 focus:border-[#EC1C25] transition-all" required placeholder="••••••••">
                                 </div>
                             </div>
 
-                            <div>
-                                <label for="new_password" class="block text-sm font-medium text-gray-700">Password Baru</label>
-                                <div class="mt-1">
-                                    <input type="password" name="new_password" id="new_password" class="shadow-sm focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full sm:text-sm border-gray-300 rounded-md" required>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div>
+                                    <label for="new_password" class="block text-sm font-bold text-gray-800 mb-2">Password Baru</label>
+                                    <input type="password" name="new_password" id="new_password" class="input-modern block w-full bg-white border-gray-200 focus:ring-red-100 focus:border-[#EC1C25] transition-all" required placeholder="Min 8 karakter">
+                                </div>
+                                <div>
+                                    <label for="new_password_confirmation" class="block text-sm font-bold text-gray-800 mb-2">Konfirmasi Password</label>
+                                    <input type="password" name="new_password_confirmation" id="new_password_confirmation" class="input-modern block w-full bg-white border-gray-200 focus:ring-red-100 focus:border-[#EC1C25] transition-all" required placeholder="Ulangi password baru">
                                 </div>
                             </div>
 
-                            <div>
-                                <label for="new_password_confirmation" class="block text-sm font-medium text-gray-700">Konfirmasi Password Baru</label>
-                                <div class="mt-1">
-                                    <input type="password" name="new_password_confirmation" id="new_password_confirmation" class="shadow-sm focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full sm:text-sm border-gray-300 rounded-md" required>
-                                </div>
-                            </div>
-
-                            <div class="flex justify-end pt-4">
-                                <button type="submit" class="bg-gray-900 border border-transparent rounded-md shadow-sm py-2 px-6 inline-flex justify-center text-sm font-medium text-white hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-all">
-                                    Update Password
+                            <div class="flex justify-end pt-8 border-t border-gray-50">
+                                <button type="submit" class="bg-gray-900 text-white px-8 py-3.5 rounded-2xl font-extrabold text-sm shadow-xl hover:bg-black transition-all transform hover:-translate-y-1 active:translate-y-0">
+                                    Update Password Sekarang
                                 </button>
                             </div>
                         </div>

@@ -2,15 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ProductImage extends Model
 {
     use HasFactory;
 
     protected $primaryKey = 'product_image_id';
-    public $timestamps = false; // Tidak menggunakan created_at dan updated_at
+    public $timestamps = false;
 
     protected $fillable = [
         'product_id',
@@ -24,25 +24,23 @@ class ProductImage extends Model
         'sort_order' => 'integer',
     ];
 
-    /* =======================
-     * Relasi
-     * ======================= */
-
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id', 'product_id');
     }
 
-
-    public static function addImage(int $productId, string $url, bool $isPrimary = false, ?int $sortOrder = null): bool
-    {
+    public static function addImage(
+        int $productId,
+        string $url,
+        bool $isPrimary = false,
+        ?int $sortOrder = null
+    ): bool {
         if ($isPrimary) {
             static::where('product_id', $productId)->update(['is_primary' => 0]);
         }
 
         if ($sortOrder === null) {
-            $max = static::where('product_id', $productId)->max('sort_order');
-            $sortOrder = $max ? $max + 1 : 1;
+            $sortOrder = (static::where('product_id', $productId)->max('sort_order') ?? 0) + 1;
         }
 
         return (bool) static::create([
@@ -62,27 +60,19 @@ class ProductImage extends Model
 
         static::where('product_id', $image->product_id)->update(['is_primary' => 0]);
 
-        $image->is_primary = true;
-        $image->save();
+        $image->update(['is_primary' => true]);
     }
 
     public static function deleteImage(int $imageId): bool
     {
-        $image = static::find($imageId);
-        if (!$image) {
-            return false;
-        }
-
-        return (bool) $image->delete();
+        return (bool) static::where('product_image_id', $imageId)->delete();
     }
 
     public static function reorderImages(array $order): void
     {
-        $position = 1;
-        foreach ($order as $imageId) {
-            static::where('product_image_id', $imageId)->update([
-                'sort_order' => $position++,
-            ]);
+        foreach ($order as $index => $imageId) {
+            static::where('product_image_id', $imageId)
+                ->update(['sort_order' => $index + 1]);
         }
     }
 }

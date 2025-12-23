@@ -102,56 +102,54 @@
     @else
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             @foreach($products as $product)
-            <div class="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden flex flex-col h-full transform hover:-translate-y-1">
+            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group overflow-hidden relative">
+                
+                <a href="{{ route('product.show', $product->slug ?? $product->product_id) }}" class="absolute inset-0 z-10"></a>
+
                 <!-- Image -->
-                <div class="relative w-full pt-[100%] bg-gray-100 overflow-hidden">
-                    <img src="{{ $product->main_image ? asset('storage/'.$product->main_image) : 'https://placehold.co/400x300?text=No+Image' }}" 
-                         alt="{{ $product->title }}" 
-                         class="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                <div class="relative aspect-square bg-gray-100 overflow-hidden">
+                     <img class="object-cover w-full h-full group-hover:scale-110 transition duration-500"
+                             src="{{ $product->main_image ? asset('storage/'.$product->main_image) : 'https://placehold.co/400x400?text=No+Image' }}"
+                             alt="{{ $product->title }}">
                     
-                    <!-- Badge Kondisi -->
-                    <span class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-gray-900 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm border border-gray-100">
-                        {{ $product->condition == 'new' ? 'BARU' : 'BEKAS' }}
-                    </span>
-                    
-                    <!-- Overlay -->
-                    <a href="{{ route('product.show', $product->slug ?? $product->product_id) }}" class="absolute inset-0 z-10"></a>
+                    <!-- Badges -->
+                    <div class="absolute top-3 left-3 z-20 flex flex-col gap-2">
+                        @if($product->condition == 'new')
+                            <span class="bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm">BARU</span>
+                        @else
+                            <span class="bg-gray-800 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm">BEKAS</span>
+                        @endif
+                    </div>
                 </div>
 
                 <!-- Content -->
                 <div class="p-4 flex flex-col flex-grow">
-                    <!-- Category Pill -->
-                    <a href="{{ route('search.index', ['category' => $product->category_id]) }}" class="inline-block w-fit mb-2 z-20 relative">
-                        <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider hover:text-[#EC1C25] transition-colors">
-                            {{ $product->category->name ?? 'Umum' }}
-                        </span>
-                    </a>
-
-                    <!-- Title -->
-                    <h5 class="text-sm font-bold text-gray-900 line-clamp-2 leading-relaxed group-hover:text-[#EC1C25] transition-colors mb-2 min-h-[2.5em]">
-                        {{ $product->title }}
-                    </h5>
-
-                    <!-- Price -->
-                    <p class="text-lg font-extrabold text-[#EC1C25] mb-4">
-                        Rp{{ number_format($product->price, 0, ',', '.') }}
-                    </p>
-
-                    <!-- Footer: Seller & Location (Consistent with Home) -->
-                    <div class="mt-auto pt-3 border-t border-gray-50 space-y-2">
-                        <!-- Seller -->
-                        <div class="flex items-center gap-2 text-xs">
-                            <img src="{{ $seller->photo_url ?? 'https://ui-avatars.com/api/?name='.urlencode($seller->name).'&background=f3f4f6&color=6b7280' }}" 
-                                 class="w-5 h-5 rounded-full object-cover border border-gray-100 flex-shrink-0">
-                            <span class="truncate font-medium text-gray-700">{{ $seller->name }}</span>
+                     <!-- Cat & Rating -->
+                     <div class="flex justify-between items-start mb-2">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{{ $product->category->name ?? 'Umum' }}</span>
+                        <div class="flex items-center gap-1 text-yellow-500 text-xs font-bold">
+                            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                            <span class="text-gray-800">{{ $product->reviews_avg_rating ? number_format($product->reviews_avg_rating, 1) : '0' }}</span>
                         </div>
+                     </div>
+
+                     <h3 class="text-sm font-bold text-gray-900 line-clamp-2 mb-2 group-hover:text-[#EC1C25] transition-colors leading-relaxed">
+                         {{ $product->title }}
+                     </h3>
+
+                     <div class="mt-auto">
+                        <p class="text-lg font-extrabold text-[#EC1C25] mb-3">Rp{{ number_format($product->price, 0, ',', '.') }}</p>
                         
-                        <!-- Location Badge -->
-                        <div class="flex items-center gap-1.5 text-xs">
-                            <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                            <span class="text-gray-500 font-medium">{{ $seller->addresses->first()->city ?? ($seller->address->city ?? 'Indonesia') }}</span>
+                        <div class="flex items-center justify-between pt-3 border-t border-gray-50 text-xs text-gray-500">
+                             <div class="flex items-center gap-1.5 max-w-[70%]">
+                                <div class="w-5 h-5 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                                     <img src="{{ $seller->photo_url ?? 'https://ui-avatars.com/api/?name='.urlencode($seller->name) }}" class="w-full h-full object-cover">
+                                </div>
+                                <span class="truncate font-medium">{{ $seller->name }}</span>
+                            </div>
+                            <span class="font-medium text-gray-400">{{ $seller->addresses->first()->city ?? 'Bandung' }}</span>
                         </div>
-                    </div>
+                     </div>
                 </div>
             </div>
             @endforeach

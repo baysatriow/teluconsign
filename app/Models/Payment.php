@@ -15,7 +15,7 @@ class Payment extends Model
 
     protected $fillable = [
         'order_id',
-        'provider_id',  // Changed from gateway_id
+        'provider_id',
         'method_code',
         'amount',
         'currency',
@@ -23,31 +23,35 @@ class Payment extends Model
         'provider_txn_id',
         'provider_order_id',
         'raw_response',
-        'paid_at'
+        'paid_at',
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
-        'raw_response' => 'array',
-        'paid_at' => 'datetime',
-        'created_at' => 'datetime',
+        'amount'        => 'decimal:2',
+        'raw_response'  => 'array',
+        'paid_at'       => 'datetime',
+        'created_at'    => 'datetime',
     ];
 
     public function order()
     {
-        return $this->belongsTo(Order::class, 'order_id');
+        return $this->belongsTo(Order::class, 'order_id', 'order_id');
     }
 
     public function provider()
     {
-        return $this->belongsTo(IntegrationProvider::class, 'provider_id', 'integration_provider_id');
+        return $this->belongsTo(
+            IntegrationProvider::class,
+            'provider_id',
+            'integration_provider_id'
+        );
     }
 
     public function initiatePayment(int $order_id, string $method_code): bool
     {
-        $this->order_id = $order_id;
+        $this->order_id    = $order_id;
         $this->method_code = $method_code;
-        $this->status = 'pending';
+        $this->status      = 'pending';
 
         return $this->save();
     }
@@ -55,8 +59,9 @@ class Payment extends Model
     public function verifyPaymentStatus(string $txn_id): string
     {
         $this->provider_txn_id = $txn_id;
-        $this->status = 'settlement';
-        $this->paid_at = now();
+        $this->status          = 'settlement';
+        $this->paid_at         = now();
+
         $this->save();
 
         return $this->status;
@@ -64,24 +69,24 @@ class Payment extends Model
 
     public function refund(int $order_id, float $amount): bool
     {
-        if ($this->order_id == $order_id && $this->status === 'settlement') {
-            $this->status = 'refund';
-
-            return $this->save();
+        if ($this->order_id !== $order_id || $this->status !== 'settlement') {
+            return false;
         }
 
-        return false;
+        $this->status = 'refund';
+
+        return $this->save();
     }
 
     public function cancelPayment(int $order_id): bool
     {
-        if ($this->order_id == $order_id && $this->status === 'pending') {
-            $this->status = 'cancel';
-
-            return $this->save();
+        if ($this->order_id !== $order_id || $this->status !== 'pending') {
+            return false;
         }
 
-        return false;
+        $this->status = 'cancel';
+
+        return $this->save();
     }
 
     public function recordTransaction(array $data): void

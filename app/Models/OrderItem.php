@@ -19,13 +19,13 @@ class OrderItem extends Model
         'product_title_snapshot',
         'unit_price',
         'quantity',
-        'subtotal'
+        'subtotal',
     ];
 
     protected $casts = [
         'unit_price' => 'decimal:2',
-        'subtotal' => 'decimal:2',
-        'quantity' => 'integer',
+        'subtotal'   => 'decimal:2',
+        'quantity'   => 'integer',
     ];
 
     public function product()
@@ -55,19 +55,16 @@ class OrderItem extends Model
     public function linkProduct(int $product_id): void
     {
         $this->product_id = $product_id;
-        $product = Product::find($product_id);
 
-        if ($product) {
-            $this->product_title_snapshot = $product->title;
-            // $this->unit_price = $product->price; // existing
-            $this->calculateSubtotal();
+        $product = Product::find($product_id);
+        if (!$product) {
+            return;
         }
+
+        $this->product_title_snapshot = $product->title;
+        $this->calculateSubtotal();
     }
 
-    /**
-     * Accessor untuk kompatibilitas backward
-     * $item->product_title akan mengembalikan product_title_snapshot
-     */
     public function getProductTitleAttribute()
     {
         return $this->product_title_snapshot;

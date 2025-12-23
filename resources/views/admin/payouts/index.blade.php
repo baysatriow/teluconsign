@@ -72,6 +72,7 @@
             </div>
 
             <!-- Filter Form -->
+            <!-- Filter Form -->
              <form action="{{ route('admin.payouts') }}" method="GET" class="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
                 <div class="relative w-full md:w-64">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -80,22 +81,49 @@
                     <input type="text" name="q" value="{{ request('q') }}" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block w-full pl-10 p-2.5 transition-all" placeholder="Cari Penjual / No. Rek...">
                 </div>
 
-                <select name="status" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block w-full md:w-40 p-2.5 transition-all">
-                    <option value="">Semua Status</option>
-                    <option value="requested" {{ request('status') == 'requested' ? 'selected' : '' }}>Pending</option>
-                    <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Paid</option>
-                    <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Ditolak</option>
-                </select>
+                <!-- Status AlpineJS Dropdown -->
+                <div x-data="{
+                    open: false,
+                    selectedId: '{{ request('status') }}',
+                    items: [
+                        {id: 'requested', name: 'Pending'},
+                        {id: 'approved', name: 'Paid'},
+                        {id: 'rejected', name: 'Ditolak'}
+                    ],
+                    get selectedName() {
+                        const item = this.items.find(i => i.id == this.selectedId);
+                        return item ? item.name : 'Semua Status';
+                    }
+                }" class="relative w-full md:w-40" @click.outside="open = false">
+                    <input type="hidden" name="status" :value="selectedId">
+                    <button @click="open = !open" type="button" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 p-2.5 text-left flex justify-between items-center transition-all">
+                        <span x-text="selectedName" class="truncate block pr-2"></span>
+                        <svg class="w-4 h-4 text-gray-500 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div x-show="open" class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden flex flex-col" x-cloak>
+                        <div @click="selectedId = ''; open = false" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer border-b border-gray-100">Semua Status</div>
+                        <template x-for="item in items" :key="item.id">
+                            <div @click="selectedId = item.id; open = false" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer flex justify-between items-center">
+                                <span x-text="item.name"></span>
+                                <svg x-show="selectedId == item.id" class="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                        </template>
+                    </div>
+                </div>
 
-                <button type="submit" class="text-white bg-gray-900 hover:bg-black font-bold rounded-xl text-sm px-5 py-2.5 shadow-lg transition-transform hover:-translate-y-0.5">
-                    Filter
-                </button>
-                
-                @if(request()->has('q') || request()->has('status'))
-                    <a href="{{ route('admin.payouts') }}" class="text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 font-bold rounded-xl text-sm px-4 py-2.5 transition-colors">
-                        Reset
-                    </a>
-                @endif
+                <div class="flex items-center gap-2">
+                    <button type="submit" class="text-white bg-gray-900 hover:bg-black font-bold rounded-xl text-sm px-4 py-2.5 shadow-lg transition-transform hover:-translate-y-0.5 flex items-center gap-2">
+                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                         Filter
+                    </button>
+                    
+                    @if(request()->has('q') || request()->has('status'))
+                        <a href="{{ route('admin.payouts') }}" class="text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 font-bold rounded-xl text-sm px-4 py-2.5 transition-colors flex items-center gap-2" title="Reset Filter">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Reset
+                        </a>
+                    @endif
+                </div>
             </form>
         </div>
     </div>
@@ -143,11 +171,15 @@
 
                     <!-- Info Rekening -->
                     <td class="px-6 py-4">
-                        <div class="flex flex-col bg-gray-50 p-2 rounded-lg border border-gray-100 max-w-xs">
-                            <span class="text-xs font-bold text-gray-600 uppercase">{{ $payout->bankAccount->bank_name ?? '-' }}</span>
-                            <span class="text-sm font-mono text-gray-900 tracking-wide font-bold">{{ $payout->bankAccount->account_no ?? '-' }}</span>
-                            <span class="text-[10px] text-gray-500 uppercase mt-0.5 truncate">a.n {{ $payout->bankAccount->account_name ?? '-' }}</span>
-                        </div>
+                        <button onclick="showBankDetails('{{ $payout->bankAccount->bank_name ?? '-' }}', '{{ $payout->bankAccount->account_no ?? '-' }}', '{{ $payout->bankAccount->account_name ?? '-' }}')" 
+                                class="flex flex-col items-start text-left bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 p-2.5 rounded-xl transition-all w-full max-w-[180px] group">
+                            <span class="text-[10px] font-bold text-gray-500 uppercase group-hover:text-indigo-600 transition-colors">Via Bank</span>
+                            <span class="text-sm font-bold text-gray-900 group-hover:text-indigo-700 font-mono">{{ $payout->bankAccount->bank_name ?? '-' }}</span>
+                            <div class="flex items-center gap-1 mt-1 text-xs text-blue-600 font-medium">
+                                <span>Lihat Detail</span>
+                                <svg class="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            </div>
+                        </button>
                     </td>
 
                     <!-- Status -->
@@ -225,6 +257,34 @@
 
 <!-- Scripts -->
 <script>
+    function showBankDetails(bankName, accountNo, accountName) {
+        Swal.fire({
+            title: '<span class="text-2xl font-bold text-indigo-900">Detail Rekening</span>',
+            html: `
+                <div class="mt-4 p-6 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div class="mb-4">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Nama Bank</p>
+                        <p class="text-3xl font-black text-indigo-600 tracking-tight">${bankName}</p>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Nomor Rekening</p>
+                        <p class="text-2xl font-mono font-bold text-gray-800 tracking-wider select-all bg-white p-2 border border-gray-200 rounded-lg inline-block">${accountNo}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Atas Nama</p>
+                        <p class="text-xl font-bold text-gray-900">${accountName}</p>
+                    </div>
+                </div>
+            `,
+            showConfirmButton: false,
+            showCloseButton: true,
+            customClass: {
+                popup: 'rounded-3xl p-2',
+                closeButton: 'focus:outline-none'
+            }
+        });
+    }
+
     function processPayout(id, action, amount) {
         let titleText = action === 'approve' ? 'Setujui Pencairan Dana?' : 'Tolak Pencairan Dana?';
         let confirmText = action === 'approve' ? 'Ya, Transfer Sekarang' : 'Ya, Tolak Request';

@@ -7,27 +7,46 @@ use App\Models\CartItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
 {
     /**
-     * Tampilkan halaman keranjang.
-     * Mengelompokkan item berdasarkan Toko (Seller).
+     * ============================================================
+     *  CART OVERVIEW
+     * ============================================================
+     *  Menampilkan halaman keranjang belanja
+     *  Item dikelompokkan berdasarkan Toko (Seller)
      */
     public function index()
     {
         $user = Auth::user();
 
-        // Ambil keranjang user, atau buat baru jika belum ada
-        $cart = Cart::firstOrCreate(['buyer_id' => $user->user_id]);
+        /**
+         * --------------------------------------------------------
+         *  Ambil atau Buat Keranjang User
+         * --------------------------------------------------------
+         */
+        $cart = Cart::firstOrCreate([
+            'buyer_id' => $user->user_id,
+        ]);
 
-        // Ambil item beserta produk dan info seller
-        $cartItems = CartItem::with(['product.seller', 'product.images'])
+        /**
+         * --------------------------------------------------------
+         *  Ambil Item Keranjang + Relasi
+         * --------------------------------------------------------
+         */
+        $cartItems = CartItem::with([
+                'product.seller',
+                'product.images',
+            ])
             ->where('cart_id', $cart->cart_id)
             ->get();
 
-        // Kelompokkan item berdasarkan Seller ID untuk tampilan per Toko
+        /**
+         * --------------------------------------------------------
+         *  Group Item berdasarkan Seller
+         * --------------------------------------------------------
+         */
         $groupedItems = $cartItems->groupBy(function ($item) {
             return $item->product->seller_id;
         });
@@ -36,111 +55,177 @@ class CartController extends Controller
     }
 
     /**
-     * Tambah item ke keranjang.
-     * Validasi: Max 20 Toko berbeda.
+     * ============================================================
+     *  ADD TO CART
+     * ============================================================
+     *  Rules:
+     *  - Validasi stok
+     *  - Tidak boleh beli produk sendiri
+     *  - Maksimal 20 toko berbeda
      */
     public function addToCart(Request $request)
     {
         $request->validate([
             'product_id' => 'required|exists:products,product_id',
-            'quantity' => 'required|integer|min:1'
+            'quantity'   => 'required|integer|min:1',
         ]);
 
-        $user = Auth::user();
+        $user    = Auth::user();
         $product = Product::findOrFail($request->product_id);
 
-        // 1. Cek Stok (Termasuk yang sudah ada di keranjang)
-        $cart = Cart::firstOrCreate(['buyer_id' => $user->user_id]);
+        /**
+         * --------------------------------------------------------
+         *  Ambil Keranjang & Item yang Sudah Ada
+         * --------------------------------------------------------
+         */
+        $cart = Cart::firstOrCreate([
+            'buyer_id' => $user->user_id,
+        ]);
+
         $existingItem = CartItem::where('cart_id', $cart->cart_id)
             ->where('product_id', $product->product_id)
             ->first();
-            
+
+        /**
+         * --------------------------------------------------------
+         *  Validasi Stok (Termasuk Item di Keranjang)
+         * --------------------------------------------------------
+         */
         $existingQty = $existingItem ? $existingItem->quantity : 0;
-        $totalQty = $existingQty + $request->quantity;
+        $totalQty    = $existingQty + $request->quantity;
 
         if ($product->stock < $totalQty) {
             $remaining = max(0, $product->stock - $existingQty);
-            $msg = ($remaining > 0)
-                ? "Stok tidak mencukupi. Anda sudah memiliki $existingQty item di keranjang. Sisa yang bisa ditambah: $remaining."
+
+            $msg = $remaining > 0
+                ? "Stok tidak mencukupi. Anda sudah memiliki {$existingQty} item di keranjang. Sisa yang bisa ditambah: {$remaining}."
                 : "Stok produk habis atau seluruh stok sudah ada di keranjang Anda.";
 
             if ($request->ajax()) {
-                return response()->json(['status' => 'error', 'message' => $msg], 400);
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => $msg,
+                ], 400);
             }
+
             return back()->with('error', $msg);
         }
 
-        // 2. Cek apakah user membeli produk sendiri
+        /**
+         * --------------------------------------------------------
+         *  Cegah User Membeli Produk Sendiri
+         * --------------------------------------------------------
+         */
         if ($product->seller_id == $user->user_id) {
+            $msg = 'Anda tidak dapat membeli produk Anda sendiri.';
+
             if ($request->ajax()) {
-                return response()->json(['status' => 'error', 'message' => 'Tidak bisa membeli produk sendiri.'], 400);
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => $msg,
+                ], 400);
             }
-            return back()->with('error', 'Anda tidak dapat membeli produk Anda sendiri.');
+
+            return back()->with('error', $msg);
         }
 
-
-
-        // 3. LOGIKA MAX 20 TOKO
-        // Ambil daftar seller_id yang sudah ada di keranjang
+        /**
+         * --------------------------------------------------------
+         *  RULE: Maksimal 20 Toko Berbeda
+         * --------------------------------------------------------
+         */
         $existingSellerIds = CartItem::where('cart_id', $cart->cart_id)
             ->join('products', 'cart_items.product_id', '=', 'products.product_id')
             ->pluck('products.seller_id')
             ->unique();
 
-        // Jika toko produk ini belum ada di keranjang DAN jumlah toko sudah >= 20
-        if (!$existingSellerIds->contains($product->seller_id) && $existingSellerIds->count() >= 20) {
-            $msg = 'Keranjang penuh! Maksimal belanja dari 20 toko berbeda. Hapus salah satu toko di keranjang terlebih dahulu.';
+        if (
+            !$existingSellerIds->contains($product->seller_id)
+            && $existingSellerIds->count() >= 20
+        ) {
+            $msg = 'Keranjang penuh! Maksimal belanja dari 20 toko berbeda. Hapus salah satu toko terlebih dahulu.';
 
             if ($request->ajax()) {
-                return response()->json(['status' => 'error', 'message' => $msg], 422);
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => $msg,
+                ], 422);
             }
+
             return back()->with('error', $msg);
         }
 
-        // 4. Tambahkan ke Cart
+        /**
+         * --------------------------------------------------------
+         *  Tambahkan Item ke Keranjang
+         * --------------------------------------------------------
+         */
         $cart->addItem($product->product_id, $request->quantity);
 
         if ($request->ajax()) {
             return response()->json([
-                'status' => 'success',
-                'message' => 'Produk berhasil masuk keranjang!',
-                'cart_count' => $cart->items()->count() // Update badge cart jika perlu
+                'status'     => 'success',
+                'message'    => 'Produk berhasil masuk keranjang!',
+                'cart_count' => $cart->items()->count(),
             ]);
         }
 
-        return redirect()->route('cart.index')->with('success', 'Produk berhasil masuk keranjang!');
+        return redirect()
+            ->route('cart.index')
+            ->with('success', 'Produk berhasil masuk keranjang!');
     }
 
     /**
-     * Update quantity item.
+     * ============================================================
+     *  UPDATE ITEM QUANTITY
+     * ============================================================
      */
     public function updateItem(Request $request, $itemId)
     {
         $request->validate([
-            'quantity' => 'required|integer|min:1'
+            'quantity' => 'required|integer|min:1',
         ]);
 
         $cartItem = CartItem::findOrFail($itemId);
-        $product = $cartItem->product; // Asumsi relasi di model CartItem ada: public function product() { return $this->belongsTo(Product::class...); }
+        $product  = $cartItem->product;
 
-        // Validasi Stok
+        /**
+         * --------------------------------------------------------
+         *  Validasi Stok
+         * --------------------------------------------------------
+         */
         if ($product->stock < $request->quantity) {
-            return response()->json(['status' => 'error', 'message' => 'Stok maksimal: ' . $product->stock], 400);
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Stok maksimal: ' . $product->stock,
+            ], 400);
         }
 
+        /**
+         * --------------------------------------------------------
+         *  Update Quantity & Recalculate Total
+         * --------------------------------------------------------
+         */
         $cartItem->updateQuantity($request->quantity);
+
         $cart = $cartItem->cart;
-        $cart->calculateTotal(); // Pastikan total keranjang di DB juga update
+        $cart->calculateTotal();
 
         return response()->json([
-            'status' => 'success',
-            'subtotal' => number_format($cartItem->subtotal, 0, ',', '.'), // Format view (Rp 10.000)
-            // Tidak perlu kirim total cart global disini karena JS view menghitung ulang berdasarkan checkbox
+            'status'   => 'success',
+            'subtotal' => number_format(
+                $cartItem->subtotal,
+                0,
+                ',',
+                '.'
+            ),
         ]);
     }
 
     /**
-     * Hapus satu item.
+     * ============================================================
+     *  DELETE SINGLE ITEM
+     * ============================================================
      */
     public function deleteItem($itemId)
     {
@@ -154,7 +239,9 @@ class CartController extends Controller
     }
 
     /**
-     * Hapus semua item dari satu toko.
+     * ============================================================
+     *  DELETE ALL ITEMS FROM ONE STORE
+     * ============================================================
      */
     public function deleteStoreItems($sellerId)
     {
@@ -162,9 +249,8 @@ class CartController extends Controller
         $cart = Cart::where('buyer_id', $user->user_id)->first();
 
         if ($cart) {
-            // Hapus item yang produknya milik seller_id tersebut
             CartItem::where('cart_id', $cart->cart_id)
-                ->whereHas('product', function($q) use ($sellerId) {
+                ->whereHas('product', function ($q) use ($sellerId) {
                     $q->where('seller_id', $sellerId);
                 })
                 ->delete();
@@ -172,6 +258,9 @@ class CartController extends Controller
             $cart->calculateTotal();
         }
 
-        return back()->with('success', 'Semua produk dari toko tersebut telah dihapus.');
+        return back()->with(
+            'success',
+            'Semua produk dari toko tersebut telah dihapus.'
+        );
     }
 }

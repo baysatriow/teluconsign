@@ -9,14 +9,31 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AdminMiddleware
 {
+    /**
+     * ============================================================
+     *  ADMIN ACCESS GUARD
+     * ============================================================
+     *  Middleware untuk membatasi akses halaman khusus Administrator
+     */
+
     public function handle(Request $request, Closure $next): Response
     {
+        /**
+         * --------------------------------------------------------
+         *  Validasi Autentikasi & Role
+         * --------------------------------------------------------
+         */
         if (Auth::check() && Auth::user()->role === 'admin') {
             return $next($request);
         }
 
-        // Jika bukan admin, redirect ke home dengan pesan error
-        return redirect('/')->with('error', 'Akses ditolak. Halaman ini khusus Administrator.');
+        /**
+         * --------------------------------------------------------
+         *  Akses Ditolak
+         * --------------------------------------------------------
+         *  Redirect ke halaman utama dengan pesan error
+         */
+        return redirect('/')
+            ->with('error', 'Akses ditolak. Halaman ini khusus Administrator.');
     }
-
 }

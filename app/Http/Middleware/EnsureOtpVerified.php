@@ -10,20 +10,37 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureOtpVerified
 {
     /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * ============================================================
+     *  OTP VERIFICATION GUARD
+     * ============================================================
+     *  Middleware untuk memastikan user yang sudah login
+     *  benar-benar telah melewati proses verifikasi OTP
      */
+
     public function handle(Request $request, Closure $next): Response
     {
+        /**
+         * --------------------------------------------------------
+         *  Validasi Status Verifikasi User
+         * --------------------------------------------------------
+         */
         if (Auth::check()) {
             $user = Auth::user();
 
-            // Jika user login tapi entah kenapa belum verified (misal bypass atau db manual)
-            // Logoutkan dia dan suruh login ulang agar kena flow OTP
+            /**
+             * Edge Case:
+             * User berhasil login namun status verifikasi belum aktif
+             * (misalnya akibat bypass flow atau manipulasi data)
+             */
             if (!$user->is_verified) {
                 Auth::logout();
-                return redirect()->route('login')->with('warning', 'Akun Anda belum aktif. Silakan login kembali untuk verifikasi.');
+
+                return redirect()
+                    ->route('login')
+                    ->with(
+                        'warning',
+                        'Akun Anda belum aktif. Silakan login kembali untuk verifikasi.'
+                    );
             }
         }
 

@@ -10,51 +10,55 @@
     <div class="relative z-10 w-full max-w-md p-8 bg-white border border-gray-100 rounded-3xl shadow-2xl animate-fade-in-up mx-4">
 
         <div class="text-center mb-8">
-            <h1 class="text-2xl font-bold text-[#EC1C25]">Atur Ulang Kata Sandi</h1>
-            <p class="text-sm text-gray-500 mt-1">Buat kata sandi baru untuk akun {{ $email }}</p>
+            <div class="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-[#EC1C25] shadow-sm transform -rotate-3">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Atur Ulang Kata Sandi</h1>
+            <p class="text-sm text-gray-500 mt-2 leading-relaxed">Buat kata sandi baru untuk akun <span class="font-bold text-gray-700">{{ $email }}</span></p>
         </div>
 
         @if(session('error'))
-            <div class="p-3 mb-4 text-xs font-medium text-red-800 bg-red-100 rounded-lg border border-red-200">
-                {{ session('error') }}
+            <div class="flex items-center gap-3 p-4 mb-6 text-sm text-red-800 bg-red-50 rounded-xl border border-red-100">
+                <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                <span>{{ session('error') }}</span>
             </div>
         @endif
 
-        <form action="{{ route('password.update') }}" method="POST" class="space-y-5">
+        <form action="{{ route('password.update') }}" method="POST" class="space-y-6">
             @csrf
             <input type="hidden" name="token" value="{{ $token }}">
             <input type="hidden" name="email" value="{{ $email }}">
 
             <!-- Password -->
             <div>
-                <label for="password" class="block mb-1.5 text-xs font-bold text-gray-700 uppercase tracking-wide">Kata Sandi Baru</label>
-                <div class="relative">
-                    <input type="password" name="password" id="password" placeholder="••••••••" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full ps-10 p-3 pr-10 transition-shadow focus:shadow-md" required>
-                    <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none text-gray-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                <label for="password" class="block mb-2 text-xs font-bold text-gray-700 uppercase tracking-wide">Kata Sandi Baru</label>
+                <div class="relative group">
+                    <input type="password" name="password" id="password" placeholder="••••••••" class="block w-full ps-11 p-4 text-sm text-gray-900 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#EC1C25] focus:border-transparent focus:bg-white transition-all shadow-sm" required autofocus>
+                    <div class="absolute inset-y-0 start-0 flex items-center ps-4 pointer-events-none text-gray-400 group-focus-within:text-[#EC1C25] transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                     </div>
-                    <button type="button" onclick="togglePassword('password')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <button type="button" onclick="togglePassword('password')" class="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
                         <svg id="icon-password" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                     </button>
                 </div>
-                @error('password') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                @error('password') <p class="text-[#EC1C25] text-xs mt-2 flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> {{ $message }}</p> @enderror
             </div>
 
             <!-- Confirm Password -->
             <div>
-                <label for="password_confirmation" class="block mb-1.5 text-xs font-bold text-gray-700 uppercase tracking-wide">Konfirmasi Kata Sandi</label>
-                <div class="relative">
-                    <input type="password" name="password_confirmation" id="password_confirmation" placeholder="••••••••" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full ps-10 p-3 pr-10 transition-shadow focus:shadow-md" required>
-                    <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none text-gray-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <label for="password_confirmation" class="block mb-2 text-xs font-bold text-gray-700 uppercase tracking-wide">Konfirmasi Kata Sandi</label>
+                <div class="relative group">
+                    <input type="password" name="password_confirmation" id="password_confirmation" placeholder="••••••••" class="block w-full ps-11 p-4 text-sm text-gray-900 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#EC1C25] focus:border-transparent focus:bg-white transition-all shadow-sm" required>
+                    <div class="absolute inset-y-0 start-0 flex items-center ps-4 pointer-events-none text-gray-400 group-focus-within:text-[#EC1C25] transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
-                    <button type="button" onclick="togglePassword('password_confirmation')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <button type="button" onclick="togglePassword('password_confirmation')" class="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
                         <svg id="icon-password_confirmation" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                     </button>
                 </div>
             </div>
 
-            <button type="submit" class="w-full text-white bg-[#EC1C25] hover:bg-[#c0151d] focus:ring-4 focus:outline-none focus:ring-red-300 font-bold rounded-xl text-sm px-5 py-3.5 shadow-lg transition-all transform hover:-translate-y-0.5 mt-2">
+            <button type="submit" class="w-full text-white bg-[#EC1C25] hover:bg-[#c0151d] focus:ring-4 focus:outline-none focus:ring-red-300 font-bold rounded-xl text-sm px-5 py-4 shadow-lg hover:shadow-red-500/30 transition-all transform hover:-translate-y-1">
                 Simpan Password Baru
             </button>
         </form>

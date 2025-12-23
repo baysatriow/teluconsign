@@ -139,7 +139,7 @@
                 <div class="mt-auto bg-white border border-gray-200 p-4 rounded-xl shadow-lg sticky bottom-4 z-30">
                      @if(Auth::id() == $product->seller_id)
                         <div class="flex gap-2">
-                            <a href="#" class="flex-1 text-center bg-gray-100 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-200 text-sm">Edit Produk</a>
+                            <a href="{{ route('shop.products.edit', $product->slug) }}" class="flex-1 text-center bg-gray-100 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-200 text-sm">Edit Produk</a>
                         </div>
                      @else
                         @if($product->stock > 0)

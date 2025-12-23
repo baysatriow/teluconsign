@@ -158,9 +158,14 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
 
         // Manajemen User
         Route::get('/users', [AdminController::class, 'users'])->name('users');
-        Route::get('/users/{id}', [AdminController::class, 'usersShow'])->name('users.show'); // Show Route
+        Route::get('/users/create', [AdminController::class, 'usersCreate'])->name('users.create'); // New Create Page must be before {id}
+        Route::get('/users/{id}/edit', [AdminController::class, 'usersEdit'])->name('users.edit'); // New Edit Page
+        Route::get('/users/{id}', [AdminController::class, 'usersShow'])->name('users.show');
+        Route::delete('/users/{id}', [AdminController::class, 'destroyUser'])->name('users.destroy'); // Delete User
         Route::post('/users', [AdminController::class, 'storeAdmin'])->name('users.store_admin');
+        Route::put('/users/{id}', [AdminController::class, 'updateAdmin'])->name('users.update_admin'); // Update Admin Data
         Route::patch('/users/{id}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle_status');
+        Route::post('/users/{id}/reset-link', [AdminController::class, 'sendResetLink'])->name('users.send_reset_link'); // Reset Link Action
 
         // Manajemen Payouts
         Route::get('/payouts', [AdminController::class, 'payouts'])->name('payouts');

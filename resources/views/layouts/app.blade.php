@@ -10,46 +10,56 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <!-- Styles -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
-        .bg-telu-red { background-color: #EC1C25; }
-        .text-telu-red { color: #EC1C25; }
-        .border-telu-red { border-color: #EC1C25; }
-        .hover-text-telu:hover { color: #EC1C25; }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8F9FA; color: #1e293b; }
+        .font-inter { font-family: 'Inter', sans-serif; }
+        
+        /* Modern Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Animation Utilities */
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translate3d(0, -10px, 0); }
-            to { opacity: 1; transform: translate3d(0, 0, 0); }
-        }
-        .animate-fade-in-down { animation: fadeInDown 0.3s ease-out; }
+        /* Smooth Transitions */
+        a, button, input { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translate3d(0, 10px, 0); }
-            to { opacity: 1; transform: translate3d(0, 0, 0); }
-        }
-        .animate-fade-in-up { animation: fadeInUp 0.4s ease-out; }
+        /* Glassmorphism Utilities */
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, 0.3); }
+        
+        /* Custom Utilities */
+        .text-balanced { text-wrap: balance; }
+        .shadow-soft { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02); }
+        .shadow-card { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -2px rgba(0, 0, 0, 0.01); }
+        .input-modern { @apply bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-3 transition-shadow duration-200 focus:shadow-lg focus:shadow-red-50; }
     </style>
 
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        inter: ['Inter', 'sans-serif'],
+                    },
                     colors: {
-                        primary: { 50:'#fff1f2', 100:'#ffe4e6', 500:'#f43f5e', 600:'#e11d48', 700:'#EC1C25', 800:'#9f1239' }
+                        primary: { 50:'#fff1f2', 100:'#ffe4e6', 500:'#f43f5e', 600:'#e11d48', 700:'#EC1C25', 800:'#9f1239' },
+                        secondary: { 50: '#f8fafc', 100: '#f1f5f9', 900: '#0f172a' }
+                    },
+                    borderRadius: {
+                        'xl': '0.75rem',
+                        '2xl': '1rem',
+                        '3xl': '1.5rem',
+                    },
+                    boxShadow: {
+                        'glow': '0 0 15px rgba(236, 28, 37, 0.15)',
                     }
                 }
             }
@@ -545,6 +555,54 @@
             }
         });
 
+    </script>
+    <!-- Global SweetAlert2 Configuration -->
+    <script>
+        // Global Mixin for consistent styling using Tailwind classes via customClass
+        const SwalCustom = Swal.mixin({
+            confirmButtonColor: '#EC1C25',
+            cancelButtonColor: '#94a3b8',
+            customClass: {
+                container: 'font-sans',
+                popup: 'rounded-2xl shadow-xl border border-gray-100',
+                title: 'text-xl font-bold text-gray-900',
+                htmlContainer: 'text-gray-600',
+                confirmButton: 'px-5 py-2.5 rounded-xl text-sm font-bold bg-[#EC1C25] text-white hover:bg-[#c4161e] focus:ring-4 focus:ring-red-100 transition-all',
+                cancelButton: 'px-5 py-2.5 rounded-xl text-sm font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 focus:ring-4 focus:ring-gray-100 transition-all ml-2'
+            },
+            buttonsStyling: false,
+            reverseButtons: true
+        });
+
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            customClass: {
+                popup: '!rounded-xl !bg-white !shadow-lg !border !border-gray-100'
+            },
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
+
+        // Flash Message Handler
+        @if(session('success'))
+            Toast.fire({
+                icon: 'success',
+                title: "{{ session('success') }}"
+            });
+        @endif
+
+        @if(session('error'))
+            Toast.fire({
+                icon: 'error',
+                title: "{{ session('error') }}"
+            });
+        @endif
     </script>
 </body>
 </html>

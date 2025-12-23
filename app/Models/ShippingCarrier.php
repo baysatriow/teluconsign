@@ -10,8 +10,8 @@ class ShippingCarrier extends Model
     use HasFactory;
 
     protected $primaryKey = 'shipping_carrier_id';
-    public $incrementing = true;
     protected $keyType = 'int';
+    public $incrementing = true;
 
     protected $fillable = [
         'code',
@@ -19,15 +19,13 @@ class ShippingCarrier extends Model
         'provider_type',
         'mode',
         'is_enabled',
-        'config_json'
+        'config_json',
     ];
 
     protected $casts = [
         'config_json' => 'array',
     ];
 
-    // Services relationship removed as table is dropped
-    
     public function registerCarrier(ShippingCarrier $data): bool
     {
         return $data->save();
@@ -35,13 +33,15 @@ class ShippingCarrier extends Model
 
     public function enableCarrier(): void
     {
-        $this->is_enabled = 1;
-        $this->save();
+        $this->update([
+            'is_enabled' => 1,
+        ]);
     }
 
     public function disableCarrier(): void
     {
-        $this->is_enabled = 0;
-        $this->save();
+        $this->update([
+            'is_enabled' => 0,
+        ]);
     }
 }

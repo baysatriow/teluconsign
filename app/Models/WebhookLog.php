@@ -21,7 +21,7 @@ class WebhookLog extends Model
     ];
 
     protected $casts = [
-        'payload' => 'array',
+        'payload'     => 'array',
         'received_at' => 'datetime',
     ];
 
@@ -29,9 +29,9 @@ class WebhookLog extends Model
     {
         self::create([
             'provider_code' => $provider_code,
-            'event_type' => $event_type,
-            'payload' => $payload,
-            'received_at' => now(),
+            'event_type'    => $event_type,
+            'payload'       => $payload,
+            'received_at'   => now(),
         ]);
     }
 
@@ -42,12 +42,13 @@ class WebhookLog extends Model
 
     public function parsePayload($payload): array
     {
-        return is_array($payload) ? $payload : (json_decode($payload, true) ?? []);
+        return is_array($payload)
+            ? $payload
+            : (json_decode($payload, true) ?? []);
     }
 
     public function replayEvent(int $log_id): bool
     {
-        $log = self::find($log_id);
-        return $log !== null;
+        return self::find($log_id) !== null;
     }
 }

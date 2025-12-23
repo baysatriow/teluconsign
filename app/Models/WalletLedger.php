@@ -34,13 +34,13 @@ class WalletLedger extends Model
         $balance = $this->getBalance($user_id) + $amount;
 
         self::create([
-            'user_id' => $user_id,
-            'direction' => 'credit',
-            'source_type' => 'order_settlement',
-            'source_id' => $source_id,
-            'amount' => $amount,
-            'balance_after' => $balance,
-            'posted_at' => now(),
+            'user_id'        => $user_id,
+            'direction'      => 'credit',
+            'source_type'    => 'order_settlement',
+            'source_id'      => $source_id,
+            'amount'         => $amount,
+            'balance_after'  => $balance,
+            'posted_at'      => now(),
         ]);
     }
 
@@ -49,23 +49,23 @@ class WalletLedger extends Model
         $balance = $this->getBalance($user_id) - $amount;
 
         self::create([
-            'user_id' => $user_id,
-            'direction' => 'debit',
-            'source_type' => 'payout',
-            'source_id' => $source_id,
-            'amount' => $amount,
-            'balance_after' => $balance,
-            'posted_at' => now(),
+            'user_id'        => $user_id,
+            'direction'      => 'debit',
+            'source_type'    => 'payout',
+            'source_id'      => $source_id,
+            'amount'         => $amount,
+            'balance_after'  => $balance,
+            'posted_at'      => now(),
         ]);
     }
 
     public function getBalance(int $user_id): float
     {
-        $lastBalance = $this->where('user_id', $user_id)
-            ->orderBy('wallet_ledger_id', 'desc')
-            ->value('balance_after');
-
-        return (float) ($lastBalance ?? 0);
+        return (float) (
+            $this->where('user_id', $user_id)
+                ->orderBy('wallet_ledger_id', 'desc')
+                ->value('balance_after') ?? 0
+        );
     }
 
     public function getTransactionHistory(int $user_id)

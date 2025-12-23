@@ -93,6 +93,9 @@ class AdminController extends Controller
                   ->orWhere('description', 'like', "%{$search}%")
                   ->orWhereHas('seller', function($sq) use ($search) {
                       $sq->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('category', function($cq) use ($search) {
+                      $cq->where('name', 'like', "%{$search}%");
                   });
             });
         }
@@ -115,7 +118,7 @@ class AdminController extends Controller
             'total' => Product::count(),
             'active' => Product::where('status', ProductStatus::Active)->count(),
             'suspended' => Product::where('status', ProductStatus::Suspended)->count(),
-            'reported' => 0 // Nanti bisa diisi jika ada tabel report
+            'sold' => Product::where('status', ProductStatus::Sold)->count(),
         ];
 
         $categories = Category::all();
@@ -163,8 +166,15 @@ class AdminController extends Controller
      */
     public function users(Request $request)
     {
-        // 1. Ambil Semua Admin (tidak perlu pagination karena jumlahnya sedikit)
-        $admins = User::where('role', 'admin')->latest()->get();
+        // 1. Ambil Semua Admin
+        // Rule: Admin Utama (ID 1) hanya terlihat oleh dirinya sendiri.
+        $adminQuery = User::where('role', 'admin')->latest();
+        
+        if (Auth::id() != 1) {
+            $adminQuery->where('user_id', '!=', 1);
+        }
+
+        $admins = $adminQuery->get();
 
         // 2. Query Users (Biasa/Seller) dengan Filter
         $query = User::where('role', '!=', 'admin');
@@ -202,15 +212,47 @@ class AdminController extends Controller
         return view('admin.users.index', compact('admins', 'users', 'stats'));
     }
 
-    public function usersShow($id)
+    public function usersShow(Request $request, $id)
     {
-        $user = User::with(['profile', 'addresses', 'products', 'bankAccounts'])->findOrFail($id);
+        $user = User::with(['profile', 'addresses', 'bankAccounts'])->findOrFail($id);
         
-        // Data pendukung
-        $products = $user->products; 
-        $orders = \App\Models\Order::where('buyer_id', $user->user_id)->orWhere('seller_id', $user->user_id)->latest()->get();
+        // 1. Query Products dengan Filter & Pagination
+        $productQuery = \App\Models\Product::where('seller_id', $user->user_id)->with('category');
 
-        return view('admin.users.show', compact('user', 'products', 'orders'));
+        // Search
+        if ($request->has('q') && $request->q != '') {
+            $productQuery->where('title', 'like', '%' . $request->q . '%');
+        }
+
+        // Filter Category
+        if ($request->has('category') && $request->category != '') {
+            $productQuery->where('category_id', $request->category);
+        }
+
+        // Filter Status
+        if ($request->has('status') && $request->status != '') {
+             $productQuery->where('status', $request->status);
+        }
+
+        $products = $productQuery->latest()->paginate(8)->withQueryString(); // 8 items per page for cleaner grid/list
+        $categories = \App\Models\Category::orderBy('name')->get();
+
+        // 2. Stats Transaksi
+        $buyCount = \App\Models\Order::where('buyer_id', $user->user_id)->count();
+        $sellCount = \App\Models\Order::where('seller_id', $user->user_id)->count();
+
+        return view('admin.users.show', compact('user', 'products', 'categories', 'buyCount', 'sellCount'));
+    }
+
+    /**
+     * Halaman Tambah Administrator (Hanya Super Admin)
+     */
+    public function usersCreate()
+    {
+        if (Auth::id() != 1) {
+            abort(403, 'Akses Ditolak. Hanya Super Admin yang dapat menambahkan admin baru.');
+        }
+        return view('admin.users.create');
     }
 
     /**
@@ -218,10 +260,15 @@ class AdminController extends Controller
      */
     public function storeAdmin(Request $request)
     {
+        if (Auth::id() != 1) {
+            abort(403, 'Akses Ditolak.');
+        }
+
         $request->validate([
             'name' => 'required|string|max:120',
             'username' => 'required|string|max:50|unique:users',
             'email' => 'required|email|max:191|unique:users',
+            'phone' => 'required|numeric|digits_between:8,15|unique:profiles,phone', 
             'password' => 'required|min:8|confirmed',
         ]);
 
@@ -237,16 +284,193 @@ class AdminController extends Controller
                 'status' => 'active',
             ]);
 
-            // Buat Profile kosong agar tidak error relasi
-            Profile::create(['user_id' => $admin->user_id]);
+            // Format Phone: Ensure starts with 62 if user typed 8...
+            $phone = $request->phone;
+            if (substr($phone, 0, 1) == '0') {
+               $phone = '62' . substr($phone, 1);
+            } elseif (substr($phone, 0, 2) != '62') {
+               $phone = '62' . $phone;
+            }
+
+            // Buat Profile dengan No HP
+            Profile::create([
+                'user_id' => $admin->user_id,
+                'phone' => $phone
+            ]);
 
             DB::commit();
 
-            return back()->with('success', 'Administrator baru berhasil ditambahkan.');
+            return redirect()->route('admin.users')->with('success', 'Administrator baru berhasil ditambahkan.');
 
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Gagal menambahkan admin: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Form Edit Administrator/User (Khusus Admin)
+     */
+    public function usersEdit($id)
+    {
+        // 1. Clevel Access Check
+        // Hanya Super Admin (ID 1) yang bisa edit siapa saja.
+        // Admin biasa hanya bisa edit diri sendiri.
+        if (Auth::id() != 1 && Auth::id() != $id) {
+            abort(403, 'Akses Ditolak. Anda hanya dapat mengedit akun sendiri.');
+        }
+
+        $user = User::findOrFail($id);
+        return view('admin.users.edit', compact('user'));
+    }
+
+    /**
+     * Update Data Admin/User
+     */
+    public function updateAdmin(Request $request, $id)
+    {
+        if (Auth::id() != 1 && Auth::id() != $id) {
+            abort(403, 'Akses Ditolak.');
+        }
+
+        $user = User::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:120',
+            'email' => 'required|email|max:191|unique:users,email,'.$id.',user_id',
+            'username' => 'required|string|max:50|unique:users,username,'.$id.',user_id',
+            'password' => 'nullable|min:8|confirmed',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $user->name = $request->name;
+            $user->email = $request->email;
+            $user->username = $request->username;
+
+            if ($request->filled('password')) {
+                $user->password = Hash::make($request->password);
+            }
+
+            $user->save();
+
+            DB::commit();
+
+            return redirect()->route('admin.users')->with('success', 'Data pengguna berhasil diperbarui.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal update: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Kirim Link Reset Password Manual (Via WhatsApp/Fonnte)
+     */
+    public function sendResetLink(Request $request, $id)
+    {
+        $user = User::with('profile')->findOrFail($id);
+        
+        // 1. Generate Token
+        $token = app('auth.password.broker')->createToken($user);
+        
+        // 2. Buat Link
+        $resetLink = route('password.reset', ['token' => $token, 'email' => $user->email]);
+
+        // 3. Kirim Pesan (Prioritas WA via Fonnte)
+        $phone = $user->profile->phone ?? null;
+        
+        if ($phone) {
+            $fonnte = new \App\Services\FonnteService();
+            $message = "*RESET PASSWORD ADMIN REQUEST*\n\nHalo {$user->name},\nAdmin telah merequest reset password untuk akun Anda.\n\nSilakan klik link berikut untuk membuat password baru:\n{$resetLink}\n\nLink ini valid untuk 60 menit.";
+            
+            $result = $fonnte->sendMessage($phone, $message);
+
+            if ($result['status']) {
+                return back()->with('success', 'Link reset password telah dikirim ke WhatsApp pengguna.');
+            } else {
+                return back()->with('error', 'Gagal kirim WA: ' . ($result['error'] ?? 'Unknown error'));
+            }
+        } else {
+            // Jika tidak ada nomor HP, mungkin bisa fallback email (tapi saat ini kita fokus WA sesuai permintaan user "seperti halaman reset")
+            return back()->with('error', 'Pengguna ini tidak memiliki nomor HP yang terdaftar untuk dikirimi link.');
+        }
+    
+
+    }
+
+    /**
+     * Hapus Pengguna & Seluruh Postingannya (Nuclear Delete)
+     */
+    public function destroyUser($id)
+    {
+        // 1. Validasi
+        if ($id == 1) {
+            return back()->with('error', 'Super Admin tidak dapat dihapus.');
+        }
+
+        if ($id == auth()->id()) {
+            return back()->with('error', 'Anda tidak dapat menghapus akun sendiri.');
+        }
+
+        $user = User::findOrFail($id);
+
+        // Security: Hanya Super Admin yang boleh menghapus sesama Admin
+        if ($user->role === 'admin' && auth()->id() != 1) {
+             return back()->with('error', 'Hanya Super Admin yang dapat menghapus Administrator.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // ----------------------------------------------------
+            // CASCADE DELETE MANUAL (Urutan Penting demi FK)
+            // ----------------------------------------------------
+
+            // 1. Keuangan
+            \App\Models\WalletLedger::where('user_id', $user->user_id)->delete();
+            \App\Models\PayoutRequest::where('seller_id', $user->user_id)->delete();
+            \App\Models\BankAccount::where('user_id', $user->user_id)->delete();
+
+            // 2. Data Pelengkap
+            \App\Models\Address::where('user_id', $user->user_id)->delete();
+            \App\Models\Review::where('user_id', $user->user_id)->delete(); // Review yang ditulis user
+
+            // 3. Orders (Transaksi)
+            // Hapus Order dimana user sebagai Buyer
+            // Note: Idealnya data transaksi tidak dihapus demi histori, tapi request "hapus pengguna"
+            // seringkali berarti purge total di sistem sederhana.
+            \App\Models\Order::where('buyer_id', $user->user_id)->delete();
+            
+            // Hapus Order dimana user sebagai Seller
+            \App\Models\Order::where('seller_id', $user->user_id)->delete();
+
+            // 4. Produk (Postingan)
+            // Termasuk gambar produk dll jika ada observer/logic di model delete()
+            $productIds = \App\Models\Product::where('seller_id', $user->user_id)->pluck('product_id');
+
+            // Hapus referensi produk di Cart & Wishlist orang lain terlebih dahulu (Constraint Fix)
+            DB::table('cart_items')->whereIn('product_id', $productIds)->delete();
+            // Jika ada tabel wishlist: DB::table('wishlists')->whereIn('product_id', $productIds)->delete();
+
+            $products = \App\Models\Product::where('seller_id', $user->user_id)->get();
+            foreach ($products as $product) {
+                // Delete manual to trigger events if any (image deletion)
+                $product->delete();
+            }
+
+            // 5. User Profile & Account
+            \App\Models\Profile::where('user_id', $user->user_id)->delete();
+            $user->delete();
+
+            DB::commit();
+
+            return back()->with('success', 'Pengguna beserta seluruh data (produk, order, wallet) berhasil dihapus.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal menghapus pengguna: ' . $e->getMessage());
         }
     }
 
@@ -291,16 +515,20 @@ class AdminController extends Controller
                     $sq->where('name', 'like', "%{$search}%");
                 })
                 ->orWhereHas('bankAccount', function($bq) use ($search) {
-                    $bq->where('account_number', 'like', "%{$search}%")
+                    $bq->where('account_no', 'like', "%{$search}%")
                        ->orWhere('bank_name', 'like', "%{$search}%")
-                       ->orWhere('account_holder', 'like', "%{$search}%");
+                       ->orWhere('account_name', 'like', "%{$search}%");
                 });
             });
         }
 
         // Filter Status
         if ($request->has('status') && $request->status != '') {
-            $query->where('status', $request->status);
+            if ($request->status == 'approved') {
+                $query->whereIn('status', ['approved', 'paid']);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         $payouts = $query->latest('requested_at')->paginate(10)->withQueryString();

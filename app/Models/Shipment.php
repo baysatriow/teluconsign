@@ -10,8 +10,8 @@ class Shipment extends Model
     use HasFactory;
 
     protected $primaryKey = 'shipment_id';
-    public $incrementing = true;
     protected $keyType = 'int';
+    public $incrementing = true;
 
     protected $fillable = [
         'order_id',
@@ -23,13 +23,13 @@ class Shipment extends Model
         'shipped_at',
         'delivered_at',
         'cost',
-        'metadata'
+        'metadata',
     ];
 
     protected $casts = [
-        'shipped_at' => 'datetime',
+        'shipped_at'   => 'datetime',
         'delivered_at' => 'datetime',
-        'metadata' => 'array',
+        'metadata'     => 'array',
     ];
 
     public function order()
@@ -44,10 +44,11 @@ class Shipment extends Model
 
     public function createShipment(int $order_id, int $carrier_id, string $service_code): bool
     {
-        $this->order_id = $order_id;
-        $this->carrier_id = $carrier_id;
+        $this->order_id     = $order_id;
+        $this->carrier_id   = $carrier_id;
         $this->service_code = $service_code;
-        $this->status = 'pending';
+        $this->status       = 'pending';
+
         return $this->save();
     }
 
@@ -70,8 +71,8 @@ class Shipment extends Model
     {
         return [
             'tracking_number' => $tracking_number,
-            'status' => $this->status,
-            'updated_at' => now()
+            'status'          => $this->status,
+            'updated_at'      => now(),
         ];
     }
 
@@ -82,8 +83,9 @@ class Shipment extends Model
 
     public function markDelivered(): void
     {
-        $this->status = 'delivered';
+        $this->status       = 'delivered';
         $this->delivered_at = now();
+
         $this->save();
     }
 }

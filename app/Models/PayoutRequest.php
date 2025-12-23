@@ -28,25 +28,24 @@ class PayoutRequest extends Model
         'processed_at' => 'datetime',
     ];
 
-    // Relasi opsional 
     public function seller()
     {
-        return $this->belongsTo(User::class, 'seller_id');
+        return $this->belongsTo(User::class, 'seller_id', 'user_id');
     }
 
     public function bankAccount()
     {
-        return $this->belongsTo(BankAccount::class, 'bank_account_id');
+        return $this->belongsTo(BankAccount::class, 'bank_account_id', 'bank_account_id');
     }
 
     public function processedByAdmin()
     {
-        return $this->belongsTo(User::class, 'processed_by');
+        return $this->belongsTo(User::class, 'processed_by', 'user_id');
     }
 
     public function createRequest(int $seller_id, float $amount): bool
     {
-        return (bool) $this->create([
+        return (bool) static::create([
             'seller_id'    => $seller_id,
             'amount'       => $amount,
             'status'       => 'requested',

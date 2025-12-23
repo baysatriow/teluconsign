@@ -18,24 +18,23 @@ class Address extends Model
         'recipient',
         'phone',
 
-        // Struktur Baru
         'province',
         'city',
-        'district', // Kecamatan
-        'village',  // Desa
+        'district',
+        'village',
         'postal_code',
-        'detail_address', // Alamat manual
+        'detail_address',
 
-        'location_id', 
+        'location_id',
         'country',
         'is_default',
-        'is_shop_default', // Baru
+        'is_shop_default',
     ];
 
     protected $casts = [
-        'is_default' => 'boolean',
+        'is_default'      => 'boolean',
         'is_shop_default' => 'boolean',
-        'created_at' => 'datetime',
+        'created_at'      => 'datetime',
     ];
 
     public static function setDefault(int $id): void
@@ -45,8 +44,7 @@ class Address extends Model
 
         DB::transaction(function () use ($address) {
             self::where('user_id', $address->user_id)->update(['is_default' => false]);
-            $address->is_default = true;
-            $address->save();
+            $address->update(['is_default' => true]);
         });
     }
 
@@ -57,12 +55,40 @@ class Address extends Model
 
         DB::transaction(function () use ($address) {
             self::where('user_id', $address->user_id)->update(['is_shop_default' => false]);
-            $address->is_shop_default = true;
-            $address->save();
+            $address->update(['is_shop_default' => true]);
         });
     }
 
-    // Helper untuk menampilkan alamat lengkap satu baris
+    public static function deleteAddress(int $id): bool
+    {
+        $address = self::find($id);
+        if (!$address) return false;
+
+        DB::transaction(function () use ($address) {
+            $userId = $address->user_id;
+            $wasDefault = $address->is_default;
+            $wasShopDefault = $address->is_shop_default;
+
+            $address->delete();
+
+            if ($wasDefault) {
+                self::where('user_id', $userId)
+                    ->orderBy('created_at')
+                    ->first()
+                    ?->update(['is_default' => true]);
+            }
+
+            if ($wasShopDefault) {
+                self::where('user_id', $userId)
+                    ->orderBy('created_at')
+                    ->first()
+                    ?->update(['is_shop_default' => true]);
+            }
+        });
+
+        return true;
+    }
+
     public function getFullAddress(): string
     {
         return "{$this->detail_address}, {$this->village}, {$this->district}, {$this->city}, {$this->province} {$this->postal_code}";

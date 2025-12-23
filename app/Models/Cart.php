@@ -4,11 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-// use Illuminate\Database\Eloquent\SoftDeletes; // HAPUS INI
 
 class Cart extends Model
 {
-    use HasFactory; // HAPUS SoftDeletes DARI SINI
+    use HasFactory;
 
     protected $primaryKey = 'cart_id';
     public $incrementing = true;
@@ -23,13 +22,11 @@ class Cart extends Model
         'created_at' => 'datetime'
     ];
 
-    // Relasi ke Item Keranjang
     public function items()
     {
         return $this->hasMany(CartItem::class, 'cart_id', 'cart_id');
     }
 
-    // Relasi ke Pembeli
     public function buyer()
     {
         return $this->belongsTo(User::class, 'buyer_id', 'user_id');
@@ -43,7 +40,7 @@ class Cart extends Model
 
         if ($item) {
             $item->quantity += $quantity;
-            $item->calculateSubtotal(); // Pastikan method ini ada di CartItem model
+            $item->calculateSubtotal();
             $item->save();
         } else {
             $product = Product::find($product_id);

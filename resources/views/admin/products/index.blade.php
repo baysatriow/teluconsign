@@ -7,7 +7,7 @@
 </div>
 
 <!-- Statistik Mini -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <div class="p-5 bg-white rounded-2xl shadow-soft border border-gray-100 flex flex-col justify-between group hover:-translate-y-1 transition-transform">
         <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Total Produk</div>
         <div class="flex items-end justify-between">
@@ -35,15 +35,6 @@
             </div>
         </div>
     </div>
-    <div class="p-5 bg-white rounded-2xl shadow-soft border border-gray-100 flex flex-col justify-between group hover:-translate-y-1 transition-transform">
-        <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Perlu Review</div>
-        <div class="flex items-end justify-between">
-            <div class="text-2xl font-bold text-gray-900">0</div>
-            <div class="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-600">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            </div>
-        </div>
-    </div>
 </div>
 
 <div class="bg-white rounded-2xl shadow-soft border border-gray-100 p-6">
@@ -53,27 +44,130 @@
             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                 <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
-            <input type="text" name="q" value="{{ request('q') }}" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block w-full pl-10 p-3 transition-all" placeholder="Cari nama produk, ID, atau penjual...">
+            <input type="text" name="q" value="{{ request('q') }}" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block w-full pl-10 p-3 transition-all" placeholder="Cari produk, penjual, atau kategori...">
         </div>
 
         <div class="flex items-center gap-3 w-full md:w-auto">
-            <select name="status" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block w-full md:w-40 p-3 transition-all">
-                <option value="">Semua Status</option>
-                @foreach(App\Enums\ProductStatus::cases() as $status)
-                    <option value="{{ $status->value }}" {{ request('status') == $status->value ? 'selected' : '' }}>
-                        {{ $status->label() }}
-                    </option>
-                @endforeach
-            </select>
+            <!-- Searchable Dropdown Status with AlpineJS -->
+            <div x-data="{
+                open: false,
+                search: '',
+                selectedId: '{{ request('status') }}',
+                items: [
+                    {id: 'active', name: 'Aktif'},
+                    {id: 'suspended', name: 'Ditangguhkan'}
+                ],
+                get selectedName() {
+                    const item = this.items.find(i => i.id == this.selectedId);
+                    return item ? item.name : 'Semua Status';
+                },
+                get filteredItems() {
+                    if (this.search === '') return this.items;
+                    return this.items.filter(i => i.name.toLowerCase().includes(this.search.toLowerCase()));
+                }
+            }" class="relative w-full md:w-48" @click.outside="open = false">
 
-            <select name="category" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block w-full md:w-48 p-3 transition-all">
-                <option value="">Semua Kategori</option>
-                @foreach($categories as $cat)
-                    <option value="{{ $cat->category_id }}" {{ request('category') == $cat->category_id ? 'selected' : '' }}>
-                        {{ $cat->name }}
-                    </option>
-                @endforeach
-            </select>
+                <input type="hidden" name="status" :value="selectedId">
+
+                <!-- Trigger -->
+                <button @click="open = !open" type="button" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 p-3 text-left flex justify-between items-center transition-all">
+                    <span x-text="selectedName" class="truncate block pr-2"></span>
+                    <svg class="w-4 h-4 text-gray-500 flex-shrink-0 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div x-show="open" 
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="transform opacity-0 scale-95"
+                     x-transition:enter-end="transform opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-75"
+                     x-transition:leave-start="transform opacity-100 scale-100"
+                     x-transition:leave-end="transform opacity-0 scale-95"
+                     class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 max-h-60 overflow-hidden flex flex-col" x-cloak>
+                    
+                    <!-- Search Input -->
+                    <div class="p-2 border-b border-gray-50 bg-gray-50">
+                        <input x-model="search" type="text" class="w-full text-xs p-2 border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="Cari status..." autofocus>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="overflow-y-auto flex-1 p-1 custom-scrollbar">
+                        <div @click="selectedId = ''; open = false" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors mb-1">
+                            Semua Status
+                        </div>
+                        <template x-for="item in filteredItems" :key="item.id">
+                            <div @click="selectedId = item.id; open = false" 
+                                 class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors flex justify-between items-center"
+                                 :class="{'bg-indigo-50 text-indigo-700 font-bold': selectedId == item.id}">
+                                <span x-text="item.name"></span>
+                                <svg x-show="selectedId == item.id" class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                        </template>
+                        <div x-show="filteredItems.length === 0" class="p-4 text-xs text-center text-gray-400 italic">
+                            Tidak ditemukan hasil untuk "<span x-text="search"></span>"
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Searchable Dropdown Category with AlpineJS -->
+            <div x-data="{
+                open: false,
+                search: '',
+                selectedId: '{{ request('category') }}',
+                items: {{ $categories->map(fn($c) => ['id' => $c->category_id, 'name' => $c->name])->values()->toJson() }},
+                get selectedName() {
+                    const item = this.items.find(i => i.id == this.selectedId);
+                    return item ? item.name : 'Semua Kategori';
+                },
+                get filteredItems() {
+                    if (this.search === '') return this.items;
+                    return this.items.filter(i => i.name.toLowerCase().includes(this.search.toLowerCase()));
+                }
+            }" class="relative w-full md:w-56" @click.outside="open = false">
+
+                <input type="hidden" name="category" :value="selectedId">
+
+                <!-- Trigger -->
+                <button @click="open = !open" type="button" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 p-3 text-left flex justify-between items-center transition-all">
+                    <span x-text="selectedName" class="truncate block pr-2"></span>
+                    <svg class="w-4 h-4 text-gray-500 flex-shrink-0 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div x-show="open" 
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="transform opacity-0 scale-95"
+                     x-transition:enter-end="transform opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-75"
+                     x-transition:leave-start="transform opacity-100 scale-100"
+                     x-transition:leave-end="transform opacity-0 scale-95"
+                     class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 max-h-60 overflow-hidden flex flex-col" x-cloak>
+                    
+                    <!-- Search Input -->
+                    <div class="p-2 border-b border-gray-50 bg-gray-50">
+                        <input x-model="search" type="text" class="w-full text-xs p-2 border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="Cari kategori..." autofocus>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="overflow-y-auto flex-1 p-1 custom-scrollbar">
+                        <div @click="selectedId = ''; open = false" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors mb-1">
+                            Semua Kategori
+                        </div>
+                        <template x-for="item in filteredItems" :key="item.id">
+                            <div @click="selectedId = item.id; open = false" 
+                                 class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors flex justify-between items-center"
+                                 :class="{'bg-indigo-50 text-indigo-700 font-bold': selectedId == item.id}">
+                                <span x-text="item.name"></span>
+                                <svg x-show="selectedId == item.id" class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                        </template>
+                        <div x-show="filteredItems.length === 0" class="p-4 text-xs text-center text-gray-400 italic">
+                            Tidak ditemukan hasil untuk "<span x-text="search"></span>"
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <button type="submit" class="text-white bg-gray-900 hover:bg-black font-bold rounded-xl text-sm px-6 py-3 shadow-lg transition-transform hover:-translate-y-0.5">
                 Filter

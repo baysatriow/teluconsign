@@ -20,10 +20,10 @@
             </div>
             Konfigurasi Token Fonnte
         </h3>
-        
+
         <form action="{{ route('admin.integrations.whatsapp.update') }}" method="POST" class="relative z-10">
             @csrf
-            
+
             <div class="mb-8">
                 <label class="block mb-2 text-sm font-semibold text-gray-700">Fonnte TokenAPI</label>
                 <div class="relative">
@@ -48,14 +48,14 @@
         <!-- Decoration -->
         <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
         <div class="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
-        
+
         <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-3 relative z-10">
             <div class="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
             </div>
             Test Kirim Pesan
         </h3>
-        
+
         <form action="{{ route('admin.integrations.whatsapp.test-send') }}" method="POST" class="relative z-10 space-y-4">
             @csrf
             <div>

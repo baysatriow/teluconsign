@@ -7,22 +7,26 @@
     [x-cloak] { display: none !important; }
 </style>
 
-<div x-data="{ addAdminModalOpen: false }">
+<div class="">
 
     <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
             <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Manajemen Pengguna</h1>
             <p class="text-sm text-gray-500 mt-1">Kelola akses, peran, dan status akun pengguna di platform.</p>
         </div>
-        <button @click="addAdminModalOpen = true" class="text-white bg-gray-900 hover:bg-black focus:ring-4 focus:ring-gray-300 font-bold rounded-xl text-sm px-5 py-3 flex items-center gap-2 shadow-lg transition-all transform hover:-translate-y-0.5" type="button">
+        @if(auth()->id() == 1)
+        <a href="{{ route('admin.users.create') }}" class="text-white bg-telu-red hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-bold rounded-xl text-sm px-5 py-3 flex items-center gap-2 shadow-lg hover:shadow-red-500/30 transition-all transform hover:-translate-y-0.5">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
             Tambah Admin
-        </button>
+        </a>
+        @endif
     </div>
+
+
 
     <!-- Statistik Mini Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-        <div class="p-5 bg-white rounded-2xl shadow-soft border border-gray-100 flex flex-col justify-between group hover:-translate-y-1 transition-transform">
+        <div class="p-5 bg-white rounded-2xl shadow-soft border border-gray-100 flex flex-col justify-between group hover:-translate-y-1 transition-transform hover-red-b">
             <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Total Member</div>
             <div class="flex items-end justify-between">
                 <div class="text-2xl font-bold text-gray-900">{{ number_format($stats['total_users']) }}</div>
@@ -31,7 +35,7 @@
                 </div>
             </div>
         </div>
-        <div class="p-5 bg-white rounded-2xl shadow-soft border border-gray-100 flex flex-col justify-between group hover:-translate-y-1 transition-transform">
+        <div class="p-5 bg-white rounded-2xl shadow-soft border border-gray-100 flex flex-col justify-between group hover:-translate-y-1 transition-transform hover-red-b">
             <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Administrator</div>
             <div class="flex items-end justify-between">
                 <div class="text-2xl font-bold text-gray-900">{{ number_format($stats['total_admins']) }}</div>
@@ -40,7 +44,7 @@
                 </div>
             </div>
         </div>
-        <div class="p-5 bg-white rounded-2xl shadow-soft border border-gray-100 flex flex-col justify-between group hover:-translate-y-1 transition-transform">
+        <div class="p-5 bg-white rounded-2xl shadow-soft border border-gray-100 flex flex-col justify-between group hover:-translate-y-1 transition-transform hover-red-b">
             <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Akun Aktif</div>
             <div class="flex items-end justify-between">
                 <div class="text-2xl font-bold text-gray-900">{{ number_format($stats['active_users']) }}</div>
@@ -49,7 +53,7 @@
                 </div>
             </div>
         </div>
-        <div class="p-5 bg-white rounded-2xl shadow-soft border border-gray-100 flex flex-col justify-between group hover:-translate-y-1 transition-transform">
+        <div class="p-5 bg-white rounded-2xl shadow-soft border border-gray-100 flex flex-col justify-between group hover:-translate-y-1 transition-transform hover-red-b">
             <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Disuspend</div>
             <div class="flex items-end justify-between">
                 <div class="text-2xl font-bold text-gray-900">{{ number_format($stats['suspended_users']) }}</div>
@@ -94,7 +98,28 @@
                             </td>
                             <td class="px-6 py-4">{{ $admin->email }}</td>
                             <td class="px-6 py-4"><span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg font-mono text-xs">{{ $admin->username }}</span></td>
-                            <td class="px-6 py-4 text-gray-500">{{ $admin->created_at->format('d M Y') }}</td>
+                            <td class="px-6 py-4 text-gray-500">
+                                <div class="flex items-center gap-2">
+                                     <span>{{ $admin->created_at->format('d M Y') }}</span>
+                                     
+                                     <!-- Edit: Only for Super Admin OR Self -->
+                                     @if(auth()->id() == 1 || auth()->id() == $admin->user_id)
+                                        <a href="{{ route('admin.users.edit', $admin->user_id) }}" class="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 p-1.5 rounded-lg transition-colors" title="Edit Data">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                        </a>
+                                     @endif
+
+                                     <!-- Delete: Only for Super Admin AND Target != 1 -->
+                                     @if(auth()->id() == 1 && $admin->user_id != 1)
+                                        <form action="{{ route('admin.users.destroy', $admin->user_id) }}" method="POST" id="delete-admin-form-{{ $admin->user_id }}">
+                                            @csrf @method('DELETE')
+                                            <button type="button" onclick="confirmDeleteUser('{{ $admin->user_id }}', '{{ $admin->name }}')" class="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg transition-colors" title="Hapus Admin">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </form>
+                                     @endif
+                                </div>
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -115,17 +140,57 @@
                 </div>
 
                 <div class="flex items-center gap-3 w-full md:w-auto">
-                    <select name="status" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block w-full md:w-36 p-3 transition-all">
-                        <option value="">Semua Status</option>
-                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                        <option value="suspended" {{ request('status') == 'suspended' ? 'selected' : '' }}>Suspended</option>
-                    </select>
+                    <!-- Status Searchable Dropdown -->
+                    <div x-data="{
+                        open: false,
+                        selectedId: '{{ request('status') }}',
+                        items: [
+                            {id: 'active', name: 'Active'},
+                            {id: 'suspended', name: 'Suspended'}
+                        ],
+                        get selectedName() {
+                            const item = this.items.find(i => i.id == this.selectedId);
+                            return item ? item.name : 'Semua Status';
+                        }
+                    }" class="relative w-full md:w-40" @click.outside="open = false">
+                        <input type="hidden" name="status" :value="selectedId">
+                        <button @click="open = !open" type="button" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 p-3 text-left flex justify-between items-center transition-all">
+                            <span x-text="selectedName" class="truncate block pr-2"></span>
+                            <svg class="w-4 h-4 text-gray-500 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div x-show="open" class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden flex flex-col" x-cloak>
+                            <div @click="selectedId = ''; open = false" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">Semua Status</div>
+                            <template x-for="item in items" :key="item.id">
+                                <div @click="selectedId = item.id; open = false" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer" :class="{'bg-indigo-50 font-bold text-indigo-700': selectedId == item.id}" x-text="item.name"></div>
+                            </template>
+                        </div>
+                    </div>
 
-                    <select name="role" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block w-full md:w-36 p-3 transition-all">
-                        <option value="">Semua Role</option>
-                        <option value="buyer" {{ request('role') == 'buyer' ? 'selected' : '' }}>Buyer</option>
-                        <option value="seller" {{ request('role') == 'seller' ? 'selected' : '' }}>Seller</option>
-                    </select>
+                    <!-- Role Searchable Dropdown -->
+                     <div x-data="{
+                        open: false,
+                        selectedId: '{{ request('role') }}',
+                        items: [
+                            {id: 'buyer', name: 'Buyer'},
+                            {id: 'seller', name: 'Seller'}
+                        ],
+                        get selectedName() {
+                            const item = this.items.find(i => i.id == this.selectedId);
+                            return item ? item.name : 'Semua Role';
+                        }
+                    }" class="relative w-full md:w-40" @click.outside="open = false">
+                        <input type="hidden" name="role" :value="selectedId">
+                        <button @click="open = !open" type="button" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 p-3 text-left flex justify-between items-center transition-all">
+                            <span x-text="selectedName" class="truncate block pr-2"></span>
+                            <svg class="w-4 h-4 text-gray-500 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div x-show="open" class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden flex flex-col" x-cloak>
+                            <div @click="selectedId = ''; open = false" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">Semua Role</div>
+                            <template x-for="item in items" :key="item.id">
+                                <div @click="selectedId = item.id; open = false" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer" :class="{'bg-indigo-50 font-bold text-indigo-700': selectedId == item.id}" x-text="item.name"></div>
+                            </template>
+                        </div>
+                    </div>
 
                     <button type="submit" class="text-white bg-gray-900 hover:bg-black font-bold rounded-xl text-sm px-6 py-3 shadow-lg transition-transform hover:-translate-y-0.5">
                         Filter
@@ -196,25 +261,95 @@
                                 {{ $user->created_at->format('d M Y') }}
                             </td>
                             <td class="px-6 py-4 text-center">
-                                <div class="flex items-center justify-center gap-2">
-                                    <a href="{{ route('admin.users.show', $user->user_id) }}" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100" title="Lihat Detail">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                    </a>
+                                    <div class="flex items-center justify-center gap-2">
+                                        <!-- View Detail (Always Visible) -->
+                                        <a href="{{ route('admin.users.show', $user->user_id) }}" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100" title="Lihat Detail">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                        </a>
 
-                                    <form action="{{ route('admin.users.toggle_status', $user->user_id) }}" method="POST" id="status-form-{{ $user->user_id }}">
-                                        @csrf
-                                        @method('PATCH')
-                                        @if($user->status === 'suspended')
-                                            <button type="button" onclick="confirmAction('{{ $user->user_id }}', 'aktifkan')" class="text-green-600 hover:bg-green-50 p-2 rounded-lg transition-colors" title="Aktifkan">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                            </button>
+                                        @if($user->role === 'admin')
+                                            <!-- Logic KHUSUS Admin -->
+                                            @php
+                                                $currentId = auth()->id();
+                                                $targetId = $user->user_id;
+                                                $isSuperAdmin = $currentId == 1;
+                                                $isSelf = $currentId == $targetId;
+                                            @endphp
+                                            
+                                            <!-- Edit: Only for Super Admin OR Self -->
+                                            @if($isSuperAdmin || $isSelf)
+                                                <a href="{{ route('admin.users.edit', $user->user_id) }}" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100" title="Edit Data">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                                </a>
+                                            @endif
+
+                                            <!-- Other Actions: Only for Super Admin AND Target is NOT Self -->
+                                            @if($isSuperAdmin && !$isSelf)
+                                                 <!-- Reset Password -->
+                                                <form action="{{ route('admin.users.send_reset_link', $user->user_id) }}" method="POST" id="reset-form-{{ $user->user_id }}">
+                                                    @csrf
+                                                    <button type="button" onclick="confirmResetPassword('{{ $user->user_id }}', '{{ $user->name }}')" class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors border border-transparent hover:border-yellow-100" title="Kirim Reset Password Link">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                                                    </button>
+                                                </form>
+
+                                                <!-- Status Toggle -->
+                                                <form action="{{ route('admin.users.toggle_status', $user->user_id) }}" method="POST" id="status-form-{{ $user->user_id }}">
+                                                    @csrf @method('PATCH')
+                                                    @if($user->status === 'suspended')
+                                                        <button type="button" onclick="confirmAction('{{ $user->user_id }}', 'aktifkan')" class="text-green-600 hover:bg-green-50 p-2 rounded-lg transition-colors" title="Aktifkan">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                        </button>
+                                                    @else
+                                                        <button type="button" onclick="confirmAction('{{ $user->user_id }}', 'suspend')" class="text-orange-600 hover:bg-orange-50 p-2 rounded-lg transition-colors" title="Suspend">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                                        </button>
+                                                    @endif
+                                                </form>
+
+                                                <!-- Delete -->
+                                                <form action="{{ route('admin.users.destroy', $user->user_id) }}" method="POST" id="delete-form-{{ $user->user_id }}">
+                                                    @csrf @method('DELETE')
+                                                    <button type="button" onclick="confirmDeleteUser('{{ $user->user_id }}', '{{ $user->name }}')" class="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Hapus Permanen">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                    </button>
+                                                </form>
+                                            @endif
+
                                         @else
-                                            <button type="button" onclick="confirmAction('{{ $user->user_id }}', 'suspend')" class="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Suspend">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
-                                            </button>
+                                            <!-- Logic STANDARD untuk Buyer/Seller -->
+
+                                            <!-- Reset Link -->
+                                            <form action="{{ route('admin.users.send_reset_link', $user->user_id) }}" method="POST" id="reset-form-{{ $user->user_id }}">
+                                                @csrf
+                                                <button type="button" onclick="confirmResetPassword('{{ $user->user_id }}', '{{ $user->name }}')" class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors border border-transparent hover:border-yellow-100" title="Kirim Reset Password Link">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                                                </button>
+                                            </form>
+
+                                            <!-- Toggle Status -->
+                                            <form action="{{ route('admin.users.toggle_status', $user->user_id) }}" method="POST" id="status-form-{{ $user->user_id }}">
+                                                @csrf @method('PATCH')
+                                                @if($user->status === 'suspended')
+                                                    <button type="button" onclick="confirmAction('{{ $user->user_id }}', 'aktifkan')" class="text-green-600 hover:bg-green-50 p-2 rounded-lg transition-colors" title="Aktifkan">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                    </button>
+                                                @else
+                                                    <button type="button" onclick="confirmAction('{{ $user->user_id }}', 'suspend')" class="text-orange-600 hover:bg-orange-50 p-2 rounded-lg transition-colors" title="Suspend">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                                    </button>
+                                                @endif
+                                            </form>
+
+                                            <!-- Delete User (Available for all admins targeting Buyer/Seller) -->
+                                            <form action="{{ route('admin.users.destroy', $user->user_id) }}" method="POST" id="delete-form-{{ $user->user_id }}">
+                                                @csrf @method('DELETE')
+                                                <button type="button" onclick="confirmDeleteUser('{{ $user->user_id }}', '{{ $user->name }}')" class="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Hapus Permanen">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                </button>
+                                            </form>
                                         @endif
-                                    </form>
-                                </div>
+                                    </div>
                             </td>
                         </tr>
                         @empty
@@ -241,84 +376,74 @@
         </div>
     </div>
 
-    <!-- Modal Tambah Admin (Alpine Controlled) -->
-    <div x-show="addAdminModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <!-- Backdrop -->
-        <div x-show="addAdminModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" @click="addAdminModalOpen = false"></div>
-        
-        <!-- Modal Content -->
-        <div x-show="addAdminModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 scale-95 translate-y-4" x-transition:enter-end="opacity-100 scale-100 translate-y-0" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 scale-100 translate-y-0" x-transition:leave-end="opacity-0 scale-95 translate-y-4" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
-            
-            <div class="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50">
-                <h3 class="text-lg font-bold text-gray-900">
-                    Tambah Administrator
-                </h3>
-                <button type="button" @click="addAdminModalOpen = false" class="text-gray-400 hover:bg-gray-100 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center">
-                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/></svg>
-                </button>
-            </div>
-
-            <form action="{{ route('admin.users.store_admin') }}" method="POST" class="p-6">
-                @csrf
-                <div class="space-y-4 mb-6">
-                    <div>
-                        <label for="name" class="block mb-2 text-sm font-bold text-gray-700">Nama Lengkap</label>
-                        <input type="text" name="name" id="name" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block w-full p-3 transition-all" placeholder="John Doe" required>
-                    </div>
-                    <div>
-                        <label for="username" class="block mb-2 text-sm font-bold text-gray-700">Username</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                            </div>
-                            <input type="text" name="username" id="username" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block w-full ps-10 p-3 transition-all" placeholder="admin_user" required>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="email" class="block mb-2 text-sm font-bold text-gray-700">Email</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                            </div>
-                            <input type="email" name="email" id="email" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block w-full ps-10 p-3 transition-all" placeholder="admin@example.com" required>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label for="password" class="block mb-2 text-sm font-bold text-gray-700">Password</label>
-                            <input type="password" name="password" id="password" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block w-full p-3 transition-all" placeholder="••••••••" required>
-                        </div>
-                        <div>
-                            <label for="password_confirmation" class="block mb-2 text-sm font-bold text-gray-700">Konfirmasi</label>
-                            <input type="password" name="password_confirmation" id="password_confirmation" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 block w-full p-3 transition-all" placeholder="••••••••" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex items-center justify-end border-t border-gray-100 pt-6">
-                    <button type="button" @click="addAdminModalOpen = false" class="mr-3 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-gray-100 font-bold rounded-xl text-sm px-6 py-3">
-                        Batal
-                    </button>
-                    <button type="submit" class="text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-bold rounded-xl text-sm px-6 py-3 text-center shadow-lg transition-transform transform hover:-translate-y-0.5 w-full md:w-auto">
-                        Simpan Admin
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- Stats Grid with Red Hover -->
+    <style>
+        .hover-red-b:hover {
+            border-color: #EC1C25 !important;
+        }
+    </style>
 
 </div>
 
 <script>
-    // Konfirmasi Aksi SweetAlert
+    // Custom SWAL for Reset Password
+    function confirmResetPassword(userId, userName) {
+        Swal.fire({
+            title: 'Kirim Link Reset?',
+            text: "Kirim link reset password via WhatsApp ke " + userName + "?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#F59E0B', // Yellow/Orange
+            cancelButtonColor: '#E5E7EB',
+            confirmButtonText: 'Ya, Kirim!',
+            cancelButtonText: '<span class="text-gray-800 font-medium">Batal</span>',
+            customClass: {
+                popup: 'rounded-2xl',
+                confirmButton: 'rounded-xl px-4 py-2 font-bold shadow-lg',
+                cancelButton: 'rounded-xl px-4 py-2 opacity-80 hover:opacity-100'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('reset-form-' + userId).submit();
+            }
+        });
+    }
+
+    // Custom SWAL for Delete User
+    function confirmDeleteUser(userId, userName) {
+        Swal.fire({
+            title: 'HAPUS PENGGUNA?',
+            html: "Anda akan menghapus pengguna <b>" + userName + "</b> beserta <b class='text-red-600'>SELURUH POSTINGAN/PRODUK</b> mereka.<br>Data tidak dapat dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#EC1C25', // Red
+            cancelButtonColor: '#E5E7EB',
+            confirmButtonText: 'Ya, Hapus Permanen!',
+            cancelButtonText: '<span class="text-gray-800 font-medium">Batal</span>',
+            reverseButtons: true, // Danger action on right usually, but standard left confirm is fine if color is distinct
+            customClass: {
+                popup: 'rounded-2xl border-2 border-red-500',
+                confirmButton: 'rounded-xl px-4 py-2 font-bold shadow-lg shadow-red-500/30',
+                cancelButton: 'rounded-xl px-4 py-2'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('delete-form-' + userId).submit();
+            }
+        });
+    }
+
+    // Konfirmasi Aksi SweetAlert (Toggle Status)
     function confirmAction(userId, action) {
         let titleText = action === 'suspend' ? 'Suspend Akun Pengguna?' : 'Aktifkan Kembali Akun?';
         let confirmText = action === 'suspend' ? 'Ya, Suspend!' : 'Ya, Aktifkan!';
         let btnColor = action === 'suspend' ? '#EF4444' : '#10B981'; 
+        let iconType = action === 'suspend' ? 'warning' : 'info'; // Use info/success for activate
 
         Swal.fire({
             title: titleText,
             text: "Pastikan tindakan ini sudah sesuai prosedur.",
-            icon: 'warning',
+            icon: iconType,
             showCancelButton: true,
             confirmButtonColor: btnColor,
             cancelButtonColor: '#E5E7EB', 

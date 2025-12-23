@@ -13,48 +13,78 @@ use App\Services\FonnteService;
 
 class ForgotPasswordController extends Controller
 {
-    protected $fonnte;
+    /**
+     * ------------------------------------------------------------
+     *  Dependency Injection
+     * ------------------------------------------------------------
+     *  Service WhatsApp (Fonnte) untuk pengiriman OTP / Link Reset
+     */
+    protected FonnteService $fonnte;
 
     public function __construct(FonnteService $fonnte)
     {
         $this->fonnte = $fonnte;
     }
 
-    // --- LANGKAH 1: FORM CARI AKUN ---
+    /**
+     * ============================================================
+     *  STEP 1 — SEARCH ACCOUNT
+     * ============================================================
+     */
+
+    /**
+     * Menampilkan form pencarian akun (email / username)
+     */
     public function showSearchForm()
     {
         return view('auth.forgot-password.search');
     }
 
+    /**
+     * Proses pencarian akun berdasarkan email atau username
+     */
     public function search(Request $request)
     {
         $request->validate([
-            'credential' => 'required|string', // Bisa email atau username
+            'credential' => 'required|string',
         ]);
 
-        $credential = $request->credential;
-
-        $user = User::where('email', $credential)
-                    ->orWhere('username', $credential)
-                    ->first();
+        $user = User::where('email', $request->credential)
+            ->orWhere('username', $request->credential)
+            ->first();
 
         if (!$user) {
             return back()->with('error', 'Akun tidak ditemukan.');
         }
 
-        // Cek apakah user punya nomor HP di profile
+        /**
+         * --------------------------------------------------------
+         *  Validasi Nomor Telepon pada Profile
+         * --------------------------------------------------------
+         */
         $phone = $user->profile->phone ?? null;
         if (!$phone) {
-            return back()->with('error', 'Akun ini tidak memiliki nomor telepon terdaftar. Hubungi admin.');
+            return back()->with(
+                'error',
+                'Akun ini tidak memiliki nomor telepon terdaftar. Hubungi admin.'
+            );
         }
 
-        // Simpan user_id di session sementara untuk langkah selanjutnya
+        // Simpan user sementara untuk step berikutnya
         session(['reset_user_id' => $user->user_id]);
 
         return redirect()->route('password.verify.show');
     }
 
-    // --- LANGKAH 2: VERIFIKASI NOMOR HP ---
+    /**
+     * ============================================================
+     *  STEP 2 — PHONE VERIFICATION
+     * ============================================================
+     */
+
+    /**
+     * Menampilkan form verifikasi nomor telepon (masked)
+     */
     public function showVerifyForm()
     {
         if (!session('reset_user_id')) {
@@ -62,19 +92,36 @@ class ForgotPasswordController extends Controller
         }
 
         $user = User::find(session('reset_user_id'));
-        if (!$user) return redirect()->route('password.request');
+        if (!$user) {
+            return redirect()->route('password.request');
+        }
 
+        /**
+         * --------------------------------------------------------
+         *  Masking Nomor Telepon
+         *  Example: 081234567890 → 0812*****890
+         * --------------------------------------------------------
+         */
         $phone = $user->profile->phone;
-
-        // Sensor Nomor HP (081234567890 -> 0812*****890)
         $length = strlen($phone);
-        $visibleStart = 4;
-        $visibleEnd = 3;
-        $maskedPhone = substr($phone, 0, $visibleStart) . str_repeat('*', $length - ($visibleStart + $visibleEnd)) . substr($phone, -$visibleEnd);
 
-        return view('auth.forgot-password.verify', compact('maskedPhone'));
+        $visibleStart = 4;
+        $visibleEnd   = 3;
+
+        $maskedPhone =
+            substr($phone, 0, $visibleStart)
+            . str_repeat('*', $length - ($visibleStart + $visibleEnd))
+            . substr($phone, -$visibleEnd);
+
+        return view(
+            'auth.forgot-password.verify',
+            compact('maskedPhone')
+        );
     }
 
+    /**
+     * Verifikasi kecocokan nomor telepon & kirim link reset password
+     */
     public function verify(Request $request)
     {
         $request->validate([
@@ -82,106 +129,195 @@ class ForgotPasswordController extends Controller
         ]);
 
         $userId = session('reset_user_id');
-        if (!$userId) return redirect()->route('password.request');
+        if (!$userId) {
+            return redirect()->route('password.request');
+        }
 
         $user = User::find($userId);
         $savedPhone = $user->profile->phone;
 
-        // Cek kecocokan nomor (Normalisasi dulu jika perlu, tapi disini kita asumsi input user harus persis)
-        // Kita bisa buat agak longgar misal 08 vs 628, tapi untuk keamanan ketat, harus persis.
-        // Mari kita buat agar 08... dan 628... dianggap sama.
+        /**
+         * --------------------------------------------------------
+         *  Normalisasi Nomor Telepon
+         *  (08xxx, 8xxx, dan 62xxx dianggap sama)
+         * --------------------------------------------------------
+         */
         $inputPhone = $this->normalizePhone($request->phone);
-        $dbPhone = $this->normalizePhone($savedPhone);
+        $dbPhone    = $this->normalizePhone($savedPhone);
 
         if ($inputPhone !== $dbPhone) {
-            return back()->with('error', 'Nomor telepon tidak cocok dengan data kami.');
+            return back()->with(
+                'error',
+                'Nomor telepon tidak cocok dengan data kami.'
+            );
         }
 
-        // --- GENERATE LINK RESET ---
+        /**
+         * --------------------------------------------------------
+         *  Generate & Store Reset Token
+         * --------------------------------------------------------
+         */
         $token = Str::random(64);
 
-        // Simpan token ke tabel password_reset_tokens
-        // Hapus token lama user ini dulu
-        DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+        DB::table('password_reset_tokens')
+            ->where('email', $user->email)
+            ->delete();
 
         DB::table('password_reset_tokens')->insert([
-            'email' => $user->email,
-            'token' => $token, // Token polosan (biasanya di-hash, tapi untuk link sekali pakai ini ok asal ada expired)
-            'created_at' => Carbon::now()
+            'email'      => $user->email,
+            'token'      => $token,
+            'created_at' => Carbon::now(),
         ]);
 
-        // Buat Link
-        $link = route('password.reset', ['token' => $token, 'email' => $user->email]);
+        /**
+         * --------------------------------------------------------
+         *  Send Reset Link via WhatsApp
+         * --------------------------------------------------------
+         */
+        $link = route('password.reset', [
+            'token' => $token,
+            'email' => $user->email,
+        ]);
 
-        // Kirim Link via WA (Fonnte)
-        $message = "Halo {$user->name},\n\nKami menerima permintaan reset password untuk akun Anda.\nKlik link berikut untuk membuat password baru:\n\n{$link}\n\nLink ini hanya berlaku selama 60 menit dan hanya bisa digunakan 1 kali.\n\nJika Anda tidak meminta ini, abaikan pesan ini.";
+        $message =
+            "Halo {$user->name},\n\n"
+            . "Kami menerima permintaan reset password untuk akun Anda.\n"
+            . "Klik link berikut untuk membuat password baru:\n\n"
+            . "{$link}\n\n"
+            . "Link ini hanya berlaku selama 60 menit dan hanya bisa digunakan 1 kali.\n\n"
+            . "Jika Anda tidak meminta ini, abaikan pesan ini.";
 
         $this->fonnte->sendMessage($savedPhone, $message);
 
-        // Hapus session user id agar tidak bisa back
+        // Bersihkan session agar tidak bisa back-step
         session()->forget('reset_user_id');
 
-        return redirect()->route('login')->with('success', 'Link reset password telah dikirim ke WhatsApp Anda. Silakan cek.');
+        return redirect()
+            ->route('login')
+            ->with(
+                'success',
+                'Link reset password telah dikirim ke WhatsApp Anda. Silakan cek.'
+            );
     }
 
-    // --- LANGKAH 3: FORM RESET PASSWORD (VIA LINK) ---
+    /**
+     * ============================================================
+     *  STEP 3 — RESET PASSWORD (VIA LINK)
+     * ============================================================
+     */
+
+    /**
+     * Menampilkan form reset password dari link
+     */
     public function showResetForm(Request $request, $token = null)
     {
-        return view('auth.forgot-password.reset')->with(
-            ['token' => $token, 'email' => $request->email]
-        );
+        return view('auth.forgot-password.reset')->with([
+            'token' => $token,
+            'email' => $request->email,
+        ]);
     }
 
+    /**
+     * Proses reset password user
+     */
     public function reset(Request $request)
     {
         $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
+            'token'    => 'required',
+            'email'    => 'required|email',
             'password' => [
-                'required', 'string', 'min:8', 'confirmed',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/'
+                'required',
+                'string',
+                'min:8',
+                'confirmed',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/',
             ],
         ], [
-            'password.regex' => 'Password harus mengandung huruf besar, kecil, angka, dan simbol.',
+            'password.regex' =>
+                'Password harus mengandung huruf besar, kecil, angka, dan simbol.',
         ]);
 
-        // Cek Token di Database
+        /**
+         * --------------------------------------------------------
+         *  Validasi Token Reset
+         * --------------------------------------------------------
+         */
         $record = DB::table('password_reset_tokens')
             ->where('email', $request->email)
             ->where('token', $request->token)
             ->first();
 
-        // Validasi Token
         if (!$record) {
-            return back()->with('error', 'Link reset password tidak valid atau salah.');
+            return back()->with(
+                'error',
+                'Link reset password tidak valid atau salah.'
+            );
         }
 
-        // Cek Expired (60 Menit)
+        /**
+         * --------------------------------------------------------
+         *  Validasi Expired Token (60 Menit)
+         * --------------------------------------------------------
+         */
         if (Carbon::parse($record->created_at)->addMinutes(60)->isPast()) {
-            DB::table('password_reset_tokens')->where('email', $request->email)->delete(); // Hapus karena expired
-            return back()->with('error', 'Link reset password sudah kadaluarsa. Silakan minta ulang.');
+            DB::table('password_reset_tokens')
+                ->where('email', $request->email)
+                ->delete();
+
+            return back()->with(
+                'error',
+                'Link reset password sudah kadaluarsa. Silakan minta ulang.'
+            );
         }
 
-        // Update Password User
+        /**
+         * --------------------------------------------------------
+         *  Update Password User
+         * --------------------------------------------------------
+         */
         $user = User::where('email', $request->email)->first();
         if (!$user) {
             return back()->with('error', 'User tidak ditemukan.');
         }
 
         $user->update([
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($request->password),
         ]);
 
-        // Hapus Token (Single Use)
-        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+        // Token hanya boleh sekali pakai
+        DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->delete();
 
-        return redirect()->route('login')->with('success', 'Password berhasil diubah! Silakan login dengan password baru.');
+        return redirect()
+            ->route('login')
+            ->with(
+                'success',
+                'Password berhasil diubah! Silakan login dengan password baru.'
+            );
     }
 
-    private function normalizePhone($phone) {
+    /**
+     * ============================================================
+     *  HELPER
+     * ============================================================
+     */
+
+    /**
+     * Normalisasi format nomor telepon Indonesia
+     */
+    private function normalizePhone($phone)
+    {
         $phone = preg_replace('/[^0-9]/', '', $phone);
-        if (substr($phone, 0, 2) == '08') return '62' . substr($phone, 1);
-        if (substr($phone, 0, 1) == '8') return '62' . $phone;
+
+        if (substr($phone, 0, 2) === '08') {
+            return '62' . substr($phone, 1);
+        }
+
+        if (substr($phone, 0, 1) === '8') {
+            return '62' . $phone;
+        }
+
         return $phone;
     }
 }

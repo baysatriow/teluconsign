@@ -77,33 +77,21 @@ class Category extends Model
         return Product::where('category_id', $this->category_id)->get();
     }
 
-    /**
-     * Parent category relationship
-     */
     public function parent()
     {
         return $this->belongsTo(Category::class, 'parent_id', 'category_id');
     }
 
-    /**
-     * Children categories relationship
-     */
     public function children()
     {
         return $this->hasMany(Category::class, 'parent_id', 'category_id');
     }
 
-    /**
-     * Products relationship
-     */
     public function products()
     {
         return $this->hasMany(Product::class, 'category_id', 'category_id');
     }
 
-    /**
-     * Get all descendant category IDs recursively (including self)
-     */
     public function getAllChildIds()
     {
         $ids = [$this->category_id];
