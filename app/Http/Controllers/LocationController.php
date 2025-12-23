@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,11 +41,26 @@ class LocationController extends Controller
 
         /*
         | >>> KONFIGURASI API
-        | Catatan: API Key sebaiknya dipindah ke .env
-        | (saat ini hardcoded untuk kebutuhan verifikasi)
+        | Ambil dari Database (Integration Tables) sesuai format BaseIntegrationService
         */
-        $apiKey  = 'd5LxeDvW8f8033e2b179a590DEyT4Xf1';
-        $baseUrl = 'https://rajaongkir.komerce.id/api/v1/destination/domestic-destination';
+        $provider = DB::table('integration_providers')->where('code', 'rajaongkir')->first();
+        $key = $provider ? DB::table('integration_keys')
+                ->where('provider_id', $provider->integration_provider_id)
+                ->where('is_active', true)
+                ->first() : null;
+
+        // Fallback jika tidak ada konfigurasi di DB
+        if (!$key) {
+            return response()->json([]);
+        }
+
+        $config  = json_decode($key->meta_json ?? '{}', true);
+        $apiKey  = $key->public_k;
+        
+        // Base URL dari config (biasanya https://rajaongkir.komerce.id/api/v1)
+        // Kita append endpoint specific
+        $baseApiUrl = $config['base_url'] ?? 'https://rajaongkir.komerce.id/api/v1';
+        $targetUrl  = $baseApiUrl . '/destination/domestic-destination';
 
         try {
             /*
@@ -53,7 +69,7 @@ class LocationController extends Controller
             | dengan konfigurasi SSL & header lokal
             */
             $ch  = curl_init();
-            $url = $baseUrl . '?search=' . urlencode($query);
+            $url = $targetUrl . '?search=' . urlencode($query);
 
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);

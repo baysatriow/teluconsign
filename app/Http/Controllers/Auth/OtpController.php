@@ -12,12 +12,6 @@ use Carbon\Carbon;
 
 class OtpController extends Controller
 {
-    /**
-     * ------------------------------------------------------------
-     *  Dependency Injection
-     * ------------------------------------------------------------
-     *  Service WhatsApp (Fonnte) untuk pengiriman OTP
-     */
     protected FonnteService $fonnte;
 
     public function __construct(FonnteService $fonnte)
@@ -25,31 +19,12 @@ class OtpController extends Controller
         $this->fonnte = $fonnte;
     }
 
-    /**
-     * ============================================================
-     *  SHOW OTP VERIFICATION FORM
-     * ============================================================
-     */
-
-    /**
-     * Menampilkan halaman input OTP + info cooldown resend
-     */
     public function showVerifyForm()
     {
-        /**
-         * --------------------------------------------------------
-         *  Validasi Session OTP
-         * --------------------------------------------------------
-         */
         if (!session('otp_user_id')) {
             return redirect()->route('login');
         }
 
-        /**
-         * --------------------------------------------------------
-         *  Hitung Sisa Cooldown Tombol Resend
-         * --------------------------------------------------------
-         */
         $userId   = session('otp_user_id');
         $cacheKey = 'otp_resend_cooldown_' . $userId;
         $cooldown = 0;
@@ -66,26 +41,12 @@ class OtpController extends Controller
         return view('auth.otp', compact('cooldown'));
     }
 
-    /**
-     * ============================================================
-     *  VERIFY OTP
-     * ============================================================
-     */
-
-    /**
-     * Proses verifikasi OTP login / aktivasi
-     */
     public function verify(Request $request)
     {
         $request->validate([
             'otp' => 'required|numeric|digits:6',
         ]);
 
-        /**
-         * --------------------------------------------------------
-         *  Ambil User dari Session OTP
-         * --------------------------------------------------------
-         */
         $userId = session('otp_user_id');
         if (!$userId) {
             return redirect()
@@ -95,11 +56,6 @@ class OtpController extends Controller
 
         $user = User::find($userId);
 
-        /**
-         * --------------------------------------------------------
-         *  Validasi OTP & Masa Berlaku
-         * --------------------------------------------------------
-         */
         if (!$user || $request->otp != $user->otp_code) {
             return back()->withErrors(['otp' => 'Kode OTP salah.']);
         }
@@ -108,28 +64,13 @@ class OtpController extends Controller
             return back()->withErrors(['otp' => 'Kode OTP sudah kadaluarsa.']);
         }
 
-        /**
-         * ========================================================
-         *  OTP VERIFIED SUCCESSFULLY
-         * ========================================================
-         */
-
-        /**
-         * 1️⃣ Update status user & bersihkan OTP
-         */
-        $user->is_verified      = true;
-        $user->otp_code         = null;
-        $user->otp_expires_at   = null;
+        $user->is_verified    = true;
+        $user->otp_code       = null;
+        $user->otp_expires_at = null;
         $user->save();
 
-        /**
-         * 2️⃣ Login user secara resmi
-         */
         Auth::login($user, session('otp_remember', false));
 
-        /**
-         * 3️⃣ Bersihkan session & cache OTP
-         */
         session()->forget([
             'otp_user_id',
             'otp_context',
@@ -152,15 +93,6 @@ class OtpController extends Controller
             ->with('success', 'Verifikasi berhasil! Selamat datang.');
     }
 
-    /**
-     * ============================================================
-     *  RESEND OTP (RATE LIMITED)
-     * ============================================================
-     */
-
-    /**
-     * Kirim ulang OTP dengan sistem cooldown & progressive delay
-     */
     public function resend()
     {
         $userId = session('otp_user_id');
@@ -168,11 +100,6 @@ class OtpController extends Controller
             return redirect()->route('login');
         }
 
-        /**
-         * --------------------------------------------------------
-         *  Rate Limiting Configuration
-         * --------------------------------------------------------
-         */
         $cooldownKey = 'otp_resend_cooldown_' . $userId;
         $attemptsKey = 'otp_resend_attempts_' . $userId;
 
@@ -190,12 +117,6 @@ class OtpController extends Controller
             }
         }
 
-        /**
-         * --------------------------------------------------------
-         *  Progressive Cooldown
-         *  1 menit → 2 menit → ... → max 5 menit
-         * --------------------------------------------------------
-         */
         $attempts     = Cache::get($attemptsKey, 0) + 1;
         $minutes      = min($attempts, 5);
         $cooldownTime = now()->addMinutes($minutes);
@@ -203,11 +124,6 @@ class OtpController extends Controller
         Cache::put($cooldownKey, $cooldownTime, $cooldownTime);
         Cache::put($attemptsKey, $attempts, now()->addHour());
 
-        /**
-         * --------------------------------------------------------
-         *  Generate & Send New OTP
-         * --------------------------------------------------------
-         */
         $user = User::find($userId);
         $userPhone = $user->profile->phone ?? null;
 

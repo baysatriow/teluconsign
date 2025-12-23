@@ -97,6 +97,10 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
     Route::post('/profile/bank', [ProfileController::class, 'addBank'])->name('profile.bank.add');
     Route::put('/profile/bank/{id}', [ProfileController::class, 'updateBank'])->name('profile.bank.update');
     Route::delete('/profile/bank/{id}', [ProfileController::class, 'deleteBank'])->name('profile.bank.delete');
+    
+    // Update Phone Number (OTP)
+    Route::post('/profile/phone/request', [ProfileController::class, 'requestPhoneUpdate'])->name('profile.phone.request');
+    Route::post('/profile/phone/verify', [ProfileController::class, 'verifyPhoneUpdate'])->name('profile.phone.verify');
 
     // --- FITUR TOKO (PENJUAL) ---
     // 1. Dashboard & Core
@@ -151,6 +155,7 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
     Route::get('/payment/{payment}', [App\Http\Controllers\PaymentController::class, 'show'])->name('payment.show');
     Route::post('/payment/{payment}/charge', [App\Http\Controllers\PaymentController::class, 'createCharge'])->name('payment.charge');
     Route::get('/payment/{payment}/status', [App\Http\Controllers\PaymentController::class, 'checkStatus'])->name('payment.status');
+    Route::post('/payment/{payment}/demo', [App\Http\Controllers\PaymentController::class, 'demoPayment'])->name('payment.demo');
 
     // --- ADMIN ROUTES (Nested Middleware: auth + verified_otp + admin) ---
     Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
@@ -218,5 +223,5 @@ Route::post('/webhook/midtrans', [App\Http\Controllers\WebhookController::class,
 
 // Fallback jika url ngawur
 Route::fallback(function () {
-    return redirect()->route('home');
+    abort(404);
 });

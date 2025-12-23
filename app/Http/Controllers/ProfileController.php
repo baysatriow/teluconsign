@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Profile;
@@ -9,6 +10,8 @@ use App\Models\Address;
 use App\Models\BankAccount;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cache;
+use App\Services\FonnteService;
 
 class ProfileController extends Controller
 {
@@ -214,5 +217,67 @@ class ProfileController extends Controller
             'postal_code' => 'required|numeric',
             'detail_address' => 'required|string',
         ]);
+    }
+
+    /**
+     * Request Phone Update (Step 1)
+     * Generate OTP & Send to NEW WhatsApp Number
+     */
+    public function requestPhoneUpdate(Request $request, FonnteService $fonnte)
+    {
+        $request->validate([
+            'new_phone' => 'required|numeric|digits_between:10,14'
+        ]);
+
+        $userId = Auth::id();
+        $otp = rand(100000, 999999);
+        $cacheKey = 'phone_update_' . $userId;
+
+        // Store temp data in cache for 5 minutes
+        Cache::put($cacheKey, [
+            'new_phone' => $request->new_phone,
+            'otp' => $otp
+        ], now()->addMinutes(5));
+
+        // Send OTP to NEW number
+        try {
+            $fonnte->sendMessage(
+                $request->new_phone, 
+                "Kode Verifikasi Ganti Nomor: *{$otp}*\n\nJANGAN BERIKAN KODE INI KE SIAPAPUN."
+            );
+            return response()->json(['status' => 'success', 'message' => 'OTP dikirim ke nomor baru.']);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => 'Gagal mengirim OTP. Pastikan nomor WhatsApp aktif.'], 500);
+        }
+    }
+
+    /**
+     * Verify Phone Update (Step 2)
+     * Check OTP & Commit Change
+     */
+    public function verifyPhoneUpdate(Request $request)
+    {
+        $request->validate([
+            'otp' => 'required|numeric|digits:6'
+        ]);
+
+        $userId = Auth::id();
+        $cacheKey = 'phone_update_' . $userId;
+        $tempData = Cache::get($cacheKey);
+
+        if (!$tempData || $request->otp != $tempData['otp']) {
+            return response()->json(['status' => 'error', 'message' => 'Kode OTP salah atau kadaluarsa.'], 400);
+        }
+
+        // Commit Change
+        Profile::updateOrCreate(
+            ['user_id' => $userId],
+            ['phone' => $tempData['new_phone']]
+        );
+
+        // Clear Cache
+        Cache::forget($cacheKey);
+
+        return response()->json(['status' => 'success', 'message' => 'Nomor WhatsApp berhasil diperbarui.']);
     }
 }

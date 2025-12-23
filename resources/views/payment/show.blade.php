@@ -99,6 +99,18 @@
                                 </div>
                             </div>
                         </div>
+                        </div>
+                        
+                        {{-- Demo Payment Button (Sandbox Only) --}}
+                        @if($isSandbox ?? false)
+                        <div class="mt-6 pt-6 border-t border-gray-100">
+                            <button onclick="demoPayment()" id="btn-demo-pay" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-xl">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                Bayar Sekarang (Demo - Sandbox)
+                            </button>
+                            <p class="text-xs text-gray-400 text-center mt-2">Tombol ini hanya muncul di mode sandbox untuk testing</p>
+                        </div>
+                        @endif
                     </div>
 
                     <script>
@@ -263,6 +275,7 @@
 
 <script>
 let paymentInterval = null;
+const isSandbox = @json($isSandbox ?? false); // Pass sandbox status to JS
 
 // Tab Switching
 function switchTab(tabName) {
@@ -280,30 +293,18 @@ function switchTab(tabName) {
 }
 
 function selectMethod(methodCode, methodName) {
-    // Disable all buttons
-    document.querySelectorAll('.payment-method-btn').forEach(btn => {
-        btn.disabled = true;
-        btn.classList.add('opacity-50', 'cursor-not-allowed');
-    });
+    // Disable all buttons visual feedback immediately
+    const btn = event.currentTarget;
+    const oldHtml = btn.innerHTML;
+    
+    // Show loading on the button itself first - simple text replacement
+    btn.innerHTML = `<div class="flex items-center justify-center w-full font-bold text-gray-500">Memproses...</div>`;
+    
+    document.querySelectorAll('.payment-method-btn').forEach(b => b.classList.add('opacity-50', 'pointer-events-none'));
 
-    // Show loading
+    // Show loading in display area
     const display = document.getElementById('payment-display');
-    const content = document.getElementById('payment-content');
     
-    content.innerHTML = `
-        <div class="text-center py-12">
-            <div class="relative">
-                <div class="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-telu-red mx-auto"></div>
-            </div>
-            <p class="text-gray-700 font-medium mt-6 text-lg">Membuat pembayaran...</p>
-            <p class="text-gray-500 text-sm mt-2">Mohon tunggu sebentar</p>
-        </div>
-    `;
-    display.classList.remove('hidden');
-    
-    // Smooth scroll to payment display
-    display.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
     // Call API to create charge
     fetch('{{ route("payment.charge", $payment) }}', {
         method: 'POST',
@@ -317,25 +318,70 @@ function selectMethod(methodCode, methodName) {
     .then(res => res.json())
     .then(data => {
         if (data.status === 'success') {
+            // Hide selection area entirely
             document.getElementById('payment-method-selection').classList.add('hidden');
+            
+            // Show payment UI
+            display.classList.remove('hidden');
             showPaymentUI(methodCode, methodName, data.data);
+            
+            // Show demo button if sandbox
+            if(isSandbox) {
+                // Check if container exists, if not create it
+                let demoContainer = document.getElementById('demo-payment-container');
+                if(!demoContainer) {
+                    demoContainer = document.createElement('div');
+                    demoContainer.id = 'demo-payment-container';
+                    demoContainer.className = 'mt-6 pt-6 border-t border-gray-100';
+                    display.appendChild(demoContainer);
+                }
+                
+                demoContainer.innerHTML = `
+                    <button onclick="demoPayment()" id="btn-demo-pay" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Bayar Sekarang (Demo - Sandbox)
+                    </button>
+                    <p class="text-xs text-gray-400 text-center mt-2">Tombol ini hanya muncul di mode sandbox untuk testing</p>
+                `;
+                demoContainer.classList.remove('hidden');
+            }
+
             startPaymentPolling();
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
+            // Revert button state
+             btn.innerHTML = oldHtml;
+             document.querySelectorAll('.payment-method-btn').forEach(b => b.classList.remove('opacity-50', 'pointer-events-none'));
+             
             Swal.fire({
                 icon: 'error',
                 title: 'Gagal Membuat Pembayaran',
                 text: data.message,
-                confirmButtonColor: '#EC1C25'
-            }).then(() => location.reload());
+                confirmButtonText: 'Tutup',
+                customClass: {
+                    confirmButton: 'bg-red-600 text-white font-bold py-2 px-6 rounded-lg'
+                },
+                buttonsStyling: false
+            });
         }
     })
     .catch(err => {
+        console.error(err);
+         btn.innerHTML = oldHtml;
+         document.querySelectorAll('.payment-method-btn').forEach(b => b.classList.remove('opacity-50', 'pointer-events-none'));
+         
         Swal.fire({
             icon: 'error',
             title: 'Terjadi Kesalahan',
             text: 'Mohon coba lagi dalam beberapa saat',
-            confirmButtonColor: '#EC1C25'
-        }).then(() => location.reload());
+            confirmButtonText: 'Tutup',
+             customClass: {
+                    confirmButton: 'bg-red-600 text-white font-bold py-2 px-6 rounded-lg'
+                },
+            buttonsStyling: false
+        });
     });
 }
 
@@ -380,39 +426,56 @@ function showPaymentUI(method, methodName, data) {
         
         content.innerHTML = `
             <div class="max-w-md mx-auto">
-                <div class="text-center mb-6">
-                    <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-50 rounded-full mb-4 ring-8 ring-blue-50/50">
+                        <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
                         </svg>
                     </div>
-                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Transfer ke ${bank}</h3>
-                    <p class="text-gray-600">Virtual Account Number</p>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-1">Transfer ke ${bank}</h3>
+                    <p class="text-gray-500 text-sm">Selesaikan pembayaran ke nomor Virtual Account di bawah</p>
                 </div>
                 
-                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 mb-6 border border-blue-200">
-                    <p class="text-sm text-blue-700 font-medium mb-2">Nomor Virtual Account:</p>
-                    <div class="flex items-center justify-between bg-white rounded-xl p-4 shadow-sm">
-                        <span class="text-2xl sm:text-3xl font-mono font-bold text-gray-900 tracking-wider" id="va-number">${vaNumber}</span>
-                        <button onclick="copyVA()" class="ml-4 px-4 py-2 bg-telu-red text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-colors flex-shrink-0">
-                            Salin
-                        </button>
+                <div class="bg-gray-50/50 rounded-2xl p-6 border border-gray-200 mb-6 relative overflow-hidden group hover:border-blue-300 transition-colors">
+                    <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <svg class="w-24 h-24 text-blue-900" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h16v16H4z" fill="none"/><path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H4V4h16v16z"/></svg>
+                    </div>
+                    
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Nomor Virtual Account</label>
+                            <button onclick="copyVA()" 
+                                    class="flex items-center gap-1.5 px-3 py-1 bg-white border border-gray-200 hover:border-blue-500 text-gray-600 hover:text-blue-600 text-xs font-bold rounded-lg transition-all shadow-sm hover:shadow active:scale-95"
+                                    title="Salin Nomor VA">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                                <span>Salin</span>
+                            </button>
+                        </div>
+                        <span class="text-3xl sm:text-4xl font-mono font-bold text-gray-900 tracking-tight block select-all" id="va-number">${vaNumber}</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-3 italic">*Cek otomatis dalam 5-10 menit</p>
+                </div>
+                
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-8">
+                    <div class="flex items-center justify-between mb-1">
+                        <p class="text-sm text-amber-800 font-medium">Total Transfer</p>
+                        <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">Harus Persis</span>
+                    </div>
+                    <p class="text-3xl font-extrabold text-gray-900 tracking-tight">Rp${formatNumber(data.gross_amount)}</p>
+                    <div class="mt-4 flex items-center gap-2 text-xs text-amber-700 bg-amber-100/50 p-2 rounded-lg">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Bayar sebelum: <span class="font-bold">${formatTimestamp(data.expiry_time)}</span>
                     </div>
                 </div>
                 
-                <div class="bg-amber-50 border-2 border-amber-300 rounded-xl p-5 mb-6">
-                    <p class="text-sm text-amber-900 font-medium mb-2">
-                        💳 Total Transfer (harus EXACT):
-                    </p>
-                    <p class="text-3xl font-bold text-amber-900">Rp${formatNumber(data.gross_amount)}</p>
-                    <p class="text-xs text-amber-700 mt-2">
-                        ⏰ Berlaku hingga: ${formatTimestamp(data.expiry_time)}
-                    </p>
-                </div>
-                
-                <div class="flex items-center justify-center gap-2 text-sm">
-                    <div class="animate-pulse w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span class="text-gray-600 font-medium">Menunggu pembayaran...</span>
+                <div class="text-center">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full border border-gray-200">
+                        <span class="relative flex h-2.5 w-2.5">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                        </span>
+                        <span class="text-sm font-medium text-gray-600">Menunggu pembayaran otomatis...</span>
+                    </div>
                 </div>
             </div>
         `;
@@ -433,18 +496,16 @@ function showPaymentUI(method, methodName, data) {
                 </div>
                 
                 <a href="${deeplink}" target="_blank" 
-                   class="inline-block px-8 py-4 bg-gradient-to-r from-telu-red to-red-600 text-white font-bold rounded-xl hover:shadow-lg transition-all transform hover:scale-105 mb-6">
-                    <span class="flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                        </svg>
-                        Buka ${methodName}
-                    </span>
+                   class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white border-2 border-[#EC1C25] text-[#EC1C25] font-bold rounded-xl hover:bg-[#EC1C25] hover:text-white transition-all transform hover:scale-105 mb-6 shadow-sm hover:shadow-lg w-full sm:w-auto">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                    </svg>
+                    <span>Buka Aplikasi ${methodName}</span>
                 </a>
                 
-                <div class="bg-gray-50 rounded-xl p-5 mb-6">
-                    <p class="text-sm text-gray-700 mb-2">Total Bayar</p>
-                    <p class="text-3xl font-bold text-telu-red">Rp${formatNumber(data.gross_amount)}</p>
+                <div class="bg-gray-50 rounded-xl p-5 mb-6 border border-gray-100">
+                    <p class="text-sm text-gray-700 mb-2 font-medium">Total Bayar</p>
+                    <p class="text-3xl font-extrabold text-gray-900">Rp${formatNumber(data.gross_amount)}</p>
                 </div>
                 
                 <div class="flex items-center justify-center gap-2 text-sm">
@@ -516,5 +577,97 @@ function startPaymentPolling() {
 window.addEventListener('beforeunload', () => {
     if (paymentInterval) clearInterval(paymentInterval);
 });
+
+// Demo Payment (Sandbox Only)
+// Demo Payment (Sandbox Only)
+function demoPayment() {
+    const btn = document.getElementById('btn-demo-pay');
+    const originalText = btn.innerHTML;
+    
+    Swal.fire({
+        title: '<h3 class="font-bold text-xl text-gray-900">Simulasi Pembayaran?</h3>',
+        html: '<div class="text-gray-600 mb-2">Ini akan mensimulasikan pembayaran sukses.</div><div class="text-sm text-purple-600 font-medium bg-purple-50 p-2 rounded-lg">Gunakan hanya untuk testing (Sandbox Mode).</div>',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#8B5CF6',
+        cancelButtonColor: '#9CA3AF',
+        confirmButtonText: 'Ya, Bayar Sekarang!',
+        cancelButtonText: 'Batal',
+        customClass: {
+            popup: 'rounded-2xl border border-gray-100 shadow-xl',
+            confirmButton: 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg transform transition hover:-translate-y-0.5',
+            cancelButton: 'bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2.5 px-6 rounded-xl transition',
+            title: 'font-bold text-gray-900',
+            htmlContainer: 'text-gray-600'
+        },
+        buttonsStyling: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+            
+            fetch('{{ route("payment.demo", $payment) }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Simulasi Dikirim!',
+                        text: 'Menunggu webhook atau update langsung...',
+                        timer: 2000,
+                        showConfirmButton: false,
+                        customClass: {
+                             popup: 'rounded-2xl border border-green-100 shadow-xl',
+                             title: 'font-bold text-gray-900'
+                        }
+                    });
+                    
+                    // Start polling for payment status
+                    startPaymentPolling();
+                    
+                    // Wait a bit then check status immediately
+                    setTimeout(() => {
+                        window.location.href = '{{ route("orders.index") }}';
+                    }, 2000);
+                    
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: data.message || 'Terjadi kesalahan',
+                        confirmButtonText: 'Tutup',
+                        customClass: {
+                            confirmButton: 'bg-red-600 text-white font-bold py-2 px-6 rounded-lg'
+                        },
+                        buttonsStyling: false
+                    });
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Terjadi kesalahan sistem',
+                     customClass: {
+                            confirmButton: 'bg-red-600 text-white font-bold py-2 px-6 rounded-lg'
+                        },
+                     buttonsStyling: false
+                });
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            });
+        }
+    });
+}
 </script>
 @endsection

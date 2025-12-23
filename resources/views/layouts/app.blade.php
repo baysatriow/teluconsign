@@ -38,7 +38,7 @@
         .text-balanced { text-wrap: balance; }
         .shadow-soft { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02); }
         .shadow-card { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -2px rgba(0, 0, 0, 0.01); }
-        .input-modern { @apply bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-3 transition-shadow duration-200 focus:shadow-lg focus:shadow-red-50; }
+        .input-modern { @apply bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-[#EC1C25]/5 focus:border-[#EC1C25] block w-full px-4 py-3 transition-all duration-200 outline-none; }
     </style>
 
     <script>

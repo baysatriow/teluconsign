@@ -13,12 +13,6 @@ use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
-    /**
-     * ------------------------------------------------------------
-     *  Dependency Injection
-     * ------------------------------------------------------------
-     *  FonnteService digunakan untuk pengiriman OTP via WhatsApp
-     */
     protected FonnteService $fonnte;
 
     public function __construct(FonnteService $fonnte)
@@ -26,30 +20,13 @@ class AuthController extends Controller
         $this->fonnte = $fonnte;
     }
 
-    /**
-     * ============================================================
-     *  REGISTER
-     * ============================================================
-     */
-
-    /**
-     * Menampilkan halaman registrasi
-     */
     public function showRegisterForm()
     {
         return view('auth.register');
     }
 
-    /**
-     * Proses registrasi user + pengiriman OTP aktivasi
-     */
     public function register(Request $request)
     {
-        /**
-         * --------------------------------------------------------
-         *  Validasi Input Registrasi
-         * --------------------------------------------------------
-         */
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:120', 'regex:/^[A-Za-zÀ-ž\s\'\.\-]+$/'],
             'username' => ['required', 'string', 'min:4', 'max:50', 'regex:/^[a-zA-Z0-9_]+$/', 'unique:users,username'],
@@ -71,11 +48,6 @@ class AuthController extends Controller
         try {
             DB::beginTransaction();
 
-            /**
-             * ----------------------------------------------------
-             *  Create User & Profile
-             * ----------------------------------------------------
-             */
             $user = User::create([
                 'name'        => $validated['name'],
                 'username'    => $validated['username'],
@@ -93,22 +65,12 @@ class AuthController extends Controller
                 'bio'     => 'Pengguna baru Telu Consign',
             ]);
 
-            /**
-             * ----------------------------------------------------
-             *  Generate & Send OTP Activation
-             * ----------------------------------------------------
-             */
             $otp = $user->generateOtp();
             $message = "Halo {$user->name}, Kode OTP Aktivasi Tel-U Consign Anda adalah: *{$otp}*.";
             $this->fonnte->sendMessage($validated['phone'], $message);
 
             DB::commit();
 
-            /**
-             * ----------------------------------------------------
-             *  Store OTP Context to Session
-             * ----------------------------------------------------
-             */
             session([
                 'otp_user_id' => $user->user_id,
                 'otp_context' => 'activation',
@@ -127,73 +89,36 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * ============================================================
-     *  LOGIN + OTP (2FA)
-     * ============================================================
-     */
-
-    /**
-     * Menampilkan halaman login
-     */
     public function showLoginForm()
     {
         return view('auth.login');
     }
 
-    /**
-     * Proses login menggunakan email / username + OTP
-     */
     public function login(Request $request)
     {
-        /**
-         * --------------------------------------------------------
-         *  Validasi Input Login
-         * --------------------------------------------------------
-         */
         $request->validate([
             'login'    => 'required|string',
             'password' => 'required|string',
         ]);
 
-        /**
-         * --------------------------------------------------------
-         *  Tentukan Login Type (Email / Username)
-         * --------------------------------------------------------
-         */
         $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL)
             ? 'email'
             : 'username';
 
         $user = User::where($loginType, $request->login)->first();
 
-        /**
-         * --------------------------------------------------------
-         *  Validasi User & Password
-         * --------------------------------------------------------
-         */
         if (!$user || !Hash::check($request->password, $user->password)) {
             return back()
                 ->withErrors(['login' => 'Username/Email atau kata sandi salah.'])
                 ->withInput();
         }
 
-        /**
-         * --------------------------------------------------------
-         *  Validasi Status Akun
-         * --------------------------------------------------------
-         */
         if ($user->status !== 'active') {
             return back()
                 ->withErrors(['login' => 'Akun Anda sedang ditangguhkan/non-aktif.'])
                 ->withInput();
         }
 
-        /**
-         * --------------------------------------------------------
-         *  Generate & Send OTP Login
-         * --------------------------------------------------------
-         */
         $otp = $user->generateOtp();
         $userPhone = $user->profile->phone ?? null;
 
@@ -204,11 +129,6 @@ class AuthController extends Controller
             );
         }
 
-        /**
-         * --------------------------------------------------------
-         *  Store OTP Login Context
-         * --------------------------------------------------------
-         */
         session([
             'otp_user_id'  => $user->user_id,
             'otp_context'  => 'login',
@@ -220,15 +140,6 @@ class AuthController extends Controller
             ->with('info', 'Masukkan kode OTP untuk masuk.');
     }
 
-    /**
-     * ============================================================
-     *  LOGOUT
-     * ============================================================
-     */
-
-    /**
-     * Logout user & destroy session
-     */
     public function logout(Request $request)
     {
         Auth::logout();

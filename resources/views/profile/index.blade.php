@@ -9,26 +9,97 @@
         <p class="mt-3 text-gray-500 text-lg">Kelola profil, keamanan, dan preferensi pengiriman Anda.</p>
     </div>
 
+    <style>
+        /* Modern Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+            background: #e2e8f0; 
+            border-radius: 10px; 
+            transition: all 0.3s;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+        /* Premium Input styling to override global inconsistencies */
+        .input-profile-custom {
+            @apply bg-white border border-gray-100 text-gray-900 text-sm rounded-2xl focus:ring-4 focus:ring-[#EC1C25]/5 focus:border-[#EC1C25] block w-full px-5 py-4 transition-all duration-300 outline-none shadow-sm;
+        }
+        .input-profile-custom::placeholder {
+            @apply text-gray-300 font-medium;
+        }
+        .input-profile-custom:hover {
+            @apply border-gray-200 shadow-md;
+        }
+
+        /* Label styling */
+        .label-profile-custom {
+            @apply block mb-2.5 text-sm font-black text-gray-700 tracking-tight;
+        }
+
+        /* Section Header refinement */
+        .section-bar {
+            @apply w-1.5 h-7 bg-[#EC1C25] rounded-full shadow-sm shadow-red-200;
+        }
+
+        /* SweetAlert2 Custom Styling - Match Brand Design */
+        .swal2-popup {
+            border-radius: 2rem !important;
+            padding: 2rem !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
+        }
+        .swal2-title {
+            font-size: 1.5rem !important;
+            font-weight: 900 !important;
+            color: #111827 !important;
+            margin-bottom: 0.5rem !important;
+        }
+        .swal2-html-container {
+            font-size: 0.95rem !important;
+            color: #6b7280 !important;
+            font-weight: 500 !important;
+        }
+        .swal2-confirm {
+            background-color: #EC1C25 !important;
+            border-radius: 1rem !important;
+            padding: 0.75rem 2rem !important;
+            font-weight: 800 !important;
+            font-size: 0.9rem !important;
+            box-shadow: 0 10px 25px -5px rgba(236, 28, 37, 0.3) !important;
+        }
+        .swal2-confirm:hover {
+            background-color: #c4161e !important;
+        }
+        .swal2-icon {
+            border-width: 3px !important;
+        }
+        .swal2-icon.swal2-success [class^='swal2-success-line'] {
+            background-color: #EC1C25 !important;
+        }
+        .swal2-icon.swal2-success .swal2-success-ring {
+            border-color: rgba(236, 28, 37, 0.3) !important;
+        }
+    </style>
+
     <div class="lg:grid lg:grid-cols-12 lg:gap-x-12">
         <!-- Sidebar Navigation -->
-        <aside class="py-6 lg:col-span-3">
-            <nav class="space-y-1.5 sticky top-28 bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 shadow-sm">
-                <a href="#profile" id="nav-profile" class="group flex items-center px-4 py-3 text-sm font-bold bg-[#EC1C25] text-white rounded-xl shadow-lg shadow-red-100 transition-all active-nav" aria-current="page">
-                    <svg class="flex-shrink-0 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <aside class="py-6 lg:col-span-4">
+            <nav class="space-y-2 sticky top-28 bg-white rounded-2xl border border-gray-200 shadow-lg p-5">
+                <a href="#profile" id="nav-profile" class="group flex items-center px-5 py-4 text-base font-bold bg-[#EC1C25] text-white rounded-xl shadow-lg shadow-red-100 transition-all active-nav" aria-current="page">
+                    <svg class="flex-shrink-0 mr-4 h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     Profil Saya
                 </a>
 
-                <a href="#address" id="nav-address" class="group flex items-center px-4 py-3 text-sm font-bold text-gray-600 rounded-xl hover:bg-red-50 hover:text-[#EC1C25] transition-all">
-                    <svg class="flex-shrink-0 mr-3 h-5 w-5 text-gray-400 group-hover:text-[#EC1C25] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <a href="#address" id="nav-address" class="group flex items-center px-5 py-4 text-base font-bold text-gray-700 rounded-xl hover:bg-red-50 hover:text-[#EC1C25] transition-all">
+                    <svg class="flex-shrink-0 mr-4 h-6 w-6 text-gray-400 group-hover:text-[#EC1C25] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     Daftar Alamat
                 </a>
 
-                <a href="#security" id="nav-security" class="group flex items-center px-4 py-3 text-sm font-bold text-gray-600 rounded-xl hover:bg-red-50 hover:text-[#EC1C25] transition-all">
-                    <svg class="flex-shrink-0 mr-3 h-5 w-5 text-gray-400 group-hover:text-[#EC1C25] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <a href="#security" id="nav-security" class="group flex items-center px-5 py-4 text-base font-bold text-gray-700 rounded-xl hover:bg-red-50 hover:text-[#EC1C25] transition-all">
+                    <svg class="flex-shrink-0 mr-4 h-6 w-6 text-gray-400 group-hover:text-[#EC1C25] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                     Keamanan
@@ -37,7 +108,7 @@
         </aside>
 
         <!-- Main Content -->
-        <div class="space-y-8 lg:col-span-9 animate-fade-in-up" id="main-content">
+        <div class="space-y-8 lg:col-span-8 animate-fade-in-up" id="main-content">
             
             <!-- SECTION 1: PROFIL -->
             <section id="section-profile" class="bg-white shadow-xl shadow-gray-200/40 rounded-3xl overflow-hidden border border-gray-100 mb-8 transition-all hover:shadow-2xl hover:shadow-gray-200/50">
@@ -73,7 +144,12 @@
                         </div>
 
                         <div class="grid grid-cols-1 gap-8 sm:grid-cols-6 mb-10">
-                            <div class="sm:col-span-3">
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-bold text-gray-800 mb-2">Username</label>
+                                <input type="text" value="{{ $user->username }}" readonly class="input-modern block w-full bg-gray-50 border-gray-200 text-gray-500 cursor-not-allowed border-dashed" placeholder="username">
+                            </div>
+
+                            <div class="sm:col-span-4">
                                 <label for="name" class="block text-sm font-bold text-gray-800 mb-2">Nama Lengkap</label>
                                 <input type="text" name="name" id="name" value="{{ $user->name }}" class="input-modern block w-full bg-white border-gray-200 focus:ring-red-100 focus:border-[#EC1C25] transition-all" placeholder="Masukkan nama lengkap">
                             </div>
@@ -91,10 +167,13 @@
                             <div class="sm:col-span-3">
                                 <label for="phone" class="block text-sm font-bold text-gray-800 mb-2">Nomor WhatsApp</label>
                                 <div class="relative group">
-                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none group-focus-within:text-[#EC1C25] transition-colors">
-                                        <span class="text-sm font-extrabold text-gray-400">+62</span>
+                                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none group-focus-within:text-[#EC1C25] transition-colors">
+                                        <span class="text-sm font-black text-gray-400">+62</span>
                                     </div>
-                                    <input type="text" name="phone" id="phone" value="{{ $user->profile->phone ?? '' }}" class="input-modern block w-full pl-12 bg-white border-gray-200 focus:ring-red-100 focus:border-[#EC1C25] transition-all" placeholder="812-3456-7890">
+                                    <input type="text" value="{{ $user->profile->phone ?? '' }}" readonly class="input-modern block w-full pl-12 bg-gray-50/80 border-gray-100 text-gray-500 cursor-not-allowed font-bold" placeholder="812-3456-7890">
+                                    <button type="button" onclick="openPhoneModal()" class="absolute inset-y-1.5 right-1.5 px-4 bg-white border border-gray-100 text-[#EC1C25] text-xs font-black rounded-xl shadow-sm hover:shadow-md hover:border-red-100 transition-all flex items-center">
+                                        Ganti
+                                    </button>
                                 </div>
                             </div>
 
@@ -134,62 +213,69 @@
                         </button>
                     </div>
 
-                    <div class="grid gap-8 sm:grid-cols-2">
+                    <div class="space-y-6">
                         @forelse($user->addresses as $addr)
-                        <div class="relative group rounded-3xl border-2 {{ $addr->is_default ? 'border-[#EC1C25] bg-red-50/10' : 'border-gray-50 bg-white hover:border-red-100' }} p-8 shadow-sm flex flex-col transition-all duration-300 hover:shadow-xl hover:shadow-gray-200/50">
-                            @if($addr->is_default)
-                                <span class="absolute -top-3 left-8 inline-flex items-center px-4 py-1.5 rounded-full text-xs font-black bg-[#EC1C25] text-white shadow-lg shadow-red-200 tracking-wider uppercase">
-                                    Alamat Utama
-                                </span>
-                            @endif
-                            
-                            <div class="flex items-start justify-between mb-4 mt-2">
-                                <h3 class="text-lg font-extrabold text-gray-900 flex items-center gap-2.5">
-                                    <span class="p-2 rounded-xl {{ $addr->is_default ? 'bg-[#EC1C25] text-white' : 'bg-gray-100 text-gray-500' }} transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                    </span>
-                                    {{ $addr->label }}
-                                </h3>
-                            </div>
-                            
-                            <div class="flex-1 mt-4 space-y-3">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-base font-bold text-gray-900">{{ $addr->recipient }}</span>
-                                    <span class="text-gray-300">|</span>
-                                    <span class="text-sm font-medium text-gray-500">{{ $addr->phone }}</span>
-                                </div>
-                                <div class="text-sm text-gray-600 leading-relaxed bg-gray-50/50 p-4 rounded-2xl border border-gray-50 group-hover:bg-white group-hover:border-red-50 transition-colors">
-                                    <p class="font-medium">{{ $addr->detail_address }}</p>
-                                    <p class="text-xs mt-1 text-gray-400">{{ $addr->village }}, {{ $addr->district }}, {{ $addr->city }}, {{ $addr->province }} {{ $addr->postal_code }}</p>
+                        <div class="relative group rounded-[2rem] border-2 {{ $addr->is_default ? 'border-[#EC1C25] bg-white' : 'border-gray-100 bg-white hover:border-red-50' }} p-8 shadow-sm flex items-start gap-8 transition-all duration-300 hover:shadow-xl hover:shadow-gray-100">
+                            <!-- Left Icon -->
+                            <div class="flex-shrink-0">
+                                <div class="w-16 h-16 rounded-[1.5rem] {{ $addr->is_default ? 'bg-red-50' : 'bg-gray-50' }} flex items-center justify-center transition-colors">
+                                    <svg class="w-8 h-8 {{ $addr->is_default ? 'text-[#EC1C25]' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
                                 </div>
                             </div>
+                            
+                            <!-- Content Area -->
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="text-xl font-black text-gray-900 tracking-tight">{{ $addr->label }}</h3>
+                                    <div class="w-px h-4 bg-gray-200"></div>
+                                    <span class="text-lg font-bold text-gray-400">{{ $addr->recipient }}</span>
+                                </div>
 
-                            <div class="mt-8 flex items-center justify-between gap-4 pt-6 border-t border-gray-50">
-                                <div class="flex items-center gap-5">
-                                    <button type="button" onclick="editAddress({{ json_encode($addr) }})" class="text-sm font-extrabold text-gray-500 hover:text-[#EC1C25] transition-colors flex items-center gap-1.5">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                        Ubah
-                                    </button>
-                                    @if(!$addr->is_default)
-                                        <form action="{{ route('profile.address.default', $addr->address_id) }}" method="POST">
-                                            @csrf @method('PATCH')
-                                            <button type="submit" class="text-sm font-extrabold text-blue-600 hover:text-blue-800 transition-colors">Utamakan</button>
-                                        </form>
-                                    @endif
+                                <div class="text-base font-bold text-gray-500 mb-3 tracking-wide">
+                                    {{ $addr->phone }}
                                 </div>
-                                
-                                @if(!$addr->is_default)
-                                <form action="{{ route('profile.address.delete', $addr->address_id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus alamat ini?');">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="w-10 h-10 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                    </button>
-                                </form>
-                                @endif
+
+                                <div class="text-base font-bold text-gray-600 leading-relaxed mb-8 max-w-2xl">
+                                    {{ $addr->detail_address }}, {{ $addr->village }}, {{ $addr->district }}, {{ $addr->city }}, {{ $addr->province }} {{ $addr->postal_code }}
+                                </div>
+
+                                <div class="pt-6 border-t border-gray-100 flex items-center justify-between">
+                                    <div class="flex items-center gap-4">
+                                        @if($addr->is_default)
+                                            <span class="px-5 py-2 bg-red-50 text-[#EC1C25] text-[11px] font-black uppercase tracking-widest rounded-lg">
+                                                Aktif
+                                            </span>
+                                        @else
+                                            <form action="{{ route('profile.address.default', $addr->address_id) }}" method="POST">
+                                                @csrf @method('PATCH')
+                                                <button type="submit" class="text-sm font-black text-blue-600 hover:text-blue-800 transition-colors uppercase tracking-widest">
+                                                    Set Sebagai Utama
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+
+                                    <div class="flex items-center gap-4">
+                                        <button type="button" onclick="editAddress({{ json_encode($addr) }})" class="flex items-center gap-2 px-6 py-2.5 bg-gray-50 text-gray-600 rounded-xl font-black text-sm hover:bg-gray-100 transition-all">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                            Edit
+                                        </button>
+                                        @if(!$addr->is_default)
+                                            <form action="{{ route('profile.address.delete', $addr->address_id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus alamat ini?');">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="w-11 h-11 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all flex items-center justify-center shadow-sm">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         @empty
-                        <div class="sm:col-span-2 text-center py-20 rounded-3xl border-4 border-dashed border-gray-100 bg-gray-50/30">
+                        <div class="text-center py-20 rounded-3xl border-4 border-dashed border-gray-100 bg-gray-50/30">
                             <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <svg class="h-10 w-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                             </div>
@@ -254,18 +340,91 @@
     </div>
 </div>
 
-<!-- ADDRESS MODAL -->
-<div id="address-modal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full backdrop-blur-sm bg-gray-900/50">
-    <div class="relative p-4 w-full max-w-2xl max-h-full">
-        <div class="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <div class="flex items-center justify-between p-6 border-b border-gray-100 bg-white">
-                <h3 class="text-xl font-bold text-gray-800" id="address-modal-title">Tambah Alamat Baru</h3>
-                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-100 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center" onclick="closeAddressModal()">
-                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/></svg>
-                </button>
-            </div>
+    <!-- Phone Update Modal -->
+    <div id="phone-modal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full transition-all duration-300">
+        <div class="relative p-6 w-full max-w-lg max-h-full">
+            <div class="relative bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden">
+                <!-- Modal Header -->
+                <div class="p-8 pb-4 text-center">
+                    <div class="mx-auto w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8 text-[#EC1C25]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-900 tracking-tight" id="phone-modal-title">Ganti Nomor WhatsApp</h3>
+                    <p class="text-sm text-gray-400 mt-2 leading-relaxed max-w-sm mx-auto" id="phone-modal-desc">Masukkan nomor WhatsApp baru Anda untuk menerima kode verifikasi OTP.</p>
+                </div>
 
-            <form id="address-form" action="{{ route('profile.address.add') }}" method="POST">
+                <div class="p-8 pt-4">
+                    <!-- Step 1: Request OTP -->
+                    <div id="phone-step-1" class="text-center space-y-6">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                                <span class="text-lg font-black text-gray-400">+62</span>
+                            </div>
+                            <input type="number" id="new_phone" class="w-full bg-gray-50 border-none text-xl font-black text-gray-900 rounded-[1.5rem] px-6 py-5 pl-16 focus:ring-4 focus:ring-red-50 transition-all placeholder:text-gray-300" placeholder="812 3456 7890">
+                        </div>
+                        
+                        <div class="flex flex-col gap-3">
+                            <button type="button" onclick="requestOtp()" id="btn-request-otp" class="w-full py-4 bg-[#EC1C25] text-white font-black rounded-[1.25rem] shadow-xl shadow-red-100 hover:bg-[#c4161e] transform transition-all active:scale-95 flex items-center justify-center gap-3 text-base">
+                                <span>Kirim Kode OTP</span>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            </button>
+                            <button type="button" onclick="closePhoneModal()" class="w-full py-2 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors">Batalkan</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Verify OTP -->
+                    <div id="phone-step-2" class="hidden text-center space-y-8">
+                        <div class="flex flex-col items-center">
+                            <div class="flex gap-2 justify-center mb-8">
+                                <input type="text" maxlength="1" class="otp-input w-12 h-16 text-center text-2xl font-black bg-gray-50 border-2 border-transparent rounded-xl focus:border-[#EC1C25] focus:ring-0 transition-all shadow-sm">
+                                <input type="text" maxlength="1" class="otp-input w-12 h-16 text-center text-2xl font-black bg-gray-50 border-2 border-transparent rounded-xl focus:border-[#EC1C25] focus:ring-0 transition-all shadow-sm">
+                                <input type="text" maxlength="1" class="otp-input w-12 h-16 text-center text-2xl font-black bg-gray-50 border-2 border-transparent rounded-xl focus:border-[#EC1C25] focus:ring-0 transition-all shadow-sm">
+                                <input type="text" maxlength="1" class="otp-input w-12 h-16 text-center text-2xl font-black bg-gray-50 border-2 border-transparent rounded-xl focus:border-[#EC1C25] focus:ring-0 transition-all shadow-sm">
+                                <input type="text" maxlength="1" class="otp-input w-12 h-16 text-center text-2xl font-black bg-gray-50 border-2 border-transparent rounded-xl focus:border-[#EC1C25] focus:ring-0 transition-all shadow-sm">
+                                <input type="text" maxlength="1" class="otp-input w-12 h-16 text-center text-2xl font-black bg-gray-50 border-2 border-transparent rounded-xl focus:border-[#EC1C25] focus:ring-0 transition-all shadow-sm">
+                            </div>
+                            <input type="hidden" id="otp_code">
+                        </div>
+
+                        <div class="flex flex-col gap-3">
+                            <button type="button" onclick="verifyOtp()" id="btn-verify-otp" class="w-full py-4 bg-gray-900 text-white font-black rounded-[1.25rem] shadow-xl shadow-gray-200 hover:bg-black transform transition-all active:scale-95 text-base">
+                                Verifikasi & Simpan Nomor
+                            </button>
+                            <div class="flex items-center justify-center gap-6">
+                                <button type="button" onclick="goBackToLine()" class="text-xs font-black text-gray-400 hover:text-gray-900 transition-colors flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                                    Ubah Nomor
+                                </button>
+                                <button type="button" onclick="requestOtp()" class="text-xs font-black text-[#EC1C25] hover:text-[#c4161e] transition-colors flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    Kirim Ulang OTP
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Address Modal Structure -->
+    <div id="address-modal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+        <div class="relative p-4 w-full max-w-2xl max-h-full">
+            <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
+                <div class="flex items-center justify-between p-6 border-b border-gray-50">
+                    <div class="flex items-center gap-4">
+                        <div class="section-bar"></div>
+                        <h3 class="text-xl font-black text-gray-900 tracking-tight" id="address-modal-title">Tambah Alamat Baru</h3>
+                    </div>
+                    <button type="button" onclick="closeAddressModal()" class="text-gray-400 bg-transparent hover:bg-gray-100 hover:text-gray-900 rounded-xl text-sm w-10 h-10 inline-flex justify-center items-center transition-all">
+                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                        </svg>
+                        <span class="sr-only">Close modal</span>
+                    </button>
+                </div><form id="address-form" action="{{ route('profile.address.add') }}" method="POST">
                 <div class="p-6 max-h-[70vh] overflow-y-auto">
                     @csrf
                     <div id="address-method"></div>
@@ -344,14 +503,19 @@
         navLinks.forEach(link => {
             const isTarget = link.getAttribute('href') === hash;
             link.className = isTarget 
-                ? 'group flex items-center px-3 py-2 text-sm font-medium bg-red-50 text-[#EC1C25] rounded-md transition-all'
-                : 'group flex items-center px-3 py-2 text-sm font-medium text-gray-900 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-all';
+                ? 'group flex items-center px-5 py-4 text-base font-bold bg-[#EC1C25] text-white rounded-xl shadow-lg shadow-red-100 transition-all active-nav'
+                : 'group flex items-center px-5 py-4 text-base font-bold text-gray-700 rounded-xl hover:bg-red-50 hover:text-[#EC1C25] transition-all';
             
             const svg = link.querySelector('svg');
             if(svg) {
-                svg.className = isTarget
-                    ? 'flex-shrink-0 -ml-1 mr-3 h-6 w-6 text-[#EC1C25]'
-                    : 'flex-shrink-0 -ml-1 mr-3 h-6 w-6 text-gray-400 group-hover:text-gray-500';
+                svg.className = 'flex-shrink-0 mr-4 h-6 w-6 transition-colors';
+                if(isTarget) {
+                    svg.classList.add('text-white');
+                    svg.classList.remove('text-gray-400');
+                } else {
+                    svg.classList.add('text-gray-400');
+                    svg.classList.remove('text-white');
+                }
             }
         });
 
@@ -367,6 +531,180 @@
 
     window.addEventListener('hashchange', () => setActiveTab(window.location.hash));
     document.addEventListener('DOMContentLoaded', () => setActiveTab(window.location.hash));
+
+    // Phone Modal Logic (Restored & Polished)
+    const phoneModal = document.getElementById('phone-modal');
+    let phoneModalInstance = null;
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        if(window.Flowbite) phoneModalInstance = new Flowbite.default.Modal(phoneModal);
+        
+        // OTP Auto-focus & Collect
+        const otpInputs = document.querySelectorAll('.otp-input');
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if(e.target.value.length === 1 && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+                updateOtpValue();
+            });
+            input.addEventListener('keydown', (e) => {
+                if(e.key === 'Backspace' && !e.target.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+        });
+
+        function updateOtpValue() {
+            let val = '';
+            otpInputs.forEach(i => val += i.value);
+            document.getElementById('otp_code').value = val;
+        }
+    });
+
+    window.openPhoneModal = function() {
+        window.goBackToLine(); // Reset steps
+        if(phoneModalInstance) phoneModalInstance.show();
+        else phoneModal.classList.remove('hidden');
+    }
+
+    window.closePhoneModal = function() {
+        if(phoneModalInstance) phoneModalInstance.hide();
+        else phoneModal.classList.add('hidden');
+    }
+
+    window.goBackToLine = function() {
+        document.getElementById('phone-step-1').classList.remove('hidden');
+        document.getElementById('phone-step-2').classList.add('hidden');
+        document.getElementById('phone-modal-title').innerText = "Ganti Nomor WhatsApp";
+        document.getElementById('phone-modal-desc').innerText = "Masukkan nomor WhatsApp baru Anda untuk menerima kode verifikasi OTP.";
+        // Clear inputs
+        document.getElementById('otp_code').value = '';
+        document.querySelectorAll('.otp-input').forEach(i => i.value = '');
+    }
+
+    window.requestOtp = function() {
+        const phone = document.getElementById('new_phone').value;
+        const btn = document.getElementById('btn-request-otp');
+        
+        if(!phone) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Nomor Tidak Valid',
+                text: 'Silakan masukkan nomor WhatsApp baru Anda',
+                confirmButtonColor: '#EC1C25',
+            });
+            return;
+        }
+
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Mengirim...';
+
+        fetch("{{ route('profile.phone.request') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ new_phone: phone })
+        })
+        .then(res => res.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+
+            if(data.status === 'success') {
+                document.getElementById('phone-step-1').classList.add('hidden');
+                document.getElementById('phone-step-2').classList.remove('hidden');
+                document.getElementById('phone-modal-title').innerText = "Verifikasi Kode OTP";
+                document.getElementById('phone-modal-desc').innerText = `Masukkan 6 digit kode yang kami kirimkan ke +62 ${phone}`;
+                
+                // Auto-focus first OTP input
+                document.querySelector('.otp-input').focus();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Mengirim OTP',
+                    text: data.message || 'Terjadi kesalahan saat mengirim kode verifikasi',
+                    confirmButtonColor: '#EC1C25',
+                });
+            }
+        })
+        .catch(error => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            Swal.fire({
+                icon: 'error',
+                title: 'Kesalahan Jaringan',
+                text: 'Tidak dapat terhubung ke server. Silakan coba lagi.',
+                confirmButtonColor: '#EC1C25',
+            });
+        });
+    }
+
+    window.verifyOtp = function() {
+        const otp = document.getElementById('otp_code').value;
+        const phone = document.getElementById('new_phone').value;
+        const btn = document.getElementById('btn-verify-otp');
+        
+        if(otp.length < 6) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Kode OTP Tidak Lengkap',
+                text: 'Silakan masukkan 6 digit kode OTP yang Anda terima',
+                confirmButtonColor: '#EC1C25',
+            });
+            return;
+        }
+
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerText = 'Memverifikasi...';
+
+        fetch("{{ route('profile.phone.verify') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ new_phone: phone, otp: otp })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Nomor Berhasil Diganti!',
+                    text: 'Nomor WhatsApp Anda telah diperbarui',
+                    confirmButtonColor: '#EC1C25',
+                    timer: 2000,
+                    timerProgressBar: true,
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Verifikasi Gagal',
+                    text: data.message || 'Kode OTP tidak valid atau sudah kedaluwarsa',
+                    confirmButtonColor: '#EC1C25',
+                });
+            }
+        })
+        .catch(error => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            Swal.fire({
+                icon: 'error',
+                title: 'Kesalahan Jaringan',
+                text: 'Tidak dapat terhubung ke server. Silakan coba lagi.',
+                confirmButtonColor: '#EC1C25',
+            });
+        });
+    }
 
     // Photo Preview
     function previewImage(input) {
