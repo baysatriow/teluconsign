@@ -2,7 +2,12 @@
 
 @section('content')
 <div class="min-h-screen flex items-center justify-center p-4 bg-gray-50/50">
-    <div class="w-full max-w-5xl bg-white shadow-2xl rounded-3xl overflow-hidden flex flex-col md:flex-row animate-fade-in-up">
+    
+    <div class="absolute inset-0 bg-cover bg-center bg-no-repeat z-0 blur-[2px]"
+         style="background-image: url('{{ asset('images/bg.png') }}'); opacity: 0.15;">
+    </div>
+
+    <div class="w-full max-w-5xl bg-white shadow-2xl rounded-3xl overflow-hidden flex flex-col md:flex-row animate-fade-in-up relative z-10">
         
         <!-- Left Side: Brand/Image -->
         <div class="hidden md:flex md:w-1/2 bg-[#EC1C25] text-white p-12 flex-col justify-between relative overflow-hidden">

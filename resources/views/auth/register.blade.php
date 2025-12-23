@@ -1,8 +1,13 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="min-h-screen flex items-center justify-center p-4 bg-gray-50/50">
-    <div class="w-full max-w-5xl bg-white shadow-2xl rounded-3xl overflow-hidden flex flex-col md:flex-row-reverse animate-fade-in-up">
+<div class="min-h-screen flex items-center justify-center pt-24 pb-12 px-4 bg-gray-50/50">
+    
+    <div class="absolute inset-0 bg-cover bg-center bg-no-repeat z-0 blur-[2px]"
+         style="background-image: url('{{ asset('images/bg.png') }}'); opacity: 0.15;">
+    </div>
+
+    <div class="w-full max-w-6xl bg-white shadow-2xl rounded-3xl overflow-hidden flex flex-col md:flex-row-reverse animate-fade-in-up relative z-10">
         
         <div class="hidden md:flex md:w-1/2 bg-[#1e293b] text-white p-12 flex-col justify-between relative overflow-hidden">
             <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1555529733-0e670560f7e1?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center opacity-30 hover:scale-105 transition-transform duration-10000"></div>
@@ -23,14 +28,14 @@
             </div>
         </div>
 
-        <div class="w-full md:w-1/2 p-8 md:p-12 bg-white relative">
+        <div class="w-full md:w-1/2 p-6 md:p-10 bg-white relative">
             <div class="max-w-md mx-auto">
-                <div class="text-center mb-6">
+                <div class="text-center mb-8">
                     <h3 class="text-3xl font-bold text-gray-900 mb-2">Buat Akun Baru 🚀</h3>
                     <p class="text-gray-500">Lengkapi data diri untuk memulai.</p>
                 </div>
 
-                <form class="space-y-4" action="{{ route('register.submit') }}" method="POST">
+                <form class="space-y-3" action="{{ route('register.submit') }}" method="POST">
                     @csrf
 
                     <div class="space-y-1">
