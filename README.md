@@ -1,61 +1,91 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# TeluConsign 🛍️
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+TeluConsign adalah platform e-commerce berbasis consignment (titip jual) yang dirancang khusus untuk memudahkan transaksi jual beli yang aman, transparan, dan terpercaya. Platform ini mengintegrasikan berbagai layanan pihak ketiga untuk memberikan pengalaman belanja yang premium dan modern.
 
-## About Laravel
+## 🚀 Fitur Utama
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Sistem Toko (My Shop)**: Pengguna dapat mendaftar sebagai penjual dan mengelola produk mereka sendiri.
+- **Integrasi Pembayaran (Midtrans)**: Transaksi aman dengan berbagai metode pembayaran otomatis.
+- **Integrasi Pengiriman (RajaOngkir)**: Perhitungan ongkos kirim real-time dan tracking pengiriman.
+- **Notifikasi WhatsApp (Fonnte)**: Verifikasi OTP dan notifikasi transaksi langsung ke WhatsApp pengguna.
+- **Fitur AI (Google Gemini)**: Integrasi kecerdasan buatan untuk asisten atau optimasi konten.
+- **Manajemen Profil & Alamat**: Pengaturan data diri yang komprehensif dengan sistem verifikasi nomor telepon yang aman.
+- **Panel Admin**: Dashboard khusus untuk mengelola user, kategori, dan memoderasi transaksi.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🛠️ Stack Teknologi
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Aplikasi ini dibangun menggunakan arsitektur modern yang efisien:
 
-## Learning Laravel
+- **Backend**: [Laravel 12.x](https://laravel.com/) (PHP)
+- **Database**: MySQL / MariaDB
+- **Frontend Core**: HTML5 & JavaScript (Vanilla JS)
+- **CSS Framework**: [Tailwind CSS](https://tailwindcss.com/) (Load via CDN)
+- **UI Components**: [Flowbite](https://flowbite.com/)
+- **Utility Libraries**: 
+  - [SweetAlert2](https://sweetalert2.github.io/) (Pop-up & Notifikasi)
+  - [Animate.css](https://animate.style/) (Animasi)
+  - [Google Fonts](https://fonts.google.com/) (Plus Jakarta Sans & Inter)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## 📦 Integrasi API
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- **Midtrans**: Payment Gateway
+- **RajaOngkir**: Shipping & Courier Data
+- **Fonnte**: WhatsApp OTP & Messaging Service
+- **Google Gemini**: AI Services
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## ⚙️ Instalasi
 
-## Laravel Sponsors
+Ikuti langkah-langkah berikut untuk menjalankan project di lingkungan lokal:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 1. Persiapan Environment
+Pastikan Anda sudah menginstal **PHP >= 8.2**, **Composer**, dan server database (seperti Laragon, XAMPP, atau Docker).
 
-### Premium Partners
+### 2. Clone Repository
+```bash
+git clone https://github.com/username/teluconsign.git
+cd teluconsign
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### 3. Instalasi Dependencies
+Cukup jalankan composer karena frontend menggunakan CDN (tidak wajib `npm install` kecuali ingin modifikasi build tool).
+```bash
+composer install
+```
 
-## Contributing
+### 4. Konfigurasi Environment
+Salin file `.env.example` menjadi `.env` dan sesuaikan konfigurasinya:
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Sesuaikan bagian database:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=teluconsign
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-## Code of Conduct
+Serta konfigurasi API (Midtrans, RajaOngkir, Fonnte, Gemini) sesuai dengan key yang Anda miliki.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 5. Migrasi & Seeding
+Jalankan migrasi database untuk membuat tabel dan data awal:
+```bash
+php artisan migrate --seed
+```
 
-## Security Vulnerabilities
+### 6. Menjalankan Aplikasi
+```bash
+php artisan serve
+```
+Aplikasi dapat diakses di `http://127.0.0.1:8000`.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## 📝 Catatan Penting
+Aplikasi ini dioptimalkan untuk performa tinggi dengan meminimalkan beban di sisi client. Penggunaan Tailwind CSS via CDN memungkinkan deployment yang lebih cepat tanpa perlu mengelola folder `node_modules` yang besar di server development.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**Developed with ❤️ by TeluConsign Team**
