@@ -39,7 +39,7 @@ class Shipment extends Model
 
     public function carrier()
     {
-        return $this->belongsTo(ShippingCarrier::class, 'carrier_id', 'carrier_id');
+        return $this->belongsTo(ShippingCarrier::class, 'carrier_id', 'shipping_carrier_id');
     }
 
     public function createShipment(int $order_id, int $carrier_id, string $service_code): bool

@@ -190,8 +190,20 @@
                 </div>
                 <div class="mt-4 pt-4 border-t border-gray-100">
                     <p class="text-xs text-gray-500 font-medium mb-1">Kurir</p>
-                    <p class="text-sm font-bold text-gray-900">JNE - Regular</p>
-                    <p class="text-xs text-gray-400">Resi: {{ $order->tracking_number ?? 'Belum ada' }}</p>
+                    @if($order->shipment && $order->shipment->carrier)
+                        <p class="text-sm font-bold text-gray-900">{{ $order->shipment->carrier->name }} - {{ $order->shipment->service_code }}</p>
+                        <div class="flex items-center gap-2 mt-1">
+                            <p class="text-xs text-gray-500">Resi:</p>
+                            @if($order->shipment->tracking_number)
+                                <p class="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded">{{ $order->shipment->tracking_number }}</p>
+                            @else
+                                <span class="text-xs text-gray-400 italic">Belum ada</span>
+                            @endif
+                        </div>
+                    @else
+                        <p class="text-sm font-bold text-gray-900">Kurir tidak tersedia</p>
+                        <p class="text-xs text-gray-400">Data pengiriman belum lengkap</p>
+                    @endif
                 </div>
             </div>
 
@@ -226,7 +238,7 @@
                      </div>
                      <div class="flex justify-between text-red-500">
                          <span>Biaya Platform</span>
-                         <span>-Rp{{ number_format($order->platform_fee, 0, ',', '.') }}</span>
+                         <span>-Rp{{ number_format($order->platform_fee_seller, 0, ',', '.') }}</span>
                      </div>
 
                      <div class="border-t border-gray-100 pt-2 flex justify-between font-bold text-gray-900 text-base">

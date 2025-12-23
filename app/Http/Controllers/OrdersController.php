@@ -43,7 +43,7 @@ class OrdersController extends Controller
         ];
         
         // Base Query
-        $query = Order::where('buyer_id', $userId)->with(['items.product', 'seller'])->latest();
+        $query = Order::where('buyer_id', $userId)->with(['items.product.currentUserReview', 'seller.profile'])->latest();
 
         // Apply Status Filter
         switch ($status) {
@@ -83,7 +83,7 @@ class OrdersController extends Controller
             abort(403);
         }
 
-        $order->load(['items.product', 'seller', 'shippingAddress', 'buyer']);
+        $order->load(['items.product.currentUserReview', 'seller.profile', 'shippingAddress', 'buyer', 'shipment.carrier']);
         
         return view('orders.show', compact('order'));
     }

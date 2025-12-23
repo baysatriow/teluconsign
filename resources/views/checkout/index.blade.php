@@ -154,7 +154,7 @@
                     <span class="text-2xl font-extrabold text-[#EC1C25]" id="grand-total">Rp{{ number_format($subtotal + $platformFee, 0, ',', '.') }}</span>
                 </div>
 
-                <button type="button" onclick="processPayment()" id="pay-btn" class="w-full text-white bg-gray-200 font-bold rounded-xl text-base px-5 py-4 text-center transition-all shadow-none cursor-not-allowed transform disabled:opacity-70 disabled:hover:translate-y-0" disabled>
+                <button type="button" onclick="processPayment()" id="pay-btn" class="w-full text-white bg-gray-200 font-bold rounded-xl text-base px-5 py-4 text-center transition-all shadow-none cursor-not-allowed transform disabled:opacity-100 disabled:hover:translate-y-0 text-gray-400" disabled>
                     Lengkapi Pengiriman
                 </button>
                 
@@ -169,12 +169,16 @@
 
 <!-- SCRIPTS -->
 <script>
+    window.addEventListener('load', function() {
+
+
+
     const subtotal = {{ $subtotal }};
     const platformFee = {{ $platformFee }};
-    let shippingCosts = {}; // Store ID -> Cost
+    let shippingData = {}; // Store ID -> { cost, code, service, etd, description }
     
     // --- 1. CHECK ONGKIR (AJAX) ---
-    function checkOngkir(sellerId, courier) {
+    window.checkOngkir = function(sellerId, courier) {
         const container = document.getElementById(`service-container-${sellerId}`);
         const listDiv = document.getElementById(`service-list-${sellerId}`);
         const loadingDiv = document.getElementById(`loading-${sellerId}`);
@@ -185,7 +189,7 @@
         loadingDiv.classList.remove('hidden');
         
         // Hapus cost lama
-        delete shippingCosts[sellerId];
+        delete shippingData[sellerId];
         updateTotal();
 
         fetch('{{ route("checkout.check_shipping") }}', {
@@ -229,7 +233,7 @@
                     
                     wrapper.innerHTML = `
                         <label class="cursor-pointer relative block">
-                            <input type="radio" name="service-${sellerId}" value="${serviceCost}" class="peer sr-only" onchange="selectService('${sellerId}', ${serviceCost})">
+                            <input type="radio" name="service-${sellerId}" value="${serviceCost}" class="peer sr-only" onchange="selectService('${sellerId}', ${serviceCost}, '${cost.code}', '${serviceName}', '${serviceEtd}', '${serviceDesc}')">
                             <div class="flex items-center justify-between p-4 border-2 border-gray-100 rounded-xl hover:border-red-100 bg-white transition-all peer-checked:border-[#EC1C25] peer-checked:bg-red-50">
                                 <div class="flex items-center gap-3">
                                     <div class="text-[#EC1C25]">
@@ -265,11 +269,17 @@
     }
 
     // --- 2. SELECT SERVICE ---
-    function selectService(sellerId, cost) {
+    window.selectService = function(sellerId, cost, courierCode, serviceCode, etd, description) {
         if(!isNaN(cost)) {
-            shippingCosts[sellerId] = cost;
+            shippingData[sellerId] = {
+                cost: cost,
+                courier: courierCode,
+                service: serviceCode,
+                etd: etd,
+                description: description
+            };
         } else {
-            delete shippingCosts[sellerId];
+            delete shippingData[sellerId];
         }
         updateTotal();
     }
@@ -280,8 +290,8 @@
         let countFilled = 0;
         const totalStores = {{ $groupedItems->count() }};
         
-        for (let key in shippingCosts) {
-            totalShipping += shippingCosts[key];
+        for (let key in shippingData) {
+            totalShipping += shippingData[key].cost;
             countFilled++;
         }
         
@@ -295,19 +305,19 @@
         const btn = document.getElementById('pay-btn');
         if(countFilled === totalStores) {
             btn.disabled = false;
-            btn.classList.remove('bg-gray-300', 'cursor-not-allowed');
-            btn.classList.add('bg-[#EC1C25]', 'hover:bg-[#c4161e]', 'shadow-lg');
+            btn.classList.remove('bg-gray-200', 'cursor-not-allowed', 'text-gray-400');
+            btn.classList.add('bg-[#EC1C25]', 'hover:bg-[#c4161e]', 'shadow-lg', 'text-white');
             btn.textContent = 'Bayar Sekarang';
         } else {
              btn.disabled = true;
-             btn.classList.add('bg-gray-300', 'cursor-not-allowed');
-             btn.classList.remove('bg-[#EC1C25]', 'hover:bg-[#c4161e]', 'shadow-lg');
+             btn.classList.add('bg-gray-200', 'cursor-not-allowed', 'text-gray-400', 'font-bold');
+             btn.classList.remove('bg-[#EC1C25]', 'hover:bg-[#c4161e]', 'shadow-lg', 'text-white');
              btn.textContent = `Lengkapi Pengiriman (${countFilled}/${totalStores})`;
         }
     }
 
     // --- 4. PROCESS PAYMENT (REDIRECT TO CUSTOM PAGE) ---
-    function processPayment() {
+    window.processPayment = function() {
         const btn = document.getElementById('pay-btn');
         btn.disabled = true;
         btn.textContent = 'Memproses...';
@@ -319,7 +329,7 @@
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
             body: JSON.stringify({
-                shipping_costs: shippingCosts
+                shipping_data: shippingData
             })
         })
         .then(res => res.json())
@@ -328,17 +338,18 @@
                 // ✅ NEW: Direct redirect to custom payment page
                 window.location.href = data.redirect_url;
             } else {
-                Swal.fire('Gagal', data.message, 'error');
+                SwalCustom.fire('Gagal', data.message, 'error');
                 btn.disabled = false;
                 btn.textContent = 'Bayar Sekarang';
             }
         })
         .catch(err => {
             console.error(err);
-            Swal.fire('Error', 'Terjadi kesalahan sistem', 'error');
+            SwalCustom.fire('Error', 'Terjadi kesalahan sistem', 'error');
             btn.disabled = false;
             btn.textContent = 'Bayar Sekarang';
         });
     }
+    });
 </script>
 @endsection

@@ -66,6 +66,12 @@ class Product extends Model
         return $this->hasMany(ProductImage::class, 'product_id', 'product_id');
     }
 
+    public function currentUserReview()
+    {
+        return $this->hasOne(Review::class, 'product_id', 'product_id')
+                    ->where('user_id', auth()->id());
+    }
+
     public function reviews()
     {
         return $this->hasMany(Review::class, 'product_id', 'product_id');

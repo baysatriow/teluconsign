@@ -76,6 +76,7 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
     Route::delete('/cart/item/{itemId}', [CartController::class, 'deleteItem'])->name('cart.deleteItem');
     Route::delete('/cart/store/{sellerId}', [CartController::class, 'deleteStoreItems'])->name('cart.deleteStore');
     Route::post('/product/{product}/buy', [ProductController::class, 'buyNow'])->name('product.buy');
+    Route::post('/reviews', [App\Http\Controllers\ReviewController::class, 'store'])->name('reviews.store');
 
     // --- FITUR PROFIL (USER BIASA) ---
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
@@ -117,7 +118,8 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
     Route::post('/myshop/products', [ShopController::class, 'storeProduct'])->name('shop.products.store');
     Route::get('/myshop/products/{product}/edit', [ShopController::class, 'editProduct'])->name('shop.products.edit');
     Route::put('/myshop/products/{product}', [ShopController::class, 'updateProduct'])->name('shop.products.update');
-    Route::delete('/myshop/products/{product}', [ShopController::class, 'deleteProduct'])->name('shop.products.delete');
+    Route::get('/myshop/products/{product}/check-deletion', [ShopController::class, 'checkProductDeletion'])->name('shop.products.check_deletion');
+    Route::delete('/myshop/products/{id}', [ShopController::class, 'deleteProduct'])->name('shop.products.delete');
     Route::delete('/myshop/products/image/{product}', [ShopController::class, 'deleteProductImage'])->name('shop.products.image.delete');
 
     // 3. Pesanan
@@ -132,7 +134,9 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
     Route::get('/myshop/payouts', [ShopController::class, 'payouts'])->name('shop.payouts');
     Route::post('/myshop/payouts', [ShopController::class, 'storePayout'])->name('shop.payouts.store');
     Route::post('/myshop/banks', [ShopController::class, 'storeBank'])->name('shop.banks.store');
+    Route::put('/myshop/banks/{id}', [ShopController::class, 'updateBank'])->name('shop.banks.update');
     Route::delete('/myshop/banks/{id}', [ShopController::class, 'deleteBank'])->name('shop.banks.delete');
+    Route::get('/myshop/banks/{id}/check', [ShopController::class, 'checkBankDeletion'])->name('shop.banks.check_deletion');
 
     // Halaman Orders Pembeli
     Route::get('/orders', [App\Http\Controllers\OrdersController::class, 'index'])->name('orders.index');

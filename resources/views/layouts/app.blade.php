@@ -311,28 +311,7 @@
         });
 
         // Toast notification variant (top-right corner)
-        const Toast = Swal.mixin({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3500,
-            timerProgressBar: true,
-            customClass: {
-                popup: 'colored-toast shadow-2xl border-0 rounded-xl',
-                title: 'text-sm font-semibold',
-                timerProgressBar: 'bg-white/30'
-            },
-            didOpen: (toast) => {
-                toast.addEventListener('mouseenter', Swal.stopTimer);
-                toast.addEventListener('mouseleave', Swal.resumeTimer);
-            },
-            showClass: {
-                popup: 'animate__animated animate__fadeInRight animate__faster'
-            },
-            hideClass: {
-                popup: 'animate__animated animate__fadeOutRight animate__faster'
-            }
-        });
+
 
         // Custom CSS for SweetAlert2 buttons and toasts
         const style = document.createElement('style');

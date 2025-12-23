@@ -167,7 +167,7 @@
                                                 Detail
                                             </button>
                                             
-                                            <button onclick="confirmDelete('{{ encrypt($prod->product_id) }}', '{{ $prod->title }}')" 
+                                            <button onclick="confirmDeleteProduct('{{ $prod->product_id }}', '{{ $prod->title }}')" 
                                                 class="p-2 bg-white border border-gray-200 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all shadow-sm group">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                             </button>
@@ -177,15 +177,16 @@
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                             </a>
                                             
-                                            <button onclick="confirmDelete('{{ $prod->product_id }}', '{{ $prod->title }}')" 
+                                            <button onclick="confirmDeleteProduct('{{ $prod->product_id }}', '{{ $prod->title }}')" 
                                                 class="p-2 bg-red-50 text-red-600 rounded-lg border border-red-200 hover:bg-red-100 transition-all shadow-sm">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                             </button>
                                         @endif
-                                    </div><form id="delete-form-{{ $prod->product_id }}" action="{{ route('shop.products.delete', $prod) }}" method="POST" class="hidden">
-                                    @csrf @method('DELETE')
-                                </form>
-                            </div>
+                                    </div>
+                                    <form id="delete-form-{{ $prod->product_id }}" action="{{ route('shop.products.delete', $prod->product_id) }}" method="POST" class="hidden">
+                                        @csrf
+                                        @method('DELETE')
+                                    </form>
                         </td>
                     </tr>
                     @empty
@@ -230,10 +231,10 @@
         });
     }
 
-    function confirmDelete(id, name) {
+    function confirmDeleteProduct(id, name) {
         Swal.fire({
             title: 'Hapus Produk?',
-            text: "Anda akan menghapus produk \"" + name + "\". Tindakan ini tidak dapat dibatalkan!",
+            html: `Anda akan menghapus produk <b>"${name}"</b>.<br><br><span style="font-size: 13px; color: #ef4444; font-weight: 600;">Catatan: Produk ini juga akan dihapus dari semua keranjang belanja pengguna.</span>`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -242,9 +243,19 @@
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                document.getElementById('delete-form-' + id).submit();
+                const form = document.getElementById('delete-form-' + id);
+                if (form) {
+                    form.submit();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Form tidak ditemukan. Silakan refresh halaman.',
+                        confirmButtonColor: '#EC1C25'
+                    });
+                }
             }
-        })
+        });
     }
 </script>
 @endsection

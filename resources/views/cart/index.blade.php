@@ -152,6 +152,10 @@
 
 
 <script>
+    window.addEventListener('load', function() {
+        
+
+
     // --- 1. LOGIKA CHECKBOX ---
 
     // Checkbox Toko (Parent)
@@ -244,7 +248,8 @@
 
     // --- 3. LOGIKA UPDATE QTY (AJAX) ---
 
-    function updateQty(itemId, change, maxStock) {
+    // --- 3. LOGIKA UPDATE QTY (AJAX) ---
+    window.updateQty = function(itemId, change, maxStock) {
         const input = document.getElementById('qty-' + itemId);
         let newQty = parseInt(input.value) + change;
 
@@ -254,7 +259,7 @@
         // Auto-adjust if exceeds max stock
         if (newQty > maxStock) {
             newQty = maxStock;
-            Swal.fire({
+            SwalCustom.fire({
                 icon: 'warning', 
                 title: 'Maksimal Stock',
                 text: `Quantity telah disesuaikan ke maksimal stock: ${maxStock}`,
@@ -297,7 +302,7 @@
                 // Recalculate Grand Total (karena qty berubah)
                 recalculateTotal();
             } else {
-                Swal.fire({ icon: 'error', title: 'Gagal', text: data.message, confirmButtonColor: '#EC1C25' });
+                SwalCustom.fire({ icon: 'error', title: 'Gagal', text: data.message });
             }
         })
         .catch(error => {
@@ -311,15 +316,16 @@
 
     // --- 4. LOGIKA DELETE ---
 
-    function confirmDeleteItem(itemId) {
-        Swal.fire({
+    // --- 4. LOGIKA DELETE ---
+
+    window.confirmDeleteItem = function(itemId) {
+        SwalCustom.fire({
             title: 'Hapus item ini?',
             text: "Barang akan dihapus dari keranjang.",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, Hapus!'
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
                 const form = document.getElementById('delete-item-form');
@@ -329,15 +335,14 @@
         });
     }
 
-    function confirmDeleteStore(sellerId) {
-        Swal.fire({
+    window.confirmDeleteStore = function(sellerId) {
+        SwalCustom.fire({
             title: 'Hapus semua item toko?',
             text: "Semua barang dari toko ini akan dihapus.",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, Hapus!'
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
                 const form = document.getElementById('delete-store-form');
@@ -347,31 +352,30 @@
         });
     }
 
-    // Init Recalculate on Load
-    document.addEventListener('DOMContentLoaded', function() {
-        recalculateTotal();
+    // Init Recalculate on Load & Auto-select from query param
+    recalculateTotal();
 
-        // Auto-select item from query param (Buy Now)
-        const urlParams = new URLSearchParams(window.location.search);
-        const selectedProductId = urlParams.get('selected_product');
-        
-        if(selectedProductId) {
-            const checkbox = document.querySelector(`.item-checkbox[data-product-id="${selectedProductId}"]`);
-            if(checkbox) {
-                checkbox.checked = true;
-                // Trigger change event to update parent store checkbox and totals
-                checkbox.dispatchEvent(new Event('change'));
-                
-                // Scroll to item
-                setTimeout(() => {
-                    checkbox.closest('.item-row').scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // Highlight effect
-                    checkbox.closest('.item-row').classList.add('bg-red-50');
-                    setTimeout(() => checkbox.closest('.item-row').classList.remove('bg-red-50'), 2000);
-                }, 500);
-            }
+    // Auto-select item from query param (Buy Now)
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedProductId = urlParams.get('selected_product');
+    
+    if(selectedProductId) {
+        const checkbox = document.querySelector(`.item-checkbox[data-product-id="${selectedProductId}"]`);
+        if(checkbox) {
+            checkbox.checked = true;
+            // Trigger change event to update parent store checkbox and totals
+            checkbox.dispatchEvent(new Event('change'));
+            
+            // Scroll to item
+            setTimeout(() => {
+                checkbox.closest('.item-row').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Highlight effect
+                checkbox.closest('.item-row').classList.add('bg-red-50');
+                setTimeout(() => checkbox.closest('.item-row').classList.remove('bg-red-50'), 2000);
+            }, 500);
         }
-    });
+    }
 
+    });
 </script>
 @endsection

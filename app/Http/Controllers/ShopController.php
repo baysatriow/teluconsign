@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\CartItem;
 use App\Models\User;
 use App\Models\Category;
 use App\Enums\ProductStatus;
@@ -34,11 +35,18 @@ class ShopController extends Controller
             })
             ->firstOrFail();
         
-        $products = Product::with(['category', 'seller.addresses', 'images'])
+        
+        $query = Product::with(['category', 'seller.addresses', 'seller.profile', 'images'])
+            ->withAvg('reviews', 'rating')
             ->where('seller_id', $seller->user_id)
-            ->where('status', ProductStatus::Active)
-            ->latest()
-            ->paginate(12);
+            ->where('status', ProductStatus::Active);
+        
+        // Search filter
+        if ($searchTerm = request('search')) {
+            $query->where('title', 'like', '%' . $searchTerm . '%');
+        }
+        
+        $products = $query->latest()->paginate(12)->withQueryString();
 
         // Stats (Optional)
         $totalSales = OrderItem::whereHas('product', function($q) use ($id) {
@@ -47,8 +55,13 @@ class ShopController extends Controller
             $q->where('status', 'completed');
         })->count();
 
-        // Rating dummy (or implement real rating logic)
-        $rating = 4.8; 
+        // Rating (Real)
+        $ratingStats = \App\Models\Review::whereHas('product', function($q) use ($seller) {
+            $q->where('seller_id', $seller->user_id);
+        })->selectRaw('avg(rating) as average, count(*) as count')->first();
+
+        $rating = $ratingStats->average ? round($ratingStats->average, 1) : 0;
+        $totalReviews = $ratingStats->count; 
 
         return view('shop.show', compact('seller', 'products', 'totalSales', 'rating'));
     }
@@ -441,9 +454,55 @@ class ShopController extends Controller
         return back()->with('success', 'Rekening bank berhasil ditambahkan');
     }
 
-    public function deleteBank($id)
+    public function updateBank(Request $request, $id)
+    {
+        $request->validate([
+            'bank_name' => 'required|string',
+            'account_no' => 'required|numeric',
+            'account_name' => 'required|string',
+        ]);
+
+        $bank = \App\Models\BankAccount::where('user_id', Auth::id())->findOrFail($id);
+        $bank->update([
+            'bank_name' => $request->bank_name,
+            'account_no' => $request->account_no,
+            'account_name' => $request->account_name,
+        ]);
+
+        return back()->with('success', 'Rekening bank berhasil diperbarui');
+    }
+
+    public function checkBankDeletion($id)
     {
         $bank = \App\Models\BankAccount::where('user_id', Auth::id())->findOrFail($id);
+        
+        $pendingPayoutsCount = \App\Models\PayoutRequest::where('bank_account_id', $id)
+            ->where('status', 'requested')
+            ->count();
+
+        $otherBanks = \App\Models\BankAccount::where('user_id', Auth::id())
+            ->where('bank_account_id', '!=', $id)
+            ->get();
+
+        return response()->json([
+            'pending_count' => $pendingPayoutsCount,
+            'other_banks' => $otherBanks
+        ]);
+    }
+
+    public function deleteBank(Request $request, $id)
+    {
+        $bank = \App\Models\BankAccount::where('user_id', Auth::id())->findOrFail($id);
+        
+        // Handle pending payouts transfer if exists
+        $transferToId = $request->input('transfer_to');
+        if ($transferToId) {
+            $targetBank = \App\Models\BankAccount::where('user_id', Auth::id())->findOrFail($transferToId);
+            \App\Models\PayoutRequest::where('bank_account_id', $id)
+                ->where('status', 'requested')
+                ->update(['bank_account_id' => $targetBank->bank_account_id]);
+        }
+
         $bank->delete();
         return back()->with('success', 'Rekening bank dihapus');
     }
@@ -536,7 +595,7 @@ class ShopController extends Controller
         }
 
         // 2. Load Relations
-        $order->load(['items.product.images', 'buyer', 'shippingAddress']);
+        $order->load(['items.product.images', 'buyer', 'shippingAddress', 'shipment.carrier']);
 
         return view('shop.orders.show', compact('order'));
     }
@@ -647,10 +706,18 @@ class ShopController extends Controller
         ]);
 
         $request->validate([
-            'title'       => 'required|string|max:160',
+            'title'       => 'required|string|min:3|max:160',
             'category_id' => 'required|exists:categories,category_id',
-            'price'       => 'required|numeric|min:100',
-            'weight'      => 'required|numeric|min:1', // Added Validation
+            'price'       => ['required', 'numeric', 'min:1000', function ($attribute, $value, $fail) {
+                if ($value % 1000 !== 0) {
+                    $fail('Harga harus dalam kelipatan Rp 1.000 (contoh: 10.000, 25.000, 150.000)');
+                }
+            }],
+            'weight'      => ['required', 'numeric', 'min:1000', function ($attribute, $value, $fail) {
+                if ($value % 500 !== 0) {
+                    $fail('Berat harus dalam kelipatan 500 gram (contoh: 1.000, 1.500, 2.000)');
+                }
+            }],
             'stock'       => 'required|numeric|min:1',
             'condition'   => 'required|in:new,used',
             'description' => 'required|string',
@@ -658,6 +725,14 @@ class ShopController extends Controller
             'images'      => 'required|array|min:1|max:5',
             'images.*'    => 'image|mimes:jpeg,png,jpg,webp|max:2048',
         ], [
+'title.required' => 'Judul produk wajib diisi.',
+            'title.min' => 'Judul produk minimal 3 karakter.',
+            'price.required' => 'Harga produk wajib diisi.',
+            'price.min' => 'Harga produk minimal Rp 1.000.',
+            'weight.required' => 'Berat produk wajib diisi.',
+            'weight.min' => 'Berat produk minimal 1.000 gram.',
+            'stock.required' => 'Stok produk wajib diisi.',
+            'stock.min' => 'Stok produk minimal 1 unit.',
             'images.required' => 'Wajib mengupload minimal 1 foto produk.',
             'images.max'      => 'Maksimal 5 foto produk.',
             'images.*.image'  => 'File harus berupa gambar.',
@@ -774,16 +849,36 @@ class ShopController extends Controller
         // Validasi
         // Perhatikan 'images' nullable saat update
         $request->validate([
-            'title'       => 'required|string|max:160',
+            'title'       => 'required|string|min:3|max:160',
             'category_id' => 'required|exists:categories,category_id',
-            'price'       => 'required|numeric|min:100',
-            'weight'      => 'required|numeric|min:1', // Added Validation
-            'stock'       => 'required|numeric|min:0',
+            'price'       => ['required', 'numeric', 'min:1000', function ($attribute, $value, $fail) {
+                if ($value % 1000 !== 0) {
+                    $fail('Harga harus dalam kelipatan Rp 1.000 (contoh: 10.000, 25.000, 150.000)');
+                }
+            }],
+            'weight'      => ['required', 'numeric', 'min:1000', function ($attribute, $value, $fail) {
+                if ($value % 500 !== 0) {
+                    $fail('Berat harus dalam kelipatan 500 gram (contoh: 1.000, 1.500, 2.000)');
+                }
+            }],
+            'stock'       => 'required|numeric|min:1',
             'condition'   => 'required|in:new,used',
             'description' => 'required|string',
             'status_input'=> ['required', 'in:active,archived'],
             'images'      => 'nullable|array|max:5',
             'images.*'    => 'image|mimes:jpeg,png,jpg,webp|max:2048',
+        ], [
+            'title.required' => 'Judul produk wajib diisi.',
+            'title.min' => 'Judul produk minimal 3 karakter.',
+            'price.required' => 'Harga produk wajib diisi.',
+            'price.min' => 'Harga produk minimal Rp 1.000.',
+            'weight.required' => 'Berat produk wajib diisi.',
+            'weight.min' => 'Berat produk minimal 1.000 gram.',
+            'stock.required' => 'Stok produk wajib diisi.',
+            'stock.min' => 'Stok produk minimal 1 unit.',
+            'images.max' => 'Maksimal 5 foto produk.',
+            'images.*.image' => 'File harus berupa gambar.',
+            'images.*.max' => 'Ukuran foto maksimal 2MB per file.',
         ]);
 
         try {
@@ -859,22 +954,50 @@ class ShopController extends Controller
         }
     }
 
-    public function deleteProduct(Product $product)
+    public function checkProductDeletion(Product $product)
     {
         if ($product->seller_id !== Auth::id()) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
+        }
+
+        $activeTransactions = OrderItem::where('product_id', $product->product_id)
+            ->whereHas('order', function ($query) {
+                $query->whereNotIn('status', ['completed', 'cancelled']);
+            })->count();
+
+        return response()->json([
+            'status' => 'success',
+            'active_transactions' => $activeTransactions,
+            'message' => $activeTransactions > 0 
+                ? "Terdapat {$activeTransactions} transaksi berjalan untuk produk ini. Produk tidak dapat dihapus." 
+                : "Aman untuk dihapus."
+        ]);
+    }
+
+    public function deleteProduct($id)
+    {
+        $product = Product::findOrFail($id);
+        
+        if ($product->seller_id !== Auth::id()) {
+            if (request()->ajax()) return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
             abort(403);
         }
 
-        $hasOrders = OrderItem::where('product_id', $product->product_id)->exists();
+        // Check for active transactions
+        $hasActiveTransactions = OrderItem::where('product_id', $product->product_id)
+            ->whereHas('order', function ($query) {
+                $query->whereNotIn('status', ['completed', 'cancelled']);
+            })->exists();
 
-        // 1. Jika sudah pernah ada order, jangan hapus fisik, tapi SoftDelete / Archive?
-        // Tapi request user "Delete".
-        // Jika ada relasi foreign key, akan error.
-
-        if ($hasOrders) {
-             if(request()->ajax()) return response()->json(['status' => 'error', 'message' => 'Produk ini pernah dipesan, tidak bisa dihapus total. (Arsipkan saja)'], 400);
-             return back()->with('error', 'Produk ini sudah ada riwayat transaksi. Sebaiknya diarsipkan.');
+        if ($hasActiveTransactions) {
+            if (request()->ajax()) {
+                return response()->json(['status' => 'error', 'message' => 'Tidak bisa menghapus produk karena masih ada transaksi berjalan.'], 400);
+            }
+            return back()->with('error', 'Tidak bisa menghapus produk karena masih ada transaksi berjalan.');
         }
+
+        // Clear from all user carts
+        CartItem::where('product_id', $product->product_id)->delete();
 
         // 2. Hapus Gambr
         foreach ($product->images as $img) {
@@ -887,10 +1010,10 @@ class ShopController extends Controller
         $product->delete();
 
         if (request()->ajax()) {
-            return response()->json(['status' => 'success', 'message' => 'Produk berhasil dihapus']);
+            return response()->json(['status' => 'success', 'message' => 'Produk berhasil dihapus dan dibersihkan dari keranjang pengguna.']);
         }
 
-        return redirect()->back()->with('success', 'Produk dihapus.');
+        return redirect()->route('shop.products.index')->with('success', 'Produk berhasil dihapus.');
     }
 
     public function deleteProductImage($id)

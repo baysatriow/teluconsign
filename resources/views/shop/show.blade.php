@@ -23,8 +23,14 @@
             <div class="flex flex-col md:flex-row items-end -mt-16 gap-6">
                 <!-- Profile Image -->
                 <div class="relative z-10">
+                    @php
+                        $shopPhotoUrl = $seller->profile?->photo_url ?: $seller->photo_url;
+                        $shopMainImg = $shopPhotoUrl 
+                            ? (str_starts_with($shopPhotoUrl, 'http') ? $shopPhotoUrl : asset('storage/'.$shopPhotoUrl))
+                            : 'https://ui-avatars.com/api/?name='.urlencode($seller->name).'&background=111827&color=fff';
+                    @endphp
                     <div class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white">
-                        <img src="{{ $seller->photo_url ?? 'https://ui-avatars.com/api/?name='.urlencode($seller->name).'&background=111827&color=fff' }}" 
+                        <img src="{{ $shopMainImg }}" 
                              class="w-full h-full object-cover hover:scale-110 transition-transform duration-500" 
                              alt="{{ $seller->name }}">
                     </div>
@@ -84,10 +90,20 @@
             <p class="text-sm text-gray-500 mt-1">Temukan produk terbaik dari {{ $seller->name }}</p>
         </div>
         <div class="flex items-center gap-3">
-            <div class="relative group">
-                <input type="text" placeholder="Cari di toko..." class="pl-10 pr-4 py-2.5 bg-gray-50 border-none rounded-full text-sm focus:ring-2 focus:ring-[#EC1C25] w-full sm:w-64 transition-shadow shadow-sm hover:shadow-md">
-                <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-3 group-hover:text-[#EC1C25] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            </div>
+            <form method="GET" action="{{ route('shop.show', $seller->username ?? $seller->user_id) }}" class="flex gap-2 w-full sm:w-auto">
+                <div class="relative group flex-grow">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari di toko..." class="pl-10 pr-4 py-2.5 bg-white border-2 border-[#EC1C25] rounded-full text-sm focus:ring-2 focus:ring-[#EC1C25] focus:border-[#EC1C25] w-full sm:w-64 transition-all shadow-sm hover:shadow-md">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-3 group-hover:text-[#EC1C25] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <button type="submit" class="px-4 py-2.5 bg-[#EC1C25] hover:bg-red-700 text-white font-bold rounded-full text-sm transition-all shadow-md">
+                    Cari
+                </button>
+                @if(request('search'))
+                <a href="{{ route('shop.show', $seller->username ?? $seller->user_id) }}" class="px-4 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-full text-sm transition-all">
+                    Reset
+                </a>
+                @endif
+            </form>
         </div>
     </div>
 
@@ -102,9 +118,8 @@
     @else
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             @foreach($products as $product)
-            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group overflow-hidden relative">
-                
-                <a href="{{ route('product.show', $product->slug ?? $product->product_id) }}" class="absolute inset-0 z-10"></a>
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group overflow-hidden relative">
+                 <a href="{{ route('product.show', $product->slug ?? $product->product_id) }}" class="absolute inset-0 z-10"></a>
 
                 <!-- Image -->
                 <div class="relative aspect-square bg-gray-100 overflow-hidden">
@@ -126,10 +141,10 @@
                 <div class="p-4 flex flex-col flex-grow">
                      <!-- Cat & Rating -->
                      <div class="flex justify-between items-start mb-2">
-                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{{ $product->category->name ?? 'Umum' }}</span>
-                        <div class="flex items-center gap-1 text-yellow-500 text-xs font-bold">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{{ $product->category->name }}</span>
+                        <div class="flex items-center gap-1 text-yellow-400 text-xs font-bold">
                             <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                            <span class="text-gray-800">{{ $product->reviews_avg_rating ? number_format($product->reviews_avg_rating, 1) : '0' }}</span>
+                            <span class="text-gray-700">{{ $product->reviews_avg_rating ? number_format($product->reviews_avg_rating, 1) : '0' }}</span>
                         </div>
                      </div>
 
@@ -138,16 +153,16 @@
                      </h3>
 
                      <div class="mt-auto">
-                        <p class="text-lg font-extrabold text-[#EC1C25] mb-3">Rp{{ number_format($product->price, 0, ',', '.') }}</p>
+                        <p class="text-lg font-extrabold text-[#EC1C25]">Rp{{ number_format($product->price, 0, ',', '.') }}</p>
                         
-                        <div class="flex items-center justify-between pt-3 border-t border-gray-50 text-xs text-gray-500">
-                             <div class="flex items-center gap-1.5 max-w-[70%]">
-                                <div class="w-5 h-5 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                                     <img src="{{ $seller->photo_url ?? 'https://ui-avatars.com/api/?name='.urlencode($seller->name) }}" class="w-full h-full object-cover">
-                                </div>
-                                <span class="truncate font-medium">{{ $seller->name }}</span>
+                        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
+                            <div class="w-6 h-6 rounded-full bg-gray-100 overflow-hidden">
+                                <img src="{{ $product->seller->profile && $product->seller->profile->photo_url ? asset('storage/'.$product->seller->profile->photo_url) : 'https://ui-avatars.com/api/?name='.urlencode($product->seller->name) }}" class="w-full h-full object-cover">
                             </div>
-                            <span class="font-medium text-gray-400">{{ $seller->addresses->first()->city ?? 'Bandung' }}</span>
+                            <div class="flex flex-col">
+                                <span class="text-xs font-medium text-gray-700 truncate max-w-[100px]">{{ $product->seller->name }}</span>
+                                <span class="text-[10px] text-gray-400">{{ $product->seller->addresses->first()->city ?? 'Bandung' }}</span>
+                            </div>
                         </div>
                      </div>
                 </div>

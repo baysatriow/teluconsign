@@ -382,14 +382,59 @@
 
 </div>
 
-<!-- Lightbox Modal -->
-<div id="lightbox" class="fixed inset-0 z-[100] bg-black/90 hidden items-center justify-center p-4 backdrop-blur-sm opacity-0 transition-opacity duration-300 pointer-events-none" onclick="closeLightbox()">
-    <img id="lightboxImage" src="" class="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl scale-95 transition-transform duration-300" onclick="event.stopPropagation()">
-    <button class="absolute top-6 right-6 text-white text-4xl hover:text-gray-300 transition">&times;</button>
+<!-- LIGHTBOX MODAL (Admin Style Port) -->
+<div id="lightbox" class="fixed inset-0 z-[100] hidden bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center p-4">
+    <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white hover:text-gray-300 focus:outline-none z-50 p-2 rounded-full hover:bg-white/10 transition-colors">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    </button>
+    
+    <div class="flex items-center justify-center w-full h-[80vh] gap-4 relative">
+        <button onclick="prevImage()" class="absolute left-2 md:left-8 text-white hover:text-gray-300 p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-all z-40 focus:outline-none -translate-y-1/2 top-1/2 group">
+            <svg class="w-6 h-6 md:w-8 md:h-8 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        
+        <img id="lightbox-img" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-all duration-300 opacity-0 scale-95 data-[visible=true]:opacity-100 data-[visible=true]:scale-100">
+        
+        <button onclick="nextImage()" class="absolute right-2 md:right-8 text-white hover:text-gray-300 p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-all z-40 focus:outline-none -translate-y-1/2 top-1/2 group">
+            <svg class="w-6 h-6 md:w-8 md:h-8 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+    </div>
+
+    <div class="absolute bottom-6 flex gap-3 overflow-x-auto max-w-full px-4 py-2 custom-scrollbar">
+        <button onclick="openLightbox(0)" 
+            class="w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all opacity-60 hover:opacity-100 focus:outline-none lightbox-thumb flex-shrink-0 bg-gray-900 border-transparent" 
+            data-index="0">
+            <img src="{{ $product->main_image ? asset('storage/'.$product->main_image) : 'https://placehold.co/800x800' }}" class="w-full h-full object-cover">
+        </button>
+        @foreach($product->images as $index => $img)
+            @if($img->url !== $product->main_image)
+            <button onclick="openLightbox({{ $index + 1 }})" 
+                class="w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all opacity-60 hover:opacity-100 focus:outline-none lightbox-thumb flex-shrink-0 bg-gray-900 border-transparent" 
+                data-index="{{ $index + 1 }}">
+                <img src="{{ asset('storage/'.$img->url) }}" class="w-full h-full object-cover">
+            </button>
+            @endif
+        @endforeach
+    </div>
 </div>
 
 <script>
-    // 1. Image Gallery
+    // --- LIGHTBOX LOGIC ---
+    let currentIndex = 0;
+    const images = [
+        "{{ $product->main_image ? asset('storage/'.$product->main_image) : 'https://placehold.co/800x800' }}",
+        @foreach($product->images as $img)
+            @if($img->url !== $product->main_image)
+            "{{ asset('storage/'.$img->url) }}",
+            @endif
+        @endforeach
+    ];
+
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const thumbs = document.querySelectorAll('.lightbox-thumb');
+
+    // 1. Image Gallery (Thumb Click updates Main Image)
     function changeImage(src) {
         const mainImage = document.getElementById('mainImage');
         mainImage.style.opacity = 0.5;
@@ -399,48 +444,133 @@
         }, 150);
     }
 
-    // 2. Lightbox Logic
-    const mainImage = document.getElementById('mainImage');
-    const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightboxImage');
-
-    function openLightbox(src) {
+    function openLightbox(index) {
+        if (images.length === 0) return;
+        
+        currentIndex = index;
+        updateLightboxImage();
+        
         lightbox.classList.remove('hidden');
-        lightbox.classList.add('flex'); // Show flex
-        // Small delay for fade in animation
+        lightbox.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+        
+        // Animasi masuk
         setTimeout(() => {
-             lightbox.classList.remove('opacity-0', 'pointer-events-none');
-             lightboxImg.classList.remove('scale-95');
-             lightboxImg.src = src;
-        }, 10);
+             lightboxImg.setAttribute('data-visible', 'true');
+        }, 50);
     }
 
     function closeLightbox() {
-        lightbox.classList.add('opacity-0', 'pointer-events-none');
-        lightboxImg.classList.add('scale-95');
+        lightboxImg.setAttribute('data-visible', 'false');
         setTimeout(() => {
             lightbox.classList.add('hidden');
             lightbox.classList.remove('flex');
-            lightboxImg.src = '';
+            document.body.style.overflow = 'auto';
         }, 300);
     }
 
-    // Bind click to main image
+    function updateLightboxImage() {
+        // Animasi swap image
+        lightboxImg.setAttribute('data-visible', 'false');
+        
+        setTimeout(() => {
+            lightboxImg.src = images[currentIndex];
+            lightboxImg.setAttribute('data-visible', 'true');
+        }, 200);
+
+        // Update active thumb
+        thumbs.forEach((thumb, i) => {
+            if (i === currentIndex) {
+                thumb.classList.add('border-white', 'opacity-100', 'scale-110');
+                thumb.classList.remove('border-transparent', 'opacity-60');
+            } else {
+                thumb.classList.remove('border-white', 'opacity-100', 'scale-110');
+                thumb.classList.add('border-transparent', 'opacity-60');
+            }
+        });
+    }
+
+    function nextImage() {
+        currentIndex = (currentIndex + 1) % images.length;
+        updateLightboxImage();
+    }
+
+    function prevImage() {
+        currentIndex = (currentIndex - 1 + images.length) % images.length;
+        updateLightboxImage();
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (lightbox.classList.contains('hidden')) return;
+        
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowRight') nextImage();
+        if (e.key === 'ArrowLeft') prevImage();
+    });
+
+    // Bind click to main image to open lightbox at current main image index
+    const mainImage = document.getElementById('mainImage');
     if(mainImage) {
         mainImage.addEventListener('click', () => {
-             openLightbox(mainImage.src);
+             // Find index of current main image src
+             const currentSrc = mainImage.src;
+             let idx = images.findIndex(img => img === currentSrc);
+             if (idx === -1) idx = 0; // fallback
+             openLightbox(idx);
         });
+    }
+
+    // --- CHECKOUT LOGIC ---
+    
+    // Helper to check Auth
+    const isLoggedIn = {{ Auth::check() ? 'true' : 'false' }};
+
+    // Shared SweetAlert Config (Industrial Standard)
+    const SwalModal = (window.TeluSwal || window.Swal).mixin({
+        buttonsStyling: false,
+        customClass: {
+            popup: 'rounded-3xl shadow-2xl border border-gray-100 p-0 overflow-hidden',
+            title: 'text-xl font-extrabold text-gray-900 mt-6 px-4',
+            htmlContainer: 'text-gray-500 text-sm mt-2 mb-8 px-8 leading-relaxed',
+            actions: 'w-full flex justify-center gap-3 px-6 pb-8',
+            confirmButton: 'flex-1 bg-[#EC1C25] hover:bg-[#c4161e] text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-red-500/20 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2',
+            cancelButton:  'flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3.5 px-6 rounded-xl transition-all transform hover:-translate-y-0.5 border border-gray-200',
+            icon: 'mb-4 mt-6 border-none'
+        },
+        padding: 0,
+        width: '400px'
+    });
+
+    function checkAuth() {
+        if (!isLoggedIn) {
+            SwalModal.fire({
+                title: 'Login Diperlukan',
+                html: "Anda harus login terlebih dahulu<br>untuk melakukan transaksi.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Login Sekarang',
+                cancelButtonText: 'Batal Nanti',
+                // Default order: Confirm (Left), Cancel (Right)
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '{{ route("login") }}';
+                }
+            });
+            return false;
+        }
+        return true;
     }
 
     // 3. AJAX Add to Cart
     function addToCart() {
+        if(!checkAuth()) return;
+
         const btn = document.getElementById('btn-add-cart');
         const originalText = btn.innerHTML;
         
         btn.disabled = true;
         btn.innerHTML = '<svg class="animate-spin h-5 w-5 text-[#EC1C25]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
-
-        console.log('Sending Add to Cart Request...'); // DEBUG
 
         fetch('{{ route("cart.add") }}', {
             method: 'POST',
@@ -458,24 +588,20 @@
         })
         .then(response => {
             return response.text().then(text => {
-                console.log('Raw Response:', text); // DEBUG: LOG RAW RESPONSE
                 try {
                     return {
                         status: response.status,
                         body: JSON.parse(text)
                     };
                 } catch (e) {
-                    console.error('JSON Parse Error:', e);
-                    throw new Error('Server returned invalid JSON. Check console for details.');
+                    throw new Error('Server returned invalid JSON.');
                 }
             });
         })
         .then(res => {
             const data = res.body;
             if (res.status === 200 && data.status === 'success') {
-                // Use global Swal if TeluSwal is undefined, fallback gracefully
                 const SwalInstance = window.TeluSwal || window.Swal;
-                
                 const Toast = SwalInstance.mixin({
                     toast: true,
                     position: 'top-end',
@@ -495,23 +621,39 @@
                 
                 setTimeout(() => location.reload(), 800);
             } else {
-                const SwalInstance = window.TeluSwal || window.Swal;
-                SwalInstance.fire({
+                SwalModal.fire({
                     icon: 'error',
                     title: 'Gagal',
-                    text: data.message || 'Terjadi kesalahan.',
-                    confirmButtonText: 'Tutup'
+                    html: data.message || 'Terjadi kesalahan.',
+                    confirmButtonText: 'Tutup',
+                    showCancelButton: false,
+                    customClass: {
+                        popup: 'rounded-3xl shadow-2xl border border-gray-100 p-0 overflow-hidden',
+                        title: 'text-xl font-extrabold text-gray-900 mt-6 px-4',
+                        htmlContainer: 'text-gray-500 text-sm mt-2 mb-8 px-8 leading-relaxed',
+                        actions: 'w-full flex justify-center px-6 pb-8',
+                        confirmButton: 'w-full bg-[#EC1C25] hover:bg-[#c4161e] text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-red-500/20 transition-all',
+                        icon: 'mb-4 mt-6 border-none'
+                    }
                 });
             }
         })
         .catch(err => {
             console.error('Add to Cart Error:', err);
-            const SwalInstance = window.TeluSwal || window.Swal;
-            SwalInstance.fire({
+            SwalModal.fire({
                 icon: 'error',
                 title: 'Error Sistem',
-                text: err.message || 'Terjadi kesalahan sistem. Cek konsole untuk detail.',
-                confirmButtonText: 'Tutup'
+                html: err.message || 'Terjadi kesalahan sistem.',
+                confirmButtonText: 'Tutup',
+                showCancelButton: false,
+                customClass: {
+                    popup: 'rounded-3xl shadow-2xl border border-gray-100 p-0 overflow-hidden',
+                    title: 'text-xl font-extrabold text-gray-900 mt-6 px-4',
+                    htmlContainer: 'text-gray-500 text-sm mt-2 mb-8 px-8 leading-relaxed',
+                    actions: 'w-full flex justify-center px-6 pb-8',
+                    confirmButton: 'w-full bg-[#EC1C25] hover:bg-[#c4161e] text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-red-500/20 transition-all',
+                    icon: 'mb-4 mt-6 border-none'
+                }
             });
         })
         .finally(() => {
@@ -522,13 +664,13 @@
 
     // Beli Langsung - Add to cart and redirect with pre-selection
     function buyNow() {
+        if(!checkAuth()) return;
+
         const btn = document.getElementById('btn-buy-now');
         const originalText = btn.innerHTML;
         
         btn.disabled = true;
         btn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
-
-        console.log('Sending Buy Now Request...'); // DEBUG
 
         fetch('{{ route("cart.add") }}', {
             method: 'POST',
@@ -546,15 +688,13 @@
         })
         .then(response => {
             return response.text().then(text => {
-                console.log('Raw Response:', text); // DEBUG
                 try {
                     return {
                         status: response.status,
                         body: JSON.parse(text)
                     };
                 } catch (e) {
-                    console.error('JSON Parse Error:', e);
-                    throw new Error('Server returned invalid JSON. Check console for details.');
+                    throw new Error('Server returned invalid JSON.');
                 }
             });
         })
@@ -563,12 +703,20 @@
             if (res.status === 200 && data.status === 'success') {
                 window.location.href = '{{ route("cart.index") }}?selected_product={{ $product->product_id }}';
             } else {
-                const SwalInstance = window.TeluSwal || window.Swal;
-                SwalInstance.fire({
+                SwalModal.fire({
                     icon: 'error',
                     title: 'Gagal',
-                    text: data.message || 'Terjadi kesalahan.',
-                    confirmButtonText: 'Tutup'
+                    html: data.message || 'Terjadi kesalahan.',
+                    confirmButtonText: 'Tutup',
+                    showCancelButton: false,
+                    customClass: {
+                        popup: 'rounded-3xl shadow-2xl border border-gray-100 p-0 overflow-hidden',
+                        title: 'text-xl font-extrabold text-gray-900 mt-6 px-4',
+                        htmlContainer: 'text-gray-500 text-sm mt-2 mb-8 px-8 leading-relaxed',
+                        actions: 'w-full flex justify-center px-6 pb-8',
+                        confirmButton: 'w-full bg-[#EC1C25] hover:bg-[#c4161e] text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-red-500/20 transition-all',
+                        icon: 'mb-4 mt-6 border-none'
+                    }
                 });
                 btn.disabled = false;
                 btn.innerHTML = originalText;
@@ -576,12 +724,20 @@
         })
         .catch(err => {
             console.error('Buy Now Error:', err);
-            const SwalInstance = window.TeluSwal || window.Swal;
-            SwalInstance.fire({
+            SwalModal.fire({
                 icon: 'error',
                 title: 'Error Sistem',
-                text: err.message || 'Terjadi kesalahan sistem. Cek konsole untuk detail.',
-                confirmButtonText: 'Tutup'
+                html: err.message || 'Terjadi kesalahan sistem.',
+                confirmButtonText: 'Tutup',
+                showCancelButton: false,
+                customClass: {
+                    popup: 'rounded-3xl shadow-2xl border border-gray-100 p-0 overflow-hidden',
+                    title: 'text-xl font-extrabold text-gray-900 mt-6 px-4',
+                    htmlContainer: 'text-gray-500 text-sm mt-2 mb-8 px-8 leading-relaxed',
+                    actions: 'w-full flex justify-center px-6 pb-8',
+                    confirmButton: 'w-full bg-[#EC1C25] hover:bg-[#c4161e] text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-red-500/20 transition-all',
+                    icon: 'mb-4 mt-6 border-none'
+                }
             });
             btn.disabled = false;
             btn.innerHTML = originalText;

@@ -126,9 +126,15 @@
             <!-- Items -->
             <div class="bg-white border border-gray-100 rounded-3xl shadow-xl shadow-gray-200/40 overflow-hidden">
                 <div class="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                    @php
+                        $photoUrl = $order->seller->profile?->photo_url ?: $order->seller->photo_url;
+                        $shopImg = $photoUrl 
+                            ? (str_starts_with($photoUrl, 'http') ? $photoUrl : asset('storage/'.$photoUrl))
+                            : 'https://ui-avatars.com/api/?name='.urlencode($order->seller->name).'&background=random';
+                    @endphp
                     <h3 class="font-extrabold text-gray-900 flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                        <div class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 overflow-hidden">
+                             <img src="{{ $shopImg }}" alt="{{ $order->seller->name }}" class="w-full h-full object-cover">
                         </div>
                         {{ $order->seller->name ?? 'Toko' }}
                     </h3>
@@ -140,18 +146,28 @@
                 <div class="divide-y divide-gray-100">
                     @foreach($order->items as $item)
                     <div class="p-6 flex gap-5 hover:bg-gray-50 transition-colors group">
-                        <a href="{{ route('product.show', $item->product_id) }}" class="w-24 h-24 rounded-xl bg-gray-100 overflow-hidden flex-none border border-gray-200 relative">
+                        <a href="{{ route('product.show', $item->product->slug) }}" class="w-24 h-24 rounded-xl bg-gray-100 overflow-hidden flex-none border border-gray-200 relative">
                             <img src="{{ $item->product && $item->product->main_image ? asset('storage/'.$item->product->main_image) : 'https://placehold.co/100?text=IMG' }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                         </a>
                         <div class="flex-1">
-                            <a href="{{ route('product.show', $item->product_id) }}" class="text-base font-bold text-gray-900 line-clamp-2 hover:text-[#EC1C25] transition-colors mb-2">{{ $item->product_title_snapshot }}</a>
+                            <a href="{{ route('product.show', $item->product->slug) }}" class="text-base font-bold text-gray-900 line-clamp-2 hover:text-[#EC1C25] transition-colors mb-2">{{ $item->product_title_snapshot }}</a>
                             <p class="text-sm text-gray-500 mb-3">{{ $item->quantity }} barang x Rp{{ number_format($item->unit_price, 0, ',', '.') }}</p>
                             
                             @if($order->status === 'completed')
-                                <a href="{{ route('product.show', $item->product_id) }}" class="inline-flex items-center gap-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-[#EC1C25] hover:text-white px-4 py-2 rounded-lg transition-all">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
-                                    Beri Ulasan
-                                </a>
+                                <div class="mt-2">
+                                    @if($item->product->currentUserReview)
+                                        <span class="inline-flex items-center gap-1 text-xs font-bold text-yellow-500 bg-yellow-50 px-2 py-1 rounded-lg border border-yellow-100">
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                            Ulasan Terkirim
+                                        </span>
+                                    @else
+                                        <button onclick='openReviewModal({{ $item->product_id }}, {{ $order->order_id }}, "{{ e($item->product_title_snapshot) }}", "Rp{{ number_format($item->unit_price, 0, ',', '.') }}", "{{ $item->product && $item->product->main_image ? asset("storage/".$item->product->main_image) : "https://placehold.co/100?text=IMG" }}")' 
+                                                class="inline-flex items-center gap-1.5 text-xs font-bold text-[#EC1C25] border border-[#EC1C25] px-4 py-2 rounded-xl hover:bg-red-50 transition-all shadow-sm">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
+                                            Beri Ulasan
+                                        </button>
+                                    @endif
+                                </div>
                             @endif
                         </div>
                         <div class="text-right">
@@ -209,21 +225,34 @@
                         Jasa Pengiriman
                     </h4>
                     <div class="flex items-center gap-3">
-                         <!-- Placeholder Courier Logo Logic -->
-                         @php $courier = strtoupper(explode(' ', $order->shipping_courier)[0]); @endphp
-                        <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-[10px] font-black text-gray-500 border border-gray-200">
-                           {{ $courier }}
-                        </div>
-                        <div>
-                            <p class="text-sm font-bold text-gray-900">{{ $order->shipping_courier }}</p>
-                            <p class="text-xs text-gray-500">Regular Service</p>
-                        </div>
+                        @if($order->shipment && $order->shipment->carrier)
+                            @php 
+                                $courierName = $order->shipment->carrier->name; 
+                                $serviceCode = $order->shipment->service_code;
+                            @endphp
+                            <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-[10px] font-black text-gray-500 border border-gray-200 uppercase">
+                                {{ substr(strtoupper($courierName), 0, 3) }}
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-900">{{ $courierName }}</p>
+                                <p class="text-xs text-gray-500">{{ $serviceCode }}</p>
+                            </div>
+                        @else
+                            <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-[10px] font-black text-gray-500 border border-gray-200">
+                                S/A
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-900">Kurir tidak tersedia</p>
+                                <p class="text-xs text-gray-500">Hubungi penjual</p>
+                            </div>
+                        @endif
                     </div>
-                     @if($order->tracking_number)
-                    <div class="mt-4 bg-blue-50 text-blue-800 text-xs px-4 py-3 rounded-xl border border-blue-100 flex justify-between items-center group cursor-pointer hover:bg-blue-100 transition-colors" onclick="navigator.clipboard.writeText('{{ $order->tracking_number }}'); Swal.fire({toast:true, position:'top-end', icon:'success', title:'Resi disalin', showConfirmButton:false, timer:1500})">
+
+                    @if($order->shipment && $order->shipment->tracking_number)
+                    <div class="mt-4 bg-blue-50 text-blue-800 text-xs px-4 py-3 rounded-xl border border-blue-100 flex justify-between items-center group cursor-pointer hover:bg-blue-100 transition-colors" onclick="navigator.clipboard.writeText('{{ $order->shipment->tracking_number }}'); Swal.fire({toast:true, position:'top-end', icon:'success', title:'Resi disalin', showConfirmButton:false, timer:1500})">
                         <div class="flex flex-col">
                             <span class="text-blue-500 text-[10px] font-bold uppercase">No. Resi</span>
-                            <span class="font-mono font-bold text-sm">{{ $order->tracking_number }}</span>
+                            <span class="font-mono font-bold text-sm">{{ $order->shipment->tracking_number }}</span>
                         </div>
                          <svg class="w-5 h-5 text-blue-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                     </div>
@@ -254,7 +283,7 @@
                      </div>
                      <div class="flex justify-between text-gray-600">
                          <span>Biaya Layanan</span>
-                         <span class="font-medium text-gray-900">Rp{{ number_format($order->platform_fee, 0, ',', '.') }}</span>
+                         <span class="font-medium text-gray-900">Rp{{ number_format($order->platform_fee_buyer, 0, ',', '.') }}</span>
                      </div>
                      
                      <div class="border-t border-dashed border-gray-200 my-2"></div>
@@ -277,6 +306,8 @@
         </div>
     </div>
 </div>
+
+<x-review-modal />
 
 <!-- SCRIPTS -->
 <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}"></script>
@@ -328,7 +359,7 @@
                                 title: 'Pembayaran Gagal',
                                 text: 'Terjadi kesalahan sistem.',
                                 confirmButtonText: 'Tutup',
-                                confirmButtonColor: '#333'
+                                confirmButtonColor: '#EC1C25'
                             });
                         },
                         onClose: function() {}
@@ -356,12 +387,12 @@
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                 Swal.fire({
-                     icon: 'info',
-                     title: 'Fitur Belum Tersedia',
-                     text: 'Logika untuk konfirmasi penerimaan oleh pembeli belum diimplementasikan di backend.',
-                     confirmButtonColor: '#333'
-                 });
+                  Swal.fire({
+                      icon: 'info',
+                      title: 'Fitur Belum Tersedia',
+                      text: 'Logika untuk konfirmasi penerimaan oleh pembeli belum diimplementasikan di backend.',
+                      confirmButtonColor: '#EC1C25'
+                  });
             }
         })
     }

@@ -214,8 +214,8 @@ class CheckoutController extends Controller
 
         $address = $user->addresses()->where('is_default', true)->first();
 
-        // Validasi Ongkir: shipping_costs dikirim dari frontend dalam format {seller_id: cost}
-        $shippingCosts = $request->input('shipping_costs', []);
+        // Validasi Ongkir: shipping_data dikirim dari frontend dalam format {seller_id: {cost, service, ...}}
+        $shippingData = $request->input('shipping_data', []);
 
         $groupedItems = $cartItems->groupBy(function($item){ return $item->product->seller_id; });
 
@@ -224,47 +224,64 @@ class CheckoutController extends Controller
 
             $paymentCode = 'PAY-' . time() . '-' . Str::random(5);
             $subtotalAll = $cartItems->sum('subtotal');
-            $totalShipping = array_sum($shippingCosts);
+            $totalShipping = 0;
+            foreach ($shippingData as $data) {
+                $totalShipping += $data['cost'] ?? 0;
+            }
             $platformFee = 2500; // Buyer pays 2,500
             $grossAmount = $subtotalAll + $platformFee + $totalShipping;
 
             $itemDetails = [];
 
             // Create Order per Seller
-            foreach ($groupedItems as $sellerId => $items) {
-                $storeSubtotal = $items->sum('subtotal');
-                $shippingCost = $shippingCosts[$sellerId] ?? 0;
+            $orderCount = $groupedItems->count();
+            $buyerFeeTotal = 2500;
+            $buyerFeePerOrder = floor($buyerFeeTotal / $orderCount);
+            $buyerFeeRemainder = $buyerFeeTotal % $orderCount;
+            
+            $loopIndex = 0;
 
+            foreach ($groupedItems as $sellerId => $items) {
+                $loopIndex++;
+                $seller = $items->first()->product->seller; // Define Seller to avoid undefined variable error
+                $sellerShipping = $shippingData[$sellerId] ?? [];
+                $shippingCost = $sellerShipping['cost'] ?? 0;
+                $serviceCode = $sellerShipping['service'] ?? 'REG'; // Fallback
+                $courierCode = $sellerShipping['courier'] ?? 'jne';
+                $etd = $sellerShipping['etd'] ?? '';
+                $description = $sellerShipping['description'] ?? '';
+
+                $storeSubtotal = $items->sum('subtotal');
                 $orderCode = 'ORD-' . strtoupper(Str::random(10));
 
-                $platformFeePerOrder = 2500; // Fixed fee per order/seller
-                $sellerEarnings = $storeSubtotal - $platformFeePerOrder;
+                // Fee Logic
+                $currentBuyerFee = $buyerFeePerOrder;
+                if ($loopIndex === 1) {
+                    $currentBuyerFee += $buyerFeeRemainder;
+                }
+                
+                $currentSellerFee = 2500; // Fixed per seller order
+                $sellerEarnings = $storeSubtotal - $currentSellerFee;
 
                 $order = Order::create([
                     'code' => $orderCode,
                     'buyer_id' => $user->user_id,
                     'seller_id' => $sellerId,
                     'shipping_address_id' => $address->address_id,
-                    'shipping_address_snapshot' => $address->toArray(), // Save snapshot
+                    'shipping_address_snapshot' => $address->toArray(),
                     'status' => 'pending',
                     'payment_status' => 'pending',
                     'subtotal_amount' => $storeSubtotal,
                     'shipping_cost' => $shippingCost,
-                    'platform_fee' => $platformFeePerOrder, 
-                    'seller_earnings' => $sellerEarnings, // Store earnings immediately
-                    'total_amount' => $storeSubtotal + $shippingCost + $platformFeePerOrder, // Total paid by buyer usually includes fee. Check logic.
-                    // Wait, if total_amount is what buyer pays, and seller earnings is less...
-                    // Let's assume Total Amount = Subtotal + Shipping + Platform Fee?
-                    // Or Total Amount = Subtotal + Shipping (and Fee is deducted from Seller)
-                    // "seller_earnings ... isinya yaitu Harga barang - biaya platform" -> Fee deducted from seller.
-                    // So Total Amount (Buyer pays) = Subtotal + Shipping? Or does buyer pay fee?
-                    // Usually: Buyer pays X, Seller gets X-Commission.
-                    // Let's stick to: Total Amount = Subtotal + Shipping. Platform Fee is internal deduction.
-                    'total_amount' => $storeSubtotal + $shippingCost, 
+                    'platform_fee_buyer' => $currentBuyerFee,
+                    'platform_fee_seller' => $currentSellerFee,
+                    'seller_earnings' => $sellerEarnings,
+                    'total_amount' => $storeSubtotal + $shippingCost + $currentBuyerFee, 
                     'notes' => 'Group Payment: ' . $paymentCode
                 ]);
 
                 foreach ($items as $item) {
+                     // 1. Create Order Item
                     OrderItem::create([
                         'order_id' => $order->order_id,
                         'product_id' => $item->product_id,
@@ -273,6 +290,9 @@ class CheckoutController extends Controller
                         'quantity' => $item->quantity,
                         'subtotal' => $item->subtotal
                     ]);
+
+                     // 2. Reduce Stock
+                    $item->product->decrement('stock', $item->quantity);
 
                     // Item untuk Midtrans
                     $itemDetails[] = [
@@ -283,13 +303,22 @@ class CheckoutController extends Controller
                     ];
                 }
 
+                // Get Carrier ID
+                $carrier = \App\Models\ShippingCarrier::where('code', $courierCode)->first();
+                $carrierId = $carrier ? $carrier->shipping_carrier_id : 1; // Default fallback
+
                 // Create Shipment record
-                $shipment = \App\Models\Shipment::create([
+                \App\Models\Shipment::create([
                     'order_id' => $order->order_id,
-                    'carrier_id' => null, // TBD - akan diisi seller nanti
-                    'service_code' => $request->input("shipping_service.$sellerId"), // dari frontend
+                    'carrier_id' => $carrierId,
+                    'service_code' => $serviceCode,
                     'status' => 'pending',
-                    'cost' => $shippingCost
+                    'cost' => $shippingCost,
+                    'metadata' => [
+                        'etd' => $etd,
+                        'description' => $description,
+                        'courier_code' => $courierCode
+                    ]
                 ]);
 
                 // Ongkir per Toko untuk Midtrans
@@ -298,7 +327,7 @@ class CheckoutController extends Controller
                         'id' => 'SHIP-' . $sellerId,
                         'price' => (int) $shippingCost,
                         'quantity' => 1,
-                        'name' => 'Ongkir Toko'
+                        'name' => 'Ongkir ' . strtoupper($courierCode) . ' - ' . $seller->name
                     ];
                 }
             }

@@ -146,7 +146,7 @@
                 
                 @else
                     <!-- PAYMENT METHOD SELECTION -->
-                    <div class="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-6 sm:p-8 border border-gray-100">
+                    <div id="payment-method-selection" class="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-6 sm:p-8 border border-gray-100">
                         <h3 class="text-xl font-bold text-gray-900 mb-6">Pilih Metode Pembayaran</h3>
                         
                         <!-- Tab Navigation (Modern Pills) -->
@@ -317,6 +317,7 @@ function selectMethod(methodCode, methodName) {
     .then(res => res.json())
     .then(data => {
         if (data.status === 'success') {
+            document.getElementById('payment-method-selection').classList.add('hidden');
             showPaymentUI(methodCode, methodName, data.data);
             startPaymentPolling();
         } else {

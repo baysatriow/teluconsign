@@ -25,6 +25,27 @@
             <!-- Hidden Status & Real Numeric Values are handled via request merge, but we keep text inputs for format -->
             <input type="hidden" name="status_input" id="status_input" value="active">
 
+            <!-- Global Error Summary -->
+            @if ($errors->any())
+                <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <h3 class="text-sm font-bold text-red-800 mb-2">Terdapat kesalahan pada input:</h3>
+                            <ul class="list-disc list-inside text-sm text-red-700 space-y-1">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <div class="p-8 space-y-10">
                 
                 <!-- Section 1: Informasi Dasar -->
@@ -39,8 +60,13 @@
                         <div>
                             <label class="block mb-2 text-sm font-semibold text-gray-900">Nama Produk <span class="text-red-500">*</span></label>
                             <input type="text" name="title" value="{{ old('title') }}"
-                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-3 transition-shadow placeholder-gray-400" 
-                                placeholder="Contoh: Laptop Gaming ASUS ROG Zephyrus G14 (Bekas)" required>
+                                class="bg-gray-50 border @error('title') border-red-500 @else border-gray-300 @enderror text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-3 transition-shadow placeholder-gray-400" 
+                                placeholder="Contoh: Laptop Gaming ASUS ROG Zephyrus G14 (Bekas)" 
+                                minlength="3" 
+                                required>
+                            @error('title')
+                                <p class="mt-1 text-xs text-red-600 font-medium">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <!-- Kategori (Searchable) & Kondisi -->
@@ -113,24 +139,35 @@
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-bold text-sm">Rp</span>
                                 <input type="text" name="price" value="{{ old('price') }}" 
-                                    class="numeric-input bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full pl-10 p-3 font-mono" 
+                                    class="numeric-input bg-gray-50 border @error('price') border-red-500 @else border-gray-300 @enderror text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full pl-10 p-3 font-mono" 
                                     placeholder="0" required oninput="formatNumber(this)">
                             </div>
+                            @error('price')
+                                <p class="mt-1 text-xs text-red-600 font-medium">{{ $message }}</p>
+                            @enderror
                         </div>
                         <div>
                             <label class="block mb-2 text-sm font-semibold text-gray-900">Stok Barang <span class="text-red-500">*</span></label>
                              <input type="text" name="stock" value="{{ old('stock', 1) }}" 
-                                class="numeric-input bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-3 font-mono" 
+                                class="numeric-input bg-gray-50 border @error('stock') border-red-500 @else border-gray-300 @enderror text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-3 font-mono" 
                                 placeholder="0" required oninput="formatNumber(this)">
+                            @error('stock')
+                                <p class="mt-1 text-xs text-red-600 font-medium">{{ $message }}</p>
+                            @enderror
                         </div>
                          <div>
                             <label class="block mb-2 text-sm font-semibold text-gray-900">Berat (Gram) <span class="text-red-500">*</span></label>
                              <div class="relative">
                                 <input type="text" name="weight" value="{{ old('weight', '1.000') }}" 
-                                    class="numeric-input bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-3 font-mono pr-12" 
-                                    placeholder="0" required oninput="formatNumber(this)">
+                                    class="numeric-input bg-gray-50 border @error('weight') border-red-500 @else border-gray-300 @enderror text-gray-900 text-sm rounded-lg focus:ring-[#EC1C25] focus:border-[#EC1C25] block w-full p-3 font-mono pr-12" 
+                                    placeholder="1.000" 
+                                    data-min="1000"
+                                    required oninput="formatNumber(this)">
                                 <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 text-xs font-bold uppercase">gram</span>
                             </div>
+                            @error('weight')
+                                <p class="mt-1 text-xs text-red-600 font-medium">{{ $message }}</p>
+                            @enderror
                         </div>
                     </div>
                 </div>
@@ -323,6 +360,38 @@
      }
 
     function submitForm(status) {
+        // Validate Divisibility before Submit
+        const priceInput = document.querySelector('input[name="price"]');
+        const weightInput = document.querySelector('input[name="weight"]');
+        
+        const priceValue = parseInt(priceInput.value.replace(/\D/g, ''));
+        const weightValue = parseInt(weightInput.value.replace(/\D/g, ''));
+        
+        let errors = [];
+        
+        if (priceValue < 1000) {
+            errors.push('Harga minimal Rp 1.000');
+        } else if (priceValue % 1000 !== 0) {
+            errors.push('Harga harus dalam kelipatan Rp 1.000 (contoh: 10.000, 25.000, 150.000)');
+        }
+        
+        if (weightValue < 1000) {
+            errors.push('Berat minimal 1.000 gram');
+        } else if (weightValue % 500 !== 0) {
+            errors.push('Berat harus dalam kelipatan 500 gram (contoh: 1.000, 1.500, 2.000)');
+        }
+        
+        if (errors.length > 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Validasi Gagal',
+                html: '<ul class="text-left list-disc list-inside">' + errors.map(e => '<li>' + e + '</li>').join('') + '</ul>',
+                confirmButtonColor: '#EC1C25',
+                confirmButtonText: 'Perbaiki'
+            });
+            return false;
+        }
+        
         document.getElementById('status_input').value = status;
         document.getElementById('createProductForm').submit();
     }

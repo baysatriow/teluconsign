@@ -24,7 +24,9 @@ class Order extends Model
         'payment_method_id',
         'subtotal_amount',
         'shipping_cost',
-        'platform_fee',
+        'shipping_cost',
+        'platform_fee_buyer',
+        'platform_fee_seller',
         'total_amount',
         'seller_earnings',
         'notes',
@@ -33,7 +35,9 @@ class Order extends Model
     protected $casts = [
         'subtotal_amount'           => 'decimal:2',
         'shipping_cost'             => 'decimal:2',
-        'platform_fee'              => 'decimal:2',
+        'shipping_cost'             => 'decimal:2',
+        'platform_fee_buyer'        => 'decimal:2',
+        'platform_fee_seller'       => 'decimal:2',
         'total_amount'              => 'decimal:2',
         'seller_earnings'           => 'decimal:2',
         'shipping_address_snapshot' => 'array',
@@ -68,9 +72,10 @@ class Order extends Model
         $this->shipping_address_id = $address_id;
         $this->subtotal_amount     = $cart->getSubtotal();
         $this->shipping_cost       = 0;
-        $this->platform_fee        = $this->subtotal_amount * 0.05;
-        $this->total_amount        = $this->subtotal_amount;
-        $this->seller_earnings     = $this->subtotal_amount - $this->platform_fee;
+        $this->platform_fee_buyer  = 2500;
+        $this->platform_fee_seller = 2500;
+        $this->total_amount        = $this->subtotal_amount + $this->shipping_cost + $this->platform_fee_buyer;
+        $this->seller_earnings     = $this->subtotal_amount - $this->platform_fee_seller;
         $this->status              = 'pending';
         $this->payment_status      = 'pending';
         $this->code                = 'ORD-' . time();
@@ -117,6 +122,11 @@ class Order extends Model
     {
         $shipment->order_id = $this->order_id;
         $shipment->save();
+    }
+
+    public function shipment()
+    {
+        return $this->hasOne(Shipment::class, 'order_id', 'order_id');
     }
 
     public function calculateTotalAmount(): float
