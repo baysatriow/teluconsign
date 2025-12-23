@@ -50,38 +50,59 @@
                 Konfigurasi API
             </h3>
             
-            <form action="{{ route('admin.integrations.payment.update') }}" method="POST">
+            <form action="{{ route('admin.integrations.payment.update') }}" method="POST" x-data="{ 
+                mode: '{{ $midtrans->meta_json['environment'] ?? 'sandbox' }}',
+                dropdownOpen: false
+            }">
                 @csrf @method('PATCH')
                 
                 <div class="grid gap-6 mb-6 md:grid-cols-2">
                     <div>
                         <label class="block mb-2 text-sm font-semibold text-gray-700">Environment Mode</label>
-                        <select name="mode" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-telu-red/20 focus:border-telu-red block w-full p-3 transition-all">
-                            <option value="sandbox" {{ ($midtrans->meta_json['environment'] ?? '') == 'sandbox' ? 'selected' : '' }}>Sandbox (Testing)</option>
-                            <option value="production" {{ ($midtrans->meta_json['environment'] ?? '') == 'production' ? 'selected' : '' }}>Production (Live)</option>
-                        </select>
+                        
+                        <div class="relative">
+                            <input type="hidden" name="mode" x-model="mode">
+                            <button type="button" @click="dropdownOpen = !dropdownOpen" @click.away="dropdownOpen = false"
+                                    class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 block w-full p-3 text-left flex justify-between items-center transition-all">
+                                <span x-text="mode === 'sandbox' ? 'Sandbox (Testing)' : 'Production (Live)'"></span>
+                                <svg class="w-4 h-4 text-gray-500 transition-transform duration-200" :class="{'rotate-180': dropdownOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+
+                            <div x-show="dropdownOpen" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95"
+                                 class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden" style="display: none;">
+                                <div @click="mode = 'sandbox'; dropdownOpen = false" class="px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 cursor-pointer flex items-center justify-between group">
+                                    <span>Sandbox (Testing)</span>
+                                    <span x-show="mode === 'sandbox'" class="text-red-500 font-bold">&check;</span>
+                                </div>
+                                <div @click="mode = 'production'; dropdownOpen = false" class="px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 cursor-pointer flex items-center justify-between group">
+                                    <span>Production (Live)</span>
+                                    <span x-show="mode === 'production'" class="text-red-500 font-bold">&check;</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <p class="mt-2 text-xs text-gray-500">Gunakan Sandbox untuk uji coba transaksi.</p>
                     </div>
                     <div>
                         <label class="block mb-2 text-sm font-semibold text-gray-700">Merchant ID</label>
-                        <input type="text" name="merchant_id" value="{{ $midtrans->meta_json['merchant_id'] ?? '' }}" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-telu-red/20 focus:border-telu-red block w-full p-3 transition-all" placeholder="G-12345678">
+                        <input type="text" name="merchant_id" value="{{ $midtrans->meta_json['merchant_id'] ?? '' }}" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 block w-full p-3 transition-all" placeholder="G-12345678">
                     </div>
                 </div>
 
                 <div class="mb-5">
                     <label class="block mb-2 text-sm font-semibold text-gray-700">Client Key</label>
-                    <input type="text" name="client_key" value="{{ $midtrans->public_k ?? '' }}" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-telu-red/20 focus:border-telu-red block w-full p-3 font-mono transition-all" placeholder="SB-Mid-client-..." required>
+                    <input type="text" name="client_key" value="{{ $midtrans->public_k ?? '' }}" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 block w-full p-3 font-mono transition-all" placeholder="SB-Mid-client-..." required>
                 </div>
 
                 <div class="mb-8">
                     <label class="block mb-2 text-sm font-semibold text-gray-700">Server Key (Secret)</label>
                     <div class="relative">
-                        <input type="password" name="server_key" value="{{ $midtrans->server_key ?? '' }}" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-telu-red/20 focus:border-telu-red block w-full p-3 font-mono transition-all" placeholder="SB-Mid-server-..." required>
+                        <input type="password" name="server_key" value="{{ $midtrans->server_key ?? '' }}" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 block w-full p-3 font-mono transition-all" placeholder="SB-Mid-server-..." required>
                     </div>
                 </div>
 
                 <div class="flex items-center justify-end">
-                    <button type="submit" class="text-white bg-telu-red hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-100 font-bold rounded-xl text-sm px-6 py-3 text-center flex items-center gap-2 shadow-lg shadow-red-500/30 transition-all transform hover:-translate-y-0.5">
+                    <button type="submit" class="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-100 font-bold rounded-xl text-sm px-6 py-3 text-center flex items-center gap-2 shadow-lg shadow-red-500/30 transition-all transform hover:-translate-y-0.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
                         Simpan Konfigurasi
                     </button>
@@ -171,7 +192,7 @@
                 // 2. Open Snap Popup
                 window.snap.pay(data.token, {
                     onSuccess: function(result){
-                        Swal.fire({ icon: 'success', title: 'Berhasil', text: "Pembayaran Test Berhasil!", customClass: { popup: 'rounded-2xl', confirmButton: 'bg-telu-red text-white px-4 py-2 rounded-xl' } });
+                        Swal.fire({ icon: 'success', title: 'Berhasil', text: "Pembayaran Test Berhasil!", customClass: { popup: 'rounded-2xl', confirmButton: 'bg-red-600 text-white px-4 py-2 rounded-xl' } });
                         resultDiv.innerHTML = JSON.stringify(result, null, 2);
                         resultDiv.classList.remove('hidden');
                         payButton.innerHTML = originalText;

@@ -124,10 +124,10 @@
 
     <!-- Sidebar -->
     <aside :class="sidebarOpen ? 'w-72' : 'w-24'"
-           class="fixed top-0 left-0 z-50 h-screen transition-all duration-300 ease-in-out bg-white border-r border-gray-100 hidden lg:block shadow-soft">
+           class="fixed top-0 left-0 z-50 h-screen transition-all duration-300 ease-in-out bg-white border-r border-gray-100 hidden lg:flex lg:flex-col shadow-soft">
         
         <!-- Logo Area -->
-        <div class="h-20 flex items-center justify-center border-b border-gray-50 bg-white/80 backdrop-blur-sm">
+        <div class="h-20 flex items-center justify-center border-b border-gray-50 bg-white/80 backdrop-blur-sm shrink-0">
             <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 overflow-hidden px-4">
                 <div class="bg-gradient-to-br from-telu-red to-red-600 text-white p-2.5 rounded-xl shadow-lg shadow-red-500/20 flex-shrink-0">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
@@ -140,7 +140,7 @@
         </div>
 
         <!-- Navigation -->
-        <div class="h-[calc(100vh-80px)] overflow-y-auto py-6 px-4 space-y-2">
+        <div class="flex-1 overflow-y-auto py-6 px-4 space-y-2">
             
             <!-- Dashboard -->
             <a href="{{ route('admin.dashboard') }}" 
@@ -158,6 +158,14 @@
                 <div class="absolute left-16 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 z-50 lg:hidden" x-show="!sidebarOpen">Produk</div>
             </a>
 
+            <!-- Categories -->
+            <a href="{{ route('admin.categories.index') }}" 
+               class="flex items-center px-4 py-3.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('admin.categories*') ? 'sidebar-item-active' : 'text-gray-500 hover:bg-red-50 hover:text-telu-red' }}">
+                <svg class="w-6 h-6 flex-shrink-0 transition-colors {{ request()->routeIs('admin.categories*') ? 'text-white' : 'text-gray-400 group-hover:text-telu-red' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                <span class="ml-3 font-medium whitespace-nowrap" x-show="sidebarOpen">Kategori</span>
+                <div class="absolute left-16 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 z-50 lg:hidden" x-show="!sidebarOpen">Kategori</div>
+            </a>
+
             <!-- Users -->
             <a href="{{ route('admin.users') }}" 
                class="flex items-center px-4 py-3.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('admin.users*') ? 'sidebar-item-active' : 'text-gray-500 hover:bg-red-50 hover:text-telu-red' }}">
@@ -173,51 +181,69 @@
                     <svg class="w-6 h-6 flex-shrink-0 transition-colors {{ request()->routeIs('admin.payouts*') ? 'text-white' : 'text-gray-400 group-hover:text-telu-red' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                     <span class="ml-3 font-medium whitespace-nowrap" x-show="sidebarOpen">Payouts</span>
                 </div>
-                @if(isset($stats['pending_payouts']) && $stats['pending_payouts'] > 0)
-                    <span class="flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-orange-500 rounded-full shadow-sm" x-show="sidebarOpen">{{ $stats['pending_payouts'] }}</span>
+                @if(isset($pendingPayoutsCount) && $pendingPayoutsCount > 0 && !request()->routeIs('admin.payouts*'))
+                    <span class="flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-orange-500 rounded-full shadow-sm" x-show="sidebarOpen">{{ $pendingPayoutsCount }}</span>
                     <div class="w-2 h-2 rounded-full bg-orange-500 absolute top-2 right-2" x-show="!sidebarOpen"></div>
                 @endif
                 <div class="absolute left-16 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 z-50 lg:hidden" x-show="!sidebarOpen">Payouts</div>
             </a>
 
-            <!-- Divider -->
-            <div class="my-4 border-t border-gray-100 mx-2"></div>
-            <div class="px-2 mb-2" x-show="sidebarOpen">
-                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Integrasi System</span>
-            </div>
+            @if(auth()->id() == 1)
+                <!-- Divider -->
+                <div class="my-4 border-t border-gray-100 mx-2"></div>
+                <div class="px-2 mb-2" x-show="sidebarOpen">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Integrasi System</span>
+                </div>
 
-            <!-- Payment Gateway -->
-            <a href="{{ route('admin.integrations.payment') }}" 
-               class="flex items-center px-4 py-3.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('admin.integrations.payment') ? 'sidebar-item-active' : 'text-gray-500 hover:bg-red-50 hover:text-telu-red' }}">
-                <svg class="w-6 h-6 flex-shrink-0 transition-colors {{ request()->routeIs('admin.integrations.payment') ? 'text-white' : 'text-gray-400 group-hover:text-telu-red' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                <span class="ml-3 font-medium whitespace-nowrap" x-show="sidebarOpen">Payment</span>
-                <div class="absolute left-16 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 z-50 lg:hidden" x-show="!sidebarOpen">Payment</div>
+                <!-- Payment Gateway -->
+                <a href="{{ route('admin.integrations.payment') }}" 
+                   class="flex items-center px-4 py-3.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('admin.integrations.payment') ? 'sidebar-item-active' : 'text-gray-500 hover:bg-red-50 hover:text-telu-red' }}">
+                    <svg class="w-6 h-6 flex-shrink-0 transition-colors {{ request()->routeIs('admin.integrations.payment') ? 'text-white' : 'text-gray-400 group-hover:text-telu-red' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                    <span class="ml-3 font-medium whitespace-nowrap" x-show="sidebarOpen">Payment</span>
+                    <div class="absolute left-16 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 z-50 lg:hidden" x-show="!sidebarOpen">Payment</div>
+                </a>
+
+                <!-- Logistics -->
+                <a href="{{ route('admin.integrations.shipping') }}" 
+                   class="flex items-center px-4 py-3.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('admin.integrations.shipping') ? 'sidebar-item-active' : 'text-gray-500 hover:bg-red-50 hover:text-telu-red' }}">
+                    <svg class="w-6 h-6 flex-shrink-0 transition-colors {{ request()->routeIs('admin.integrations.shipping') ? 'text-white' : 'text-gray-400 group-hover:text-telu-red' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span class="ml-3 font-medium whitespace-nowrap" x-show="sidebarOpen">Logistik</span>
+                    <div class="absolute left-16 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 z-50 lg:hidden" x-show="!sidebarOpen">Logistik</div>
+                </a>
+
+                <!-- WhatsApp -->
+                <a href="{{ route('admin.integrations.whatsapp') }}" 
+                   class="flex items-center px-4 py-3.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('admin.integrations.whatsapp') ? 'sidebar-item-active' : 'text-gray-500 hover:bg-red-50 hover:text-telu-red' }}">
+                    <svg class="w-6 h-6 flex-shrink-0 transition-colors {{ request()->routeIs('admin.integrations.whatsapp') ? 'text-white' : 'text-gray-400 group-hover:text-telu-red' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    <span class="ml-3 font-medium whitespace-nowrap" x-show="sidebarOpen">WhatsApp</span>
+                    <div class="absolute left-16 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 z-50 lg:hidden" x-show="!sidebarOpen">WhatsApp</div>
+                </a>
+
+                <!-- Webhook Logs -->
+                <a href="{{ route('admin.integrations.webhook-logs') }}" 
+                   class="flex items-center px-4 py-3.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('admin.integrations.webhook-logs') ? 'sidebar-item-active' : 'text-gray-500 hover:bg-red-50 hover:text-telu-red' }}">
+                    <svg class="w-6 h-6 flex-shrink-0 transition-colors {{ request()->routeIs('admin.integrations.webhook-logs') ? 'text-white' : 'text-gray-400 group-hover:text-telu-red' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    <span class="ml-3 font-medium whitespace-nowrap" x-show="sidebarOpen">Webhook Logs</span>
+                    <div class="absolute left-16 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 z-50 lg:hidden" x-show="!sidebarOpen">Webhook Logs</div>
+                </a>
+            @endif
+
+        </div>
+
+        <!-- Bottom Actions -->
+        <div class="p-4 border-t border-gray-100 bg-white shrink-0">
+             <a href="{{ route('home') }}" target="_blank"
+                class="flex items-center px-4 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all mb-1 group" title="Lihat Website">
+                 <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                 <span class="ml-3 font-medium whitespace-nowrap" x-show="sidebarOpen">Lihat Website</span>
             </a>
-
-            <!-- Logistics -->
-            <a href="{{ route('admin.integrations.shipping') }}" 
-               class="flex items-center px-4 py-3.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('admin.integrations.shipping') ? 'sidebar-item-active' : 'text-gray-500 hover:bg-red-50 hover:text-telu-red' }}">
-                <svg class="w-6 h-6 flex-shrink-0 transition-colors {{ request()->routeIs('admin.integrations.shipping') ? 'text-white' : 'text-gray-400 group-hover:text-telu-red' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                <span class="ml-3 font-medium whitespace-nowrap" x-show="sidebarOpen">Logistik</span>
-                <div class="absolute left-16 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 z-50 lg:hidden" x-show="!sidebarOpen">Logistik</div>
-            </a>
-
-            <!-- WhatsApp -->
-            <a href="{{ route('admin.integrations.whatsapp') }}" 
-               class="flex items-center px-4 py-3.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('admin.integrations.whatsapp') ? 'sidebar-item-active' : 'text-gray-500 hover:bg-red-50 hover:text-telu-red' }}">
-                <svg class="w-6 h-6 flex-shrink-0 transition-colors {{ request()->routeIs('admin.integrations.whatsapp') ? 'text-white' : 'text-gray-400 group-hover:text-telu-red' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                <span class="ml-3 font-medium whitespace-nowrap" x-show="sidebarOpen">WhatsApp</span>
-                <div class="absolute left-16 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 z-50 lg:hidden" x-show="!sidebarOpen">WhatsApp</div>
-            </a>
-
-            <!-- Webhook Logs -->
-            <a href="{{ route('admin.integrations.webhook-logs') }}" 
-               class="flex items-center px-4 py-3.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('admin.integrations.webhook-logs') ? 'sidebar-item-active' : 'text-gray-500 hover:bg-red-50 hover:text-telu-red' }}">
-                <svg class="w-6 h-6 flex-shrink-0 transition-colors {{ request()->routeIs('admin.integrations.webhook-logs') ? 'text-white' : 'text-gray-400 group-hover:text-telu-red' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-                <span class="ml-3 font-medium whitespace-nowrap" x-show="sidebarOpen">Webhook Logs</span>
-                <div class="absolute left-16 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 z-50 lg:hidden" x-show="!sidebarOpen">Webhook Logs</div>
-            </a>
-
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="w-full flex items-center px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700 transition-all group" title="Logout">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    <span class="ml-3 font-medium whitespace-nowrap" x-show="sidebarOpen">Logout</span>
+                </button>
+            </form>
         </div>
     </aside>
 
@@ -240,23 +266,32 @@
                 <a href="{{ route('admin.products') }}" class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('admin.products*') ? 'bg-telu-red text-white' : 'text-gray-600 hover:bg-gray-50' }}">
                     <span class="font-medium">Produk</span>
                 </a>
+                <a href="{{ route('admin.categories.index') }}" class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('admin.categories*') ? 'bg-telu-red text-white' : 'text-gray-600 hover:bg-gray-50' }}">
+                    <span class="font-medium">Kategori</span>
+                </a>
                 <a href="{{ route('admin.users') }}" class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('admin.users*') ? 'bg-telu-red text-white' : 'text-gray-600 hover:bg-gray-50' }}">
                     <span class="font-medium">Pengguna</span>
                 </a>
                 <a href="{{ route('admin.payouts') }}" class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('admin.payouts*') ? 'bg-telu-red text-white' : 'text-gray-600 hover:bg-gray-50' }}">
                     <span class="font-medium">Payouts</span>
+                    @if(isset($pendingPayoutsCount) && $pendingPayoutsCount > 0 && !request()->routeIs('admin.payouts*'))
+                        <span class="ml-auto bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingPayoutsCount }}</span>
+                    @endif
                 </a>
-                <div class="my-2 border-t border-gray-100"></div>
-                <div class="px-4 text-xs font-bold text-gray-400 uppercase mt-2">Integrasi</div>
-                <a href="{{ route('admin.integrations.payment') }}" class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('admin.integrations.payment') ? 'bg-telu-red text-white' : 'text-gray-600 hover:bg-gray-50' }}">
-                    <span class="font-medium">Payment Gateway</span>
-                </a>
-                <a href="{{ route('admin.integrations.shipping') }}" class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('admin.integrations.shipping') ? 'bg-telu-red text-white' : 'text-gray-600 hover:bg-gray-50' }}">
-                    <span class="font-medium">Logistik</span>
-                </a>
-                <a href="{{ route('admin.integrations.whatsapp') }}" class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('admin.integrations.whatsapp') ? 'bg-telu-red text-white' : 'text-gray-600 hover:bg-gray-50' }}">
-                    <span class="font-medium">WhatsApp</span>
-                </a>
+
+                @if(auth()->id() == 1)
+                    <div class="my-2 border-t border-gray-100"></div>
+                    <div class="px-4 text-xs font-bold text-gray-400 uppercase mt-2">Integrasi</div>
+                    <a href="{{ route('admin.integrations.payment') }}" class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('admin.integrations.payment') ? 'bg-telu-red text-white' : 'text-gray-600 hover:bg-gray-50' }}">
+                        <span class="font-medium">Payment Gateway</span>
+                    </a>
+                    <a href="{{ route('admin.integrations.shipping') }}" class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('admin.integrations.shipping') ? 'bg-telu-red text-white' : 'text-gray-600 hover:bg-gray-50' }}">
+                        <span class="font-medium">Logistik</span>
+                    </a>
+                    <a href="{{ route('admin.integrations.whatsapp') }}" class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('admin.integrations.whatsapp') ? 'bg-telu-red text-white' : 'text-gray-600 hover:bg-gray-50' }}">
+                        <span class="font-medium">WhatsApp</span>
+                    </a>
+                @endif
            </div>
     </aside>
 

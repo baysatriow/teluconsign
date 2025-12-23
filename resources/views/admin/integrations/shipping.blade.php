@@ -26,17 +26,17 @@
                 
                 <div class="mb-5">
                     <label class="block mb-2 text-sm font-semibold text-gray-700">Base URL API</label>
-                    <input type="url" name="base_url" value="{{ $rajaongkir->meta_json['base_url'] ?? 'https://rajaongkir.komerce.id/api/v1' }}" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-telu-red/20 focus:border-telu-red block w-full p-3 transition-all" placeholder="https://rajaongkir.komerce.id/api/v1" required>
+                    <input type="url" name="base_url" value="{{ $rajaongkir->meta_json['base_url'] ?? 'https://rajaongkir.komerce.id/api/v1' }}" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 block w-full p-3 transition-all" placeholder="https://rajaongkir.komerce.id/api/v1" required>
                     <p class="mt-2 text-xs text-gray-500">Default: <span class="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-600">https://rajaongkir.komerce.id/api/v1</span></p>
                 </div>
 
                 <div class="mb-8">
                     <label class="block mb-2 text-sm font-semibold text-gray-700">API Key</label>
-                    <input type="text" name="api_key" value="{{ $rajaongkir->public_k ?? '' }}" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-telu-red/20 focus:border-telu-red block w-full p-3 font-mono transition-all" placeholder="Masukkan API Key Komerce/RajaOngkir" required>
+                    <input type="text" name="api_key" value="{{ $rajaongkir->public_k ?? '' }}" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 block w-full p-3 font-mono transition-all" placeholder="Masukkan API Key Komerce/RajaOngkir" required>
                 </div>
 
                 <div class="flex items-center justify-end">
-                    <button type="submit" class="text-white bg-telu-red hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-100 font-bold rounded-xl text-sm px-6 py-3 text-center flex items-center gap-2 shadow-lg shadow-red-500/30 transition-all transform hover:-translate-y-0.5">
+                    <button type="submit" class="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-100 font-bold rounded-xl text-sm px-6 py-3 text-center flex items-center gap-2 shadow-lg shadow-red-500/30 transition-all transform hover:-translate-y-0.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         Simpan Konfigurasi
                     </button>
@@ -55,9 +55,9 @@
 
             <form action="{{ route('admin.integrations.carrier.store') }}" method="POST" class="flex gap-2 mb-4">
                 @csrf
-                <input type="text" name="code" placeholder="Kode (ex: jne)" class="bg-gray-50 border border-gray-200 text-xs rounded-lg block w-32 px-3 py-2 focus:ring-2 focus:ring-telu-red/20 focus:border-telu-red transition-all" required>
-                <input type="text" name="name" placeholder="Nama Tampil (ex: JNE Express)" class="bg-gray-50 border border-gray-200 text-xs rounded-lg block flex-1 px-3 py-2 focus:ring-2 focus:ring-telu-red/20 focus:border-telu-red transition-all" required>
-                <button type="submit" class="text-white bg-gray-900 hover:bg-black font-medium rounded-lg text-xs px-4 py-2 shadow transition-transform hover:-translate-y-0.5 whitespace-nowrap">
+                <input type="text" name="code" placeholder="Kode (ex: jne)" class="bg-white border border-gray-300 text-xs rounded-lg block w-32 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all" required>
+                <input type="text" name="name" placeholder="Nama Tampil (ex: JNE Express)" class="bg-white border border-gray-300 text-xs rounded-lg block flex-1 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all" required>
+                <button type="submit" class="text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg text-xs px-4 py-2 shadow transition-transform hover:-translate-y-0.5 whitespace-nowrap">
                     + Tambah
                 </button>
             </form>
@@ -80,7 +80,7 @@
                                     @csrf @method('PATCH')
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" class="sr-only peer" onchange="this.form.submit()" {{ $carrier->is_enabled ? 'checked' : '' }}>
-                                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-telu-red"></div>
+                                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-600"></div>
                                     </label>
                                 </form>
                             </td>
@@ -94,7 +94,7 @@
                                 <div class="flex items-center justify-center gap-1.5">
                                     <!-- Edit Button -->
                                     <button onclick="openEditModal('{{ route('admin.integrations.carrier.update', $carrier->shipping_carrier_id) }}', '{{ $carrier->code }}', '{{ $carrier->name }}')" 
-                                        class="text-gray-400 hover:text-blue-600 transition-colors p-1" 
+                                        class="text-gray-400 hover:text-red-600 transition-colors p-1" 
                                         title="Edit">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                     </button>
@@ -144,9 +144,14 @@
 
     <!-- RIGHT: SIMULATOR -->
     <div class="xl:col-span-1">
-        <div class="bg-white border border-gray-100 rounded-2xl shadow-soft p-6 sticky top-28">
+        <div class="bg-white border border-gray-100 rounded-2xl shadow-soft p-6 sticky top-28" x-data="{ 
+            courierCode: 'jne', 
+            courierName: 'JNE Express',
+            dropdownOpen: false,
+            couriers: {{ $shippingCarriers->map(fn($c) => ['code' => $c->code, 'name' => $c->name])->toJson() }}
+        }">
             <h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
-                <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+                <div class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-600">
                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                 </div>
                 Test Cek Ongkir
@@ -157,29 +162,43 @@
                 @csrf
                 <div>
                      <label class="text-xs font-bold text-gray-500 uppercase block mb-2">Origin ID</label>
-                     <input type="number" name="origin" placeholder="501" class="w-full rounded-xl border-gray-200 text-sm focus:ring-2 focus:ring-gray-200 focus:border-gray-400 p-3 transition-all" value="501" required>
+                     <input type="number" name="origin" placeholder="501" class="w-full rounded-xl bg-white border border-gray-300 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 transition-all" value="501" required>
                      <p class="text-[10px] text-gray-400 mt-1">Cth: 501 (Yogyakarta), 151 (Jakarta)</p>
                 </div>
                 <div>
                      <label class="text-xs font-bold text-gray-500 uppercase block mb-2">Destination ID</label>
-                     <input type="number" name="destination" placeholder="114" class="w-full rounded-xl border-gray-200 text-sm focus:ring-2 focus:ring-gray-200 focus:border-gray-400 p-3 transition-all" value="114" required>
+                     <input type="number" name="destination" placeholder="114" class="w-full rounded-xl bg-white border border-gray-300 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 transition-all" value="114" required>
                      <p class="text-[10px] text-gray-400 mt-1">Cth: 114 (Denpasar), 23 (Bandung)</p>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                          <label class="text-xs font-bold text-gray-500 uppercase block mb-2">Berat (g)</label>
-                         <input type="number" name="weight" placeholder="1000" class="w-full rounded-xl border-gray-200 text-sm focus:ring-2 focus:ring-gray-200 focus:border-gray-400 p-3 transition-all" value="1000" required>
+                         <input type="number" name="weight" placeholder="1000" min="1000" class="w-full rounded-xl bg-white border border-gray-300 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 transition-all" value="1000" required>
+                         <p class="text-[10px] text-gray-400 mt-1">Min: 1000g</p>
                     </div>
                     <div>
                          <label class="text-xs font-bold text-gray-500 uppercase block mb-2">Kurir</label>
-                         <select name="courier" class="w-full rounded-xl border-gray-200 text-sm focus:ring-2 focus:ring-gray-200 focus:border-gray-400 p-3 transition-all" required>
-                            @foreach($shippingCarriers as $carrier)
-                                <option value="{{ $carrier->code }}">{{ $carrier->name }}</option>
-                            @endforeach
-                            @if($shippingCarriers->isEmpty())
-                                <option value="jne">jne (def)</option>
-                            @endif
-                         </select>
+                         
+                         <div class="relative">
+                             <input type="hidden" name="courier" x-model="courierCode">
+                             <button type="button" @click="dropdownOpen = !dropdownOpen" @click.away="dropdownOpen = false"
+                                     class="w-full rounded-xl bg-white border border-gray-300 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 transition-all text-left flex justify-between items-center">
+                                 <span x-text="courierName || 'Pilih Kurir'"></span>
+                                 <svg class="w-4 h-4 text-gray-500 transition-transform duration-200" :class="{'rotate-180': dropdownOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                             </button>
+
+                             <div x-show="dropdownOpen" x-transition class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden max-h-48 overflow-y-auto" style="display: none;">
+                                <template x-for="c in couriers" :key="c.code">
+                                    <div @click="courierCode = c.code; courierName = c.name; dropdownOpen = false" class="px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 cursor-pointer flex items-center justify-between">
+                                        <span x-text="c.name"></span>
+                                        <span x-show="courierCode === c.code" class="text-red-500 font-bold">&check;</span>
+                                    </div>
+                                </template>
+                                <div x-show="couriers.length === 0" class="px-4 py-3 text-xs text-gray-400 text-center">
+                                    Belum ada kurir aktif.
+                                </div>
+                             </div>
+                         </div>
                     </div>
                 </div>
 
@@ -187,7 +206,7 @@
                     <span class="font-bold">Info:</span> Pastikan ID Kota/Kecamatan valid (sesuai database RajaOngkir).
                 </div>
 
-                <button type="submit" class="w-full text-white bg-gray-800 hover:bg-black font-bold rounded-xl text-sm px-5 py-4 shadow-lg transition-transform hover:-translate-y-0.5 mt-4">
+                <button type="submit" class="w-full text-white bg-red-600 hover:bg-red-700 font-bold rounded-xl text-sm px-5 py-4 shadow-lg shadow-red-500/20 transition-transform hover:-translate-y-0.5 mt-4">
                     CEK HARGA ONGKIR
                 </button>
             </form>
@@ -196,7 +215,6 @@
 
 </div>
 
-<!-- Edit Carrier Modal -->
 <div id="editModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeEditModal()"></div>
@@ -207,29 +225,29 @@
                 @csrf @method('PUT')
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="sm:flex sm:items-start">
-                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                            <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         </div>
                         <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                             <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Edit Kurir</h3>
                             <div class="mt-4 space-y-4">
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700 mb-1">Kode Kurir</label>
-                                    <input type="text" name="code" id="editCode" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5" required>
+                                    <input type="text" name="code" id="editCode" class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-red-500 focus:border-red-500 block p-2.5" required>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700 mb-1">Nama Tampil</label>
-                                    <input type="text" name="name" id="editName" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5" required>
+                                    <input type="text" name="name" id="editName" class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-red-500 focus:border-red-500 block p-2.5" required>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                    <button type="submit" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                    <button type="submit" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
                         Simpan Perubahan
                     </button>
-                    <button type="button" onclick="closeEditModal()" class="mt-3 w-full inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    <button type="button" onclick="closeEditModal()" class="mt-3 w-full inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                         Batal
                     </button>
                 </div>
@@ -237,6 +255,7 @@
         </div>
     </div>
 </div>
+
 
 <script>
     // Edit Modal Functions

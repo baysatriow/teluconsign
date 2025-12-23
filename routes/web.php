@@ -10,6 +10,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\AdminCategoryController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -165,7 +166,12 @@ Route::middleware(['auth', 'verified_otp'])->group(function () {
         Route::post('/users', [AdminController::class, 'storeAdmin'])->name('users.store_admin');
         Route::put('/users/{id}', [AdminController::class, 'updateAdmin'])->name('users.update_admin'); // Update Admin Data
         Route::patch('/users/{id}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle_status');
+        Route::patch('/users/{id}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle_status');
         Route::post('/users/{id}/reset-link', [AdminController::class, 'sendResetLink'])->name('users.send_reset_link'); // Reset Link Action
+
+        // Manajemen Kategori
+        Route::get('/categories/check/{id}', [AdminCategoryController::class, 'checkDeletion'])->name('categories.check');
+        Route::resource('categories', AdminCategoryController::class);
 
         // Manajemen Payouts
         Route::get('/payouts', [AdminController::class, 'payouts'])->name('payouts');

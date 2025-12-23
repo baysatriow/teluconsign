@@ -6,8 +6,8 @@ enum ProductStatus: string
 {
     case Active = 'active';
     case Sold = 'sold';
-    case Archived = 'archived';     // Draft
-    case Suspended = 'suspended';   // Admin Suspend
+    case Archived = 'archived';    
+    case Suspended = 'suspended';   
 
     public function label(): string
     {

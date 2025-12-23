@@ -19,6 +19,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Share Pending Payouts Count to Admin Layout sidebar
+        \Illuminate\Support\Facades\View::composer('layouts.admin', function ($view) {
+            $view->with('pendingPayoutsCount', \App\Models\PayoutRequest::where('status', 'requested')->count());
+        });
     }
 }
