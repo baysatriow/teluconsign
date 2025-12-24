@@ -92,7 +92,7 @@ class ProductCRUDTest extends TestCase
         $response = $this->actingAs($seller)->delete(route('shop.products.delete', $product->product_id));
 
         $response->assertRedirect(route('shop.products.index'));
-        $this->assertSoftDeleted('products', [
+        $this->assertDatabaseMissing('products', [
             'product_id' => $product->product_id,
         ]);
     }

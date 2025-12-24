@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="C:\laragon\www\teluconsign\phpunit.xml" tests="18" assertions="39" errors="0" failures="0" skipped="0" time="0.746222">
+    <testsuite name="Unit" tests="1" assertions="1" errors="0" failures="0" skipped="0" time="0.004610">
+      <testsuite name="Tests\Unit\ExampleTest" file="C:\laragon\www\teluconsign\tests\Unit\ExampleTest.php" tests="1" assertions="1" errors="0" failures="0" skipped="0" time="0.004610">
+        <testcase name="test_that_true_is_true" file="C:\laragon\www\teluconsign\tests\Unit\ExampleTest.php" line="12" class="Tests\Unit\ExampleTest" classname="Tests.Unit.ExampleTest" assertions="1" time="0.004610"/>
+      </testsuite>
+    </testsuite>
+    <testsuite name="Feature" tests="17" assertions="38" errors="0" failures="0" skipped="0" time="0.741612">
+      <testsuite name="Tests\Feature\AdminDashboardTest" file="C:\laragon\www\teluconsign\tests\Feature\AdminDashboardTest.php" tests="2" assertions="3" errors="0" failures="0" skipped="0" time="0.358584">
+        <testcase name="test_admin_can_access_dashboard" file="C:\laragon\www\teluconsign\tests\Feature\AdminDashboardTest.php" line="14" class="Tests\Feature\AdminDashboardTest" classname="Tests.Feature.AdminDashboardTest" assertions="1" time="0.344617"/>
+        <testcase name="test_non_admin_cannot_access_dashboard" file="C:\laragon\www\teluconsign\tests\Feature\AdminDashboardTest.php" line="23" class="Tests\Feature\AdminDashboardTest" classname="Tests.Feature.AdminDashboardTest" assertions="2" time="0.013967"/>
+      </testsuite>
+      <testsuite name="Tests\Feature\CheckoutTest" file="C:\laragon\www\teluconsign\tests\Feature\CheckoutTest.php" tests="2" assertions="7" errors="0" failures="0" skipped="0" time="0.065327">
+        <testcase name="test_user_can_add_item_to_cart" file="C:\laragon\www\teluconsign\tests\Feature\CheckoutTest.php" line="19" class="Tests\Feature\CheckoutTest" classname="Tests.Feature.CheckoutTest" assertions="3" time="0.026824"/>
+        <testcase name="test_user_can_place_order" file="C:\laragon\www\teluconsign\tests\Feature\CheckoutTest.php" line="36" class="Tests\Feature\CheckoutTest" classname="Tests.Feature.CheckoutTest" assertions="4" time="0.038502"/>
+      </testsuite>
+      <testsuite name="Tests\Feature\ExampleTest" file="C:\laragon\www\teluconsign\tests\Feature\ExampleTest.php" tests="1" assertions="1" errors="0" failures="0" skipped="0" time="0.015547">
+        <testcase name="test_the_application_returns_a_successful_response" file="C:\laragon\www\teluconsign\tests\Feature\ExampleTest.php" line="14" class="Tests\Feature\ExampleTest" classname="Tests.Feature.ExampleTest" assertions="1" time="0.015547"/>
+      </testsuite>
+      <testsuite name="Tests\Feature\HomeTest" file="C:\laragon\www\teluconsign\tests\Feature\HomeTest.php" tests="2" assertions="2" errors="0" failures="0" skipped="0" time="0.034914">
+        <testcase name="test_homepage_loads_correctly" file="C:\laragon\www\teluconsign\tests\Feature\HomeTest.php" line="14" class="Tests\Feature\HomeTest" classname="Tests.Feature.HomeTest" assertions="1" time="0.014313"/>
+        <testcase name="test_homepage_displays_products" file="C:\laragon\www\teluconsign\tests\Feature\HomeTest.php" line="21" class="Tests\Feature\HomeTest" classname="Tests.Feature.HomeTest" assertions="1" time="0.020602"/>
+      </testsuite>
+      <testsuite name="Tests\Feature\LoginTest" file="C:\laragon\www\teluconsign\tests\Feature\LoginTest.php" tests="3" assertions="5" errors="0" failures="0" skipped="0" time="0.099758">
+        <testcase name="test_login_screen_can_be_rendered" file="C:\laragon\www\teluconsign\tests\Feature\LoginTest.php" line="14" class="Tests\Feature\LoginTest" classname="Tests.Feature.LoginTest" assertions="1" time="0.019613"/>
+        <testcase name="test_users_can_authenticate_using_the_login_screen" file="C:\laragon\www\teluconsign\tests\Feature\LoginTest.php" line="21" class="Tests\Feature\LoginTest" classname="Tests.Feature.LoginTest" assertions="3" time="0.064343"/>
+        <testcase name="test_users_can_not_authenticate_with_invalid_password" file="C:\laragon\www\teluconsign\tests\Feature\LoginTest.php" line="42" class="Tests\Feature\LoginTest" classname="Tests.Feature.LoginTest" assertions="1" time="0.015802"/>
+      </testsuite>
+      <testsuite name="Tests\Feature\ProductCRUDTest" file="C:\laragon\www\teluconsign\tests\Feature\ProductCRUDTest.php" tests="4" assertions="11" errors="0" failures="0" skipped="0" time="0.099533">
+        <testcase name="test_seller_can_view_product_list" file="C:\laragon\www\teluconsign\tests\Feature\ProductCRUDTest.php" line="18" class="Tests\Feature\ProductCRUDTest" classname="Tests.Feature.ProductCRUDTest" assertions="2" time="0.022860"/>
+        <testcase name="test_seller_can_create_product" file="C:\laragon\www\teluconsign\tests\Feature\ProductCRUDTest.php" line="34" class="Tests\Feature\ProductCRUDTest" classname="Tests.Feature.ProductCRUDTest" assertions="3" time="0.040157"/>
+        <testcase name="test_seller_can_update_product" file="C:\laragon\www\teluconsign\tests\Feature\ProductCRUDTest.php" line="62" class="Tests\Feature\ProductCRUDTest" classname="Tests.Feature.ProductCRUDTest" assertions="3" time="0.019820"/>
+        <testcase name="test_seller_can_delete_product" file="C:\laragon\www\teluconsign\tests\Feature\ProductCRUDTest.php" line="86" class="Tests\Feature\ProductCRUDTest" classname="Tests.Feature.ProductCRUDTest" assertions="3" time="0.016697"/>
+      </testsuite>
+      <testsuite name="Tests\Feature\RegisterTest" file="C:\laragon\www\teluconsign\tests\Feature\RegisterTest.php" tests="3" assertions="9" errors="0" failures="0" skipped="0" time="0.067948">
+        <testcase name="test_registration_screen_can_be_rendered" file="C:\laragon\www\teluconsign\tests\Feature\RegisterTest.php" line="14" class="Tests\Feature\RegisterTest" classname="Tests.Feature.RegisterTest" assertions="1" time="0.015562"/>
+        <testcase name="test_new_users_can_register" file="C:\laragon\www\teluconsign\tests\Feature\RegisterTest.php" line="21" class="Tests\Feature\RegisterTest" classname="Tests.Feature.RegisterTest" assertions="4" time="0.036262"/>
+        <testcase name="test_registration_fails_with_invalid_data" file="C:\laragon\www\teluconsign\tests\Feature\RegisterTest.php" line="41" class="Tests\Feature\RegisterTest" classname="Tests.Feature.RegisterTest" assertions="4" time="0.016124"/>
+      </testsuite>
+    </testsuite>
+  </testsuite>
+</testsuites>

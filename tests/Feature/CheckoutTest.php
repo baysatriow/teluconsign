@@ -70,6 +70,9 @@ class CheckoutTest extends TestCase
         if ($response->status() !== 200) {
             $response->dump();
         }
+        if ($response->status() !== 200) {
+            $response->dump();
+        }
         $response->assertStatus(200);
         $response->assertJson(['status' => 'success']);
 

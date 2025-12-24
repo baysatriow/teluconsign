@@ -241,7 +241,7 @@
                                     </div>
                                     <div>
                                         <p class="font-bold text-gray-800 text-sm">${serviceName}</p>
-                                        <p class="text-xs text-gray-500">Estimasi ${serviceEtd} hari</p>
+                                        <p class="text-xs text-gray-500">Estimasi ${serviceEtd}</p>
                                     </div>
                                 </div>
                                 <div class="text-right">
