@@ -4,7 +4,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OtpController;
-use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductController;
@@ -12,233 +11,220 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\AdminCategoryController;
-use App\Http\Controllers\SearchController;
-use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\OrdersController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\LocationController;
-use App\Http\Controllers\WebhookController;
 
 /*
 |--------------------------------------------------------------------------
-| 1. GUEST & PUBLIC ROUTES
+| Web Routes
 |--------------------------------------------------------------------------
 */
 
-// --- Public View ---
+// ==============================================================================
+// 1. PUBLIC ROUTES (Bisa diakses siapa saja)
+// ==============================================================================
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/search', [SearchController::class, 'index'])->name('search.index');
+Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->name('search.index');
 Route::get('/product/{product}', [ProductController::class, 'show'])->name('product.show');
 Route::get('/shop/{id}', [ShopController::class, 'show'])->name('shop.show');
 
-// --- Authentication (Guest Only) ---
+// ==============================================================================
+// 2. GUEST ROUTES (Hanya untuk yang BELUM login)
+// ==============================================================================
 Route::middleware('guest')->group(function () {
+
+    // --- LOGIN ---
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+
+    // --- REGISTER ---
     Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->name('register.submit');
 
-    // OTP Verification
+    // --- OTP (Guest) ---
     Route::get('/otp-verify', [OtpController::class, 'showVerifyForm'])->name('otp.verify');
     Route::post('/otp-verify', [OtpController::class, 'verify'])->name('otp.verify.submit');
     Route::post('/otp-resend', [OtpController::class, 'resend'])->name('otp.resend');
 
-    // Forgot Password Flow
-    Route::prefix('forgot-password')->name('password.')->group(function () {
-        Route::get('/', [ForgotPasswordController::class, 'showSearchForm'])->name('request');
-        Route::post('/search', [ForgotPasswordController::class, 'search'])->name('search');
-        Route::get('/verify', [ForgotPasswordController::class, 'showVerifyForm'])->name('verify.show');
-        Route::post('/verify', [ForgotPasswordController::class, 'verify'])->name('verify.submit');
-        Route::get('/reset-password/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('reset');
-        Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])->name('update');
-    });
+    // --- LUPA PASSWORD ---
+    // 1. Cari Akun
+    Route::get('/forgot-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showSearchForm'])->name('password.request');
+    Route::post('/forgot-password/search', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'search'])->name('password.search');
+
+    // 2. Verifikasi Nomor HP
+    Route::get('/forgot-password/verify', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showVerifyForm'])->name('password.verify.show');
+    Route::post('/forgot-password/verify', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'verify'])->name('password.verify.submit');
+
+    // 3. Reset Password (Link dari WA)
+    Route::get('/reset-password/{token}', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'reset'])->name('password.update');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 2. AUTHENTICATED ROUTES (Verified OTP)
-|--------------------------------------------------------------------------
-*/
-
+// ==============================================================================
+// 3. AUTHENTICATED ROUTES (Harus Login & Verified OTP)
+// ==============================================================================
 Route::middleware(['auth', 'verified_otp'])->group(function () {
 
+    // --- LOGOUT ---
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // --- User Profile & Settings ---
-    Route::prefix('profile')->name('profile.')->group(function () {
-        Route::get('/', [ProfileController::class, 'index'])->name('index');
-        Route::put('/update', [ProfileController::class, 'update'])->name('update');
-        Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
-        
-        // Address Management
-        Route::post('/address', [ProfileController::class, 'addAddress'])->name('address.add');
-        Route::put('/address/{id}', [ProfileController::class, 'updateAddress'])->name('address.update');
-        Route::delete('/address/{id}', [ProfileController::class, 'deleteAddress'])->name('address.delete');
-        Route::patch('/address/{id}/default', [ProfileController::class, 'setDefaultAddress'])->name('address.default');
-
-        // Bank Account Management
-        Route::post('/bank', [ProfileController::class, 'addBank'])->name('bank.add');
-        Route::put('/bank/{id}', [ProfileController::class, 'updateBank'])->name('bank.update');
-        Route::delete('/bank/{id}', [ProfileController::class, 'deleteBank'])->name('bank.delete');
-
-        // Phone Update via OTP
-        Route::post('/phone/request', [ProfileController::class, 'requestPhoneUpdate'])->name('phone.request');
-        Route::post('/phone/verify', [ProfileController::class, 'verifyPhoneUpdate'])->name('phone.verify');
-    });
-
-    // --- Shopping Cart ---
-    Route::prefix('cart')->name('cart.')->group(function () {
-        Route::get('/', [CartController::class, 'index'])->name('index');
-        Route::post('/add', [CartController::class, 'addToCart'])->name('add');
-        Route::post('/update/{itemId}', [CartController::class, 'updateItem'])->name('update');
-        Route::delete('/item/{itemId}', [CartController::class, 'deleteItem'])->name('deleteItem');
-        Route::delete('/store/{sellerId}', [CartController::class, 'deleteStoreItems'])->name('deleteStore');
-    });
-
-    // --- Order & Transaction ---
+    // ======================================================================
+    // 3.1 FITUR KERANJANG & PEMBELIAN
+    // ======================================================================
+    Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+    Route::post('/cart/add', [CartController::class, 'addToCart'])->name('cart.add');
+    Route::post('/cart/update/{itemId}', [CartController::class, 'updateItem'])->name('cart.update');
+    Route::delete('/cart/item/{itemId}', [CartController::class, 'deleteItem'])->name('cart.deleteItem');
+    Route::delete('/cart/store/{sellerId}', [CartController::class, 'deleteStoreItems'])->name('cart.deleteStore');
     Route::post('/product/{product}/buy', [ProductController::class, 'buyNow'])->name('product.buy');
-    Route::post('/reviews', [ReviewController::class, 'store'])->name('reviews.store');
-    Route::get('/orders', [OrdersController::class, 'index'])->name('orders.index');
-    Route::get('/orders/{order}', [OrdersController::class, 'show'])->name('orders.show');
-    Route::post('/orders/{id}/pay', [OrdersController::class, 'pay'])->name('orders.pay');
+    Route::post('/reviews', [App\Http\Controllers\ReviewController::class, 'store'])->name('reviews.store');
 
-    // --- Checkout Flow ---
-    Route::prefix('checkout')->name('checkout.')->group(function () {
-        Route::get('/', [CheckoutController::class, 'index'])->name('index');
-        Route::post('/check-shipping', [CheckoutController::class, 'checkShippingCost'])->name('check_shipping');
-        Route::post('/process', [CheckoutController::class, 'process'])->name('process');
-    });
+    // ======================================================================
+    // 3.2 FITUR PROFIL (USER BIASA)
+    // ======================================================================
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+    Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
 
-    // --- Custom Payment Page ---
-    Route::prefix('payment')->name('payment.')->group(function () {
-        Route::get('/{payment}', [PaymentController::class, 'show'])->name('show');
-        Route::post('/{payment}/charge', [PaymentController::class, 'createCharge'])->name('charge');
-        Route::get('/{payment}/status', [PaymentController::class, 'checkStatus'])->name('status');
-        Route::post('/{payment}/demo', [PaymentController::class, 'demoPayment'])->name('demo');
-    });
+    // --- Autocomplete Lokasi ---
+    Route::get('/location/search', [App\Http\Controllers\LocationController::class, 'search'])->name('location.search');
 
-    // --- Utilities ---
-    Route::get('/location/search', [LocationController::class, 'search'])->name('location.search');
+    // --- Kelola Alamat ---
+    Route::post('/profile/address', [ProfileController::class, 'addAddress'])->name('profile.address.add');
+    Route::put('/profile/address/{id}', [ProfileController::class, 'updateAddress'])->name('profile.address.update');
+    Route::delete('/profile/address/{id}', [ProfileController::class, 'deleteAddress'])->name('profile.address.delete');
+    Route::patch('/profile/address/{id}/default', [ProfileController::class, 'setDefaultAddress'])->name('profile.address.default');
 
-    /*
-    |----------------------------------------------------------------------
-    | 3. SELLER / SHOP ROUTES
-    |----------------------------------------------------------------------
-    */
-    Route::prefix('myshop')->name('shop.')->group(function () {
-        Route::get('/', [ShopController::class, 'index'])->name('index');
-        Route::post('/register', [ShopController::class, 'registerStore'])->name('shop.register');
+    // --- Kelola Bank ---
+    Route::post('/profile/bank', [ProfileController::class, 'addBank'])->name('profile.bank.add');
+    Route::put('/profile/bank/{id}', [ProfileController::class, 'updateBank'])->name('profile.bank.update');
+    Route::delete('/profile/bank/{id}', [ProfileController::class, 'deleteBank'])->name('profile.bank.delete');
 
-        // Shop Address Management
-        Route::prefix('address')->name('address.')->group(function () {
-            Route::get('/', [ShopController::class, 'addressIndex'])->name('index');
-            Route::get('/create', [ShopController::class, 'addressCreate'])->name('create');
-            Route::post('/', [ShopController::class, 'addressStore'])->name('store');
-            Route::get('/{id}/edit', [ShopController::class, 'addressEdit'])->name('edit');
-            Route::put('/{id}', [ShopController::class, 'addressUpdate'])->name('update');
-            Route::delete('/{id}', [ShopController::class, 'addressDestroy'])->name('delete');
-            Route::patch('/{id}/default', [ShopController::class, 'addressSetDefault'])->name('setdefault');
-        });
+    // --- Update Phone Number (OTP) ---
+    Route::post('/profile/phone/request', [ProfileController::class, 'requestPhoneUpdate'])->name('profile.phone.request');
+    Route::post('/profile/phone/verify', [ProfileController::class, 'verifyPhoneUpdate'])->name('profile.phone.verify');
 
-        // Product Management
-        Route::prefix('products')->name('products.')->group(function () {
-            Route::get('/', [ShopController::class, 'products'])->name('index');
-            Route::get('/create', [ShopController::class, 'createProduct'])->name('create');
-            Route::post('/', [ShopController::class, 'storeProduct'])->name('store');
-            Route::get('/{product}/edit', [ShopController::class, 'editProduct'])->name('edit');
-            Route::put('/{product}', [ShopController::class, 'updateProduct'])->name('update');
-            Route::get('/{product}/check-deletion', [ShopController::class, 'checkProductDeletion'])->name('check_deletion');
-            Route::delete('/{id}', [ShopController::class, 'deleteProduct'])->name('delete');
-            Route::delete('/image/{product}', [ShopController::class, 'deleteProductImage'])->name('image.delete');
-        });
+    // ======================================================================
+    // 3.3 FITUR TOKO (PENJUAL)
+    // ======================================================================
 
-        // Order Management
-        Route::get('/orders', [ShopController::class, 'orders'])->name('orders');
-        Route::get('/orders/{order}', [ShopController::class, 'orderDetail'])->name('orders.show');
-        Route::patch('/orders/{order}/status', [ShopController::class, 'updateOrderStatus'])->name('orders.update_status');
+    // 1. Dashboard & Core
+    Route::get('/myshop', [ShopController::class, 'index'])->name('shop.index');
+    Route::post('/myshop/register', [ShopController::class, 'registerStore'])->name('shop.register');
 
-        // Finance & Reports
-        Route::get('/reports', [ShopController::class, 'reports'])->name('reports');
-        Route::get('/payouts', [ShopController::class, 'payouts'])->name('payouts');
-        Route::post('/payouts', [ShopController::class, 'storePayout'])->name('payouts.store');
-        
-        // Shop Bank Management
-        Route::prefix('banks')->name('banks.')->group(function () {
-            Route::post('/', [ShopController::class, 'storeBank'])->name('store');
-            Route::put('/{id}', [ShopController::class, 'updateBank'])->name('update');
-            Route::delete('/{id}', [ShopController::class, 'deleteBank'])->name('delete');
-            Route::get('/{id}/check', [ShopController::class, 'checkBankDeletion'])->name('check_deletion');
-        });
-    });
+    // --- Alamat Toko ---
+    Route::get('/myshop/address', [ShopController::class, 'addressIndex'])->name('shop.address.index');
+    Route::get('/myshop/address/create', [ShopController::class, 'addressCreate'])->name('shop.address.create');
+    Route::post('/myshop/address', [ShopController::class, 'addressStore'])->name('shop.address.store');
+    Route::get('/myshop/address/{id}/edit', [ShopController::class, 'addressEdit'])->name('shop.address.edit');
+    Route::put('/myshop/address/{id}', [ShopController::class, 'addressUpdate'])->name('shop.address.update');
+    Route::delete('/myshop/address/{id}', [ShopController::class, 'addressDestroy'])->name('shop.address.delete');
+    Route::patch('/myshop/address/{id}/default', [ShopController::class, 'addressSetDefault'])->name('shop.address.setdefault');
 
-    /*
-    |----------------------------------------------------------------------
-    | 4. ADMIN ROUTES
-    |----------------------------------------------------------------------
-    */
+    // --- Produk (CRUD & List) ---
+    Route::get('/myshop/products', [ShopController::class, 'products'])->name('shop.products.index');
+    Route::get('/myshop/products/create', [ShopController::class, 'createProduct'])->name('shop.products.create');
+    Route::post('/myshop/products', [ShopController::class, 'storeProduct'])->name('shop.products.store');
+    Route::get('/myshop/products/{product}/edit', [ShopController::class, 'editProduct'])->name('shop.products.edit');
+    Route::put('/myshop/products/{product}', [ShopController::class, 'updateProduct'])->name('shop.products.update');
+    Route::get('/myshop/products/{product}/check-deletion', [ShopController::class, 'checkProductDeletion'])->name('shop.products.check_deletion');
+    Route::delete('/myshop/products/{id}', [ShopController::class, 'deleteProduct'])->name('shop.products.delete');
+    Route::delete('/myshop/products/image/{product}', [ShopController::class, 'deleteProductImage'])->name('shop.products.image.delete');
+
+    // --- Pesanan ---
+    Route::get('/myshop/orders', [ShopController::class, 'orders'])->name('shop.orders');
+    Route::get('/myshop/orders/{order}', [ShopController::class, 'orderDetail'])->name('shop.orders.show');
+    Route::patch('/myshop/orders/{order}/status', [ShopController::class, 'updateOrderStatus'])->name('shop.orders.update_status');
+
+    // --- Laporan ---
+    Route::get('/myshop/reports', [ShopController::class, 'reports'])->name('shop.reports');
+
+    // --- Saldo & Penarikan ---
+    Route::get('/myshop/payouts', [ShopController::class, 'payouts'])->name('shop.payouts');
+    Route::post('/myshop/payouts', [ShopController::class, 'storePayout'])->name('shop.payouts.store');
+    Route::post('/myshop/banks', [ShopController::class, 'storeBank'])->name('shop.banks.store');
+    Route::put('/myshop/banks/{id}', [ShopController::class, 'updateBank'])->name('shop.banks.update');
+    Route::delete('/myshop/banks/{id}', [ShopController::class, 'deleteBank'])->name('shop.banks.delete');
+    Route::get('/myshop/banks/{id}/check', [ShopController::class, 'checkBankDeletion'])->name('shop.banks.check_deletion');
+
+    // --- Halaman Orders Pembeli ---
+    Route::get('/orders', [App\Http\Controllers\OrdersController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [App\Http\Controllers\OrdersController::class, 'show'])->name('orders.show');
+    Route::post('/orders/{id}/pay', [App\Http\Controllers\OrdersController::class, 'pay'])->name('orders.pay');
+
+    // --- CHECKOUT ---
+    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+    Route::post('/checkout/check-shipping', [CheckoutController::class, 'checkShippingCost'])->name('checkout.check_shipping');
+    Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
+
+    // --- PAYMENT (Custom Payment Page) ---
+    Route::get('/payment/{payment}', [App\Http\Controllers\PaymentController::class, 'show'])->name('payment.show');
+    Route::post('/payment/{payment}/charge', [App\Http\Controllers\PaymentController::class, 'createCharge'])->name('payment.charge');
+    Route::get('/payment/{payment}/status', [App\Http\Controllers\PaymentController::class, 'checkStatus'])->name('payment.status');
+    Route::post('/payment/{payment}/demo', [App\Http\Controllers\PaymentController::class, 'demoPayment'])->name('payment.demo');
+
+    // ======================================================================
+    // 3.4 ADMIN ROUTES (Nested Middleware: auth + verified_otp + admin)
+    // ======================================================================
     Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
+
         Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
 
-        // Product Moderation
-        Route::prefix('products')->name('products.')->group(function () {
-            Route::get('/', [AdminController::class, 'products'])->name('index'); // Changed from 'products' for consistency
-            Route::get('/{id}', [AdminController::class, 'showProduct'])->name('show');
-            Route::patch('/{id}/toggle-status', [AdminController::class, 'toggleProductStatus'])->name('toggle_status');
-        });
+        // --- Manajemen Produk ---
+        Route::get('/products', [AdminController::class, 'products'])->name('products');
+        Route::get('/products/{id}', [AdminController::class, 'showProduct'])->name('products.show');
+        Route::patch('/products/{id}/toggle-status', [AdminController::class, 'toggleProductStatus'])->name('products.toggle_status');
 
-        // User Management
-        Route::prefix('users')->name('users.')->group(function () {
-            Route::get('/', [AdminController::class, 'users'])->name('index');
-            Route::get('/create', [AdminController::class, 'usersCreate'])->name('create');
-            Route::post('/', [AdminController::class, 'storeAdmin'])->name('store_admin');
-            Route::get('/{id}', [AdminController::class, 'usersShow'])->name('show');
-            Route::get('/{id}/edit', [AdminController::class, 'usersEdit'])->name('edit');
-            Route::put('/{id}', [AdminController::class, 'updateAdmin'])->name('update_admin');
-            Route::delete('/{id}', [AdminController::class, 'destroyUser'])->name('destroy');
-            Route::patch('/{id}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('toggle_status');
-            Route::post('/{id}/reset-link', [AdminController::class, 'sendResetLink'])->name('send_reset_link');
-        });
+        // --- Manajemen User ---
+        Route::get('/users', [AdminController::class, 'users'])->name('users');
+        Route::get('/users/create', [AdminController::class, 'usersCreate'])->name('users.create');
+        Route::get('/users/{id}/edit', [AdminController::class, 'usersEdit'])->name('users.edit');
+        Route::get('/users/{id}', [AdminController::class, 'usersShow'])->name('users.show');
+        Route::delete('/users/{id}', [AdminController::class, 'destroyUser'])->name('users.destroy');
+        Route::post('/users', [AdminController::class, 'storeAdmin'])->name('users.store_admin');
+        Route::put('/users/{id}', [AdminController::class, 'updateAdmin'])->name('users.update_admin');
+        Route::patch('/users/{id}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle_status');
+        Route::post('/users/{id}/reset-link', [AdminController::class, 'sendResetLink'])->name('users.send_reset_link');
 
-        // Category & Payouts
+        // --- Manajemen Kategori ---
         Route::get('/categories/check/{id}', [AdminCategoryController::class, 'checkDeletion'])->name('categories.check');
         Route::resource('categories', AdminCategoryController::class);
-        
+
+        // --- Manajemen Payouts ---
         Route::get('/payouts', [AdminController::class, 'payouts'])->name('payouts');
         Route::patch('/payouts/{id}', [AdminController::class, 'updatePayoutStatus'])->name('payouts.update');
 
-        // Integration Settings
-        Route::prefix('integrations')->name('integrations.')->group(function () {
-            // Payment
-            Route::get('/payment', [AdminController::class, 'paymentGateway'])->name('payment');
-            Route::patch('/payment-gateway', [AdminController::class, 'updatePaymentGateway'])->name('payment.update');
-            Route::get('/payment/test-token', [AdminController::class, 'getPaymentTestToken'])->name('payment.test-token');
+        // --- Integrasi & Settings ---
+        // Payment Gateway
+        Route::get('/integrations/payment', [AdminController::class, 'paymentGateway'])->name('integrations.payment');
+        Route::patch('/integrations/payment-gateway', [AdminController::class, 'updatePaymentGateway'])->name('integrations.payment.update');
+        Route::get('/integrations/payment/test-token', [AdminController::class, 'getPaymentTestToken'])->name('integrations.payment.test-token');
 
-            // Logistics
-            Route::get('/logistics', [AdminController::class, 'shipping'])->name('shipping');
-            Route::post('/shipping', [AdminController::class, 'updateShippingApi'])->name('shipping.update');
-            Route::post('/shipping-carrier', [AdminController::class, 'storeCarrier'])->name('carrier.store');
-            Route::put('/shipping-carrier/{id}', [AdminController::class, 'updateCarrier'])->name('carrier.update');
-            Route::patch('/shipping-carrier/{id}/toggle', [AdminController::class, 'toggleCarrierStatus'])->name('carrier.toggle');
-            Route::delete('/shipping-carrier/{id}', [AdminController::class, 'deleteCarrier'])->name('carrier.delete');
-            Route::post('/shipping/test-cost', [AdminController::class, 'checkShippingCostTest'])->name('shipping.test-cost');
+        // Logistik
+        Route::get('/integrations/logistics', [AdminController::class, 'shipping'])->name('integrations.shipping');
+        Route::post('/integrations/shipping', [AdminController::class, 'updateShippingApi'])->name('integrations.shipping.update');
+        Route::post('/integrations/shipping-carrier', [AdminController::class, 'storeCarrier'])->name('integrations.carrier.store');
+        Route::put('/integrations/shipping-carrier/{id}', [AdminController::class, 'updateCarrier'])->name('integrations.carrier.update');
+        Route::patch('/integrations/shipping-carrier/{id}/toggle', [AdminController::class, 'toggleCarrierStatus'])->name('integrations.carrier.toggle');
+        Route::delete('/integrations/shipping-carrier/{id}', [AdminController::class, 'deleteCarrier'])->name('integrations.carrier.delete');
+        Route::post('/integrations/shipping/test-cost', [AdminController::class, 'checkShippingCostTest'])->name('integrations.shipping.test-cost');
 
-            // WhatsApp & Logs
-            Route::get('/whatsapp', [AdminController::class, 'whatsapp'])->name('whatsapp');
-            Route::post('/whatsapp', [AdminController::class, 'updateWhatsappApi'])->name('whatsapp.update');
-            Route::post('/whatsapp/test-send', [AdminController::class, 'sendTestWhatsapp'])->name('whatsapp.test-send');
-            Route::get('/webhook-logs', [AdminController::class, 'webhookLogs'])->name('webhook-logs');
-        });
+        // WhatsApp
+        Route::get('/integrations/whatsapp', [AdminController::class, 'whatsapp'])->name('integrations.whatsapp');
+        Route::post('/integrations/whatsapp', [AdminController::class, 'updateWhatsappApi'])->name('integrations.whatsapp.update');
+        Route::post('/integrations/whatsapp/test-send', [AdminController::class, 'sendTestWhatsapp'])->name('integrations.whatsapp.test-send');
+
+        // Webhook Logs
+        Route::get('/integrations/webhook-logs', [AdminController::class, 'webhookLogs'])->name('integrations.webhook-logs');
     });
 });
 
-/*
-|--------------------------------------------------------------------------
-| 5. WEBHOOKS & FALLBACK
-|--------------------------------------------------------------------------
-*/
+// ==============================================================================
+// WEBHOOK ENDPOINTS (No Auth - Called by external services)
+// ==============================================================================
+Route::post('/webhook/midtrans', [App\Http\Controllers\WebhookController::class, 'midtransNotification'])->name('webhook.midtrans');
 
-Route::post('/webhook/midtrans', [WebhookController::class, 'midtransNotification'])->name('webhook.midtrans');
-
+// ==============================================================================
+// Fallback jika URL ngawur
+// ==============================================================================
 Route::fallback(function () {
     abort(404);
 });

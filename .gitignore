@@ -23,4 +23,5 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /public/report
+/public/phpunit
 *.zip

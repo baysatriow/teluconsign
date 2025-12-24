@@ -16,10 +16,11 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'username' => fake()->userName(),
-            'password_hash' => Hash::make('password'),
+            'password' => static::$password ??= Hash::make('password'),
             'photo_url' => null,
             'role' => 'buyer',
             'status' => 'active',
+            'is_verified' => true,
             'remember_token' => Str::random(10),
         ];
     }

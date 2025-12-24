@@ -16,6 +16,8 @@ class IntegrationProvider extends Model
         'name',
     ];
 
+    public $timestamps = false;
+
     protected $casts = [
         'created_at' => 'datetime',
     ];
