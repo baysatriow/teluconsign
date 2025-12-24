@@ -8,7 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. Bank Accounts (Rekening User untuk Withdraw)
         Schema::create('bank_accounts', function (Blueprint $table) {
             $table->id('bank_account_id');
             $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
@@ -21,20 +20,18 @@ return new class extends Migration
             $table->unique(['user_id', 'account_no'], 'uniq_user_account');
         });
 
-        // 2. Wallet Ledger (Buku Besar Saldo User)
         Schema::create('wallet_ledger', function (Blueprint $table) {
             $table->id('wallet_ledger_id');
             $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
-            $table->enum('direction', ['credit', 'debit']); // Credit=Masuk, Debit=Keluar
+            $table->enum('direction', ['credit', 'debit']);
             $table->enum('source_type', ['order_settlement', 'payout', 'adjustment']);
-            $table->unsignedBigInteger('source_id')->nullable(); // ID Order atau ID Payout
+            $table->unsignedBigInteger('source_id')->nullable();
             $table->decimal('amount', 14, 2);
-            $table->decimal('balance_after', 14, 2); // Saldo akhir setelah mutasi
+            $table->decimal('balance_after', 14, 2);
             $table->string('memo')->nullable();
             $table->timestamp('posted_at')->useCurrent();
         });
 
-        // 3. Payout Requests (Permintaan Tarik Dana)
         Schema::create('payout_requests', function (Blueprint $table) {
             $table->id('payout_request_id');
             $table->foreignId('seller_id')->constrained('users', 'user_id')->onDelete('cascade');
@@ -42,7 +39,7 @@ return new class extends Migration
             $table->enum('status', ['requested', 'approved', 'rejected', 'paid', 'cancelled'])->default('requested');
             $table->foreignId('bank_account_id')->nullable()->constrained('bank_accounts', 'bank_account_id')->nullOnDelete();
             $table->timestamp('requested_at')->useCurrent();
-            $table->foreignId('processed_by')->nullable()->constrained('users', 'user_id'); // Admin yang proses
+            $table->foreignId('processed_by')->nullable()->constrained('users', 'user_id');
             $table->timestamp('processed_at')->nullable();
             $table->string('notes')->nullable();
         });

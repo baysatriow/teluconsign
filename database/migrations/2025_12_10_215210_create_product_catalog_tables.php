@@ -8,7 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. Categories
         Schema::create('categories', function (Blueprint $table) {
             $table->id('category_id');
             $table->foreignId('parent_id')->nullable()->constrained('categories', 'category_id')->nullOnDelete();
@@ -18,7 +17,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // 2. Products
         Schema::create('products', function (Blueprint $table) {
             $table->id('product_id');
             $table->foreignId('seller_id')->constrained('users', 'user_id')->onDelete('cascade');
@@ -30,12 +28,11 @@ return new class extends Migration
             $table->enum('condition', ['new', 'used'])->default('used');
             $table->string('location', 120)->nullable();
             $table->enum('status', ['active', 'sold', 'archived', 'suspended'])->default('active');
-            $table->string('main_image')->nullable(); // Thumbnail utama
+            $table->string('main_image')->nullable(); 
             $table->timestamps();
-            $table->softDeletes(); // Agar produk yang dihapus user masih bisa direstore admin
+            $table->softDeletes();
         });
 
-        // 3. Product Images (Galeri Produk)
         Schema::create('product_images', function (Blueprint $table) {
             $table->id('product_image_id');
             $table->foreignId('product_id')->constrained('products', 'product_id')->onDelete('cascade');

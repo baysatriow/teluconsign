@@ -8,7 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. Users Table
         Schema::create('users', function (Blueprint $table) {
             $table->id('user_id');
             $table->string('name', 120);
@@ -23,7 +22,6 @@ return new class extends Migration
             $table->softDeletes();
         });
 
-        // 2. Profiles Table
         Schema::create('profiles', function (Blueprint $table) {
             $table->foreignId('user_id')->primary()->constrained('users', 'user_id')->onDelete('cascade');
             $table->string('phone', 30)->nullable();
@@ -32,32 +30,23 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // 3. Addresses Table (REVISI FINAL)
         Schema::create('addresses', function (Blueprint $table) {
             $table->id('address_id');
             $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
-
-            // Info Penerima
-            $table->string('label', 60); // Rumah, Kantor
+            $table->string('label', 60);
             $table->string('recipient', 120);
             $table->string('phone', 30);
-
-            // Data Wilayah (Dari API/Pilihan)
-            $table->string('province', 100);  // Jawa Barat
-            $table->string('city', 100);      // Bandung
-            $table->string('district', 100);  // Bojongsoang (Kecamatan)
-            $table->string('village', 100);   // Lengkong (Desa/Kelurahan)
+            $table->string('province', 100);
+            $table->string('city', 100);
+            $table->string('district', 100);
+            $table->string('village', 100);
             $table->string('postal_code', 10);
-
-            // Data Manual (Ketik Sendiri)
-            $table->text('detail_address');   // Jl. Telekomunikasi No. 1, RT 02/RW 03
-
+            $table->text('detail_address');
             $table->string('country', 2)->default('ID');
             $table->boolean('is_default')->default(false);
             $table->timestamps();
         });
 
-        // 4. Notifications Table
         Schema::create('notifications', function (Blueprint $table) {
             $table->id('notification_id');
             $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
