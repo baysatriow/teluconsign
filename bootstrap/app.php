@@ -4,7 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\AdminMiddleware;
-use App\Http\Middleware\EnsureOtpVerified; // Import the new middleware
+use App\Http\Middleware\EnsureOtpVerified;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,13 +13,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Register aliases here
         $middleware->alias([
             'admin' => AdminMiddleware::class,
-            'verified_otp' => EnsureOtpVerified::class, // This line fixes your error
+            'verified_otp' => EnsureOtpVerified::class,
         ]);
 
-        // Exclude webhook routes from CSRF verification
         $middleware->validateCsrfTokens(except: [
             'webhook/*',
         ]);
@@ -27,6 +25,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => route('login'));
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+       
     })
     ->create();
