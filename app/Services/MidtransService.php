@@ -136,19 +136,17 @@ class MidtransService extends BaseIntegrationService
     |----------------------------------------------------------------------
     | SIMULATE PAYMENT SUCCESS (SANDBOX ONLY)
     |----------------------------------------------------------------------
-    | For testing purposes - finish transaction in sandbox mode
+    | Untuk Testing - finish transaction in sandbox mode
     */
     public function simulatePaymentSuccess(string $orderId)
     {
         try {
             $cred = $this->getCredential($this->providerCode);
 
-            // Only allow in sandbox mode
             if ($cred->config['environment'] === 'production') {
                 throw new \Exception('Payment simulation only available in sandbox mode.');
             }
 
-            // Call Midtrans finish payment API (sandbox)
             $baseUrl = "https://api.sandbox.midtrans.com/v2/{$orderId}/status/b2b/settle";
             $authKey = base64_encode($cred->secret_key . ':');
 
