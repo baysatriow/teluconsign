@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -16,7 +15,6 @@ use Illuminate\Support\Str;
 
 class CheckoutController extends Controller
 {
-    // ... constructor ...
     protected $midtrans;
     protected $rajaOngkir;
 
@@ -26,18 +24,12 @@ class CheckoutController extends Controller
         $this->rajaOngkir = $rajaOngkir;
     }
 
-    /**
-     * Tampilkan Halaman Checkout
-     * Menerima input 'selected_items' dari form keranjang
-     */
     public function index(Request $request)
     {
         $user = Auth::user();
 
-        // 1. Ambil ID item yang dipilih dari Request (Form Submit)
         $selectedItemIds = $request->input('selected_items', []);
 
-        // Jika kosong, cek session (mungkin refresh halaman)
         if (empty($selectedItemIds)) {
             $selectedItemIds = session('checkout_item_ids', []);
         }
@@ -46,7 +38,6 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Pilih minimal satu barang untuk checkout.');
         }
 
-        // 2. Simpan ID ke Session agar persist saat refresh atau proses ajax selanjutnya
         session(['checkout_item_ids' => $selectedItemIds]);
 
         $cart = Cart::where('buyer_id', $user->user_id)->first();
@@ -55,7 +46,6 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index');
         }
 
-        // 3. Ambil item HANYA yang dipilih & Valid (milik user ini)
         $cartItems = $cart->items()
             ->whereIn('cart_item_id', $selectedItemIds)
             ->with('product.seller.addresses')
@@ -65,34 +55,27 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Item tidak valid atau sudah dihapus.');
         }
 
-        // 4. Grouping & Perhitungan
         $groupedItems = $cartItems->groupBy(function ($item) {
             return $item->product->seller_id;
         });
 
-        // Validasi Max 20 Toko
         if ($groupedItems->count() > 20) {
             return redirect()->route('cart.index')->with('error', 'Maksimal checkout dari 20 toko sekaligus.');
         }
 
         $mainAddress = $user->addresses()->where('is_default', true)->first();
         
-        // Redirect to address page if no default address
         if (!$mainAddress) {
             return redirect()->route('profile.index')
                 ->with('error', 'Silakan tambahkan alamat pengiriman terlebih dahulu.');
         }
 
-        // Hitung total dari item yang dipilih SAJA
         $subtotal = $cartItems->sum('subtotal');
-        // Calculate Platform Fee (buyer pays)
         $platformFee = 2500;
         $totalPayment = $subtotal + $platformFee;
 
-        // Ambil Kurir dari Database
         $couriers = \App\Models\ShippingCarrier::where('is_enabled', true)->pluck('code')->toArray();
 
-        // Fallback jika kosong
         if(empty($couriers)) {
             $couriers = ['jne', 'pos', 'tiki']; 
         }
@@ -100,10 +83,6 @@ class CheckoutController extends Controller
         return view('checkout.index', compact('groupedItems', 'mainAddress', 'subtotal', 'platformFee', 'totalPayment', 'couriers'));
     }
 
-    // ... method checkShippingCost dan process tetap sama ...
-    /**
-     * AJAX: Check Shipping Cost
-     */
     public function checkShippingCost(Request $request)
     {
         $request->validate([
@@ -118,7 +97,6 @@ class CheckoutController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Alamat pembeli tidak ditemukan.']);
         }
 
-        // Get Seller Address
         $seller = User::find($request->seller_id);
         $sellerAddress = $seller->addresses()->where('is_default', true)->first() ?? $seller->addresses()->first();
 
@@ -126,7 +104,6 @@ class CheckoutController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Alamat penjual tidak tersedia.']);
         }
 
-        // Hitung Berat Total (Default 1000g jika tidak ada data berat)
         $selectedItemIds = session('checkout_item_ids', []);
         $cart = Cart::where('buyer_id', $user->user_id)->first();
 
@@ -138,18 +115,14 @@ class CheckoutController extends Controller
 
         $totalWeight = 0;
         foreach($items as $item) {
-            $weight = $item->product->weight ?? 1000; // Asumsi berat 1kg jika null
+            $weight = $item->product->weight ?? 1000; 
             $totalWeight += ($weight * $item->quantity);
         }
 
-        // Fix: Ensure weight is never 0 to avoid RajaOngkir error
         if ($totalWeight <= 0) {
             $totalWeight = 1000;
         }
 
-        // Integrasi RajaOngkir (Komerce)
-        // Prioritaskan location_id (ID Kecamatan/Kelurahan dari Autocomplete)
-        
         $origin = $sellerAddress->location_id 
             ?? (is_numeric($sellerAddress->district) ? $sellerAddress->district : (is_numeric($sellerAddress->city) ? $sellerAddress->city : 501));
             
@@ -158,7 +131,7 @@ class CheckoutController extends Controller
 
         $result = $this->rajaOngkir->checkCost(
             origin: $origin,
-            originType: 'subdistrict', // Komerce uses subdistrict ID usually
+            originType: 'subdistrict', 
             destination: $destination,
             destinationType: 'subdistrict',
             weight: $totalWeight,
@@ -169,7 +142,6 @@ class CheckoutController extends Controller
             return response()->json(['status' => 'error', 'message' => $result['message']]);
         }
 
-        // Log Shipping Cost Check
         \App\Models\WebhookLog::create([
             'provider_code' => 'rajaongkir',
             'event_type' => 'cost_check',
@@ -194,7 +166,6 @@ class CheckoutController extends Controller
     {
         $user = Auth::user();
 
-        // Ambil ID item dari session
         $selectedItemIds = session('checkout_item_ids', []);
 
         if (empty($selectedItemIds)) {
@@ -214,7 +185,6 @@ class CheckoutController extends Controller
 
         $address = $user->addresses()->where('is_default', true)->first();
 
-        // Validasi Ongkir: shipping_data dikirim dari frontend dalam format {seller_id: {cost, service, ...}}
         $shippingData = $request->input('shipping_data', []);
 
         $groupedItems = $cartItems->groupBy(function($item){ return $item->product->seller_id; });
@@ -228,12 +198,11 @@ class CheckoutController extends Controller
             foreach ($shippingData as $data) {
                 $totalShipping += $data['cost'] ?? 0;
             }
-            $platformFee = 2500; // Buyer pays 2,500
+            $platformFee = 2500; 
             $grossAmount = $subtotalAll + $platformFee + $totalShipping;
 
             $itemDetails = [];
 
-            // Create Order per Seller
             $orderCount = $groupedItems->count();
             $buyerFeeTotal = 2500;
             $buyerFeePerOrder = floor($buyerFeeTotal / $orderCount);
@@ -243,10 +212,10 @@ class CheckoutController extends Controller
 
             foreach ($groupedItems as $sellerId => $items) {
                 $loopIndex++;
-                $seller = $items->first()->product->seller; // Define Seller to avoid undefined variable error
+                $seller = $items->first()->product->seller; 
                 $sellerShipping = $shippingData[$sellerId] ?? [];
                 $shippingCost = $sellerShipping['cost'] ?? 0;
-                $serviceCode = $sellerShipping['service'] ?? 'REG'; // Fallback
+                $serviceCode = $sellerShipping['service'] ?? 'REG'; 
                 $courierCode = $sellerShipping['courier'] ?? 'jne';
                 $etd = $sellerShipping['etd'] ?? '';
                 $description = $sellerShipping['description'] ?? '';
@@ -254,13 +223,12 @@ class CheckoutController extends Controller
                 $storeSubtotal = $items->sum('subtotal');
                 $orderCode = 'ORD-' . strtoupper(Str::random(10));
 
-                // Fee Logic
                 $currentBuyerFee = $buyerFeePerOrder;
                 if ($loopIndex === 1) {
                     $currentBuyerFee += $buyerFeeRemainder;
                 }
                 
-                $currentSellerFee = 2500; // Fixed per seller order
+                $currentSellerFee = 2500; 
                 $sellerEarnings = $storeSubtotal - $currentSellerFee;
 
                 $order = Order::create([
@@ -281,7 +249,6 @@ class CheckoutController extends Controller
                 ]);
 
                 foreach ($items as $item) {
-                     // 1. Create Order Item
                     OrderItem::create([
                         'order_id' => $order->order_id,
                         'product_id' => $item->product_id,
@@ -291,10 +258,8 @@ class CheckoutController extends Controller
                         'subtotal' => $item->subtotal
                     ]);
 
-                     // 2. Reduce Stock
                     $item->product->decrement('stock', $item->quantity);
 
-                    // Item untuk Midtrans
                     $itemDetails[] = [
                         'id' => $item->product_id,
                         'price' => (int) $item->unit_price,
@@ -303,11 +268,9 @@ class CheckoutController extends Controller
                     ];
                 }
 
-                // Get Carrier ID
                 $carrier = \App\Models\ShippingCarrier::where('code', $courierCode)->first();
-                $carrierId = $carrier ? $carrier->shipping_carrier_id : 1; // Default fallback
+                $carrierId = $carrier ? $carrier->shipping_carrier_id : 1; 
 
-                // Create Shipment record
                 \App\Models\Shipment::create([
                     'order_id' => $order->order_id,
                     'carrier_id' => $carrierId,
@@ -321,7 +284,6 @@ class CheckoutController extends Controller
                     ]
                 ]);
 
-                // Ongkir per Toko untuk Midtrans
                 if ($shippingCost > 0) {
                      $itemDetails[] = [
                         'id' => 'SHIP-' . $sellerId,
@@ -332,7 +294,6 @@ class CheckoutController extends Controller
                 }
             }
 
-            // Fee Aplikasi
             $itemDetails[] = [
                 'id' => 'FEE-PLATFORM',
                 'price' => (int) $platformFee,
@@ -340,39 +301,33 @@ class CheckoutController extends Controller
                 'name' => 'Biaya Layanan'
             ];
 
-            // Create Payment record
-            // Note: gateway_id references integration_providers
             $midtransProvider = \App\Models\IntegrationProvider::where('code', 'midtrans')->first();
             
             if (!$midtransProvider) {
-                // Create if not exists (first time setup)
                 $midtransProvider = \App\Models\IntegrationProvider::create([
                     'code' => 'midtrans',
                     'name' => 'Midtrans Payment Gateway'
                 ]);
             }
 
-            // Get first order for payment relation
             $firstOrderRecord = Order::where('notes', 'LIKE', "%{$paymentCode}%")->first();
 
             $payment = \App\Models\Payment::create([
                 'order_id' => $firstOrderRecord->order_id,
-                'provider_id' => $midtransProvider->integration_provider_id,  // Changed from gateway_id
-                'method_code' => null, // User akan pilih di payment page
+                'provider_id' => $midtransProvider->integration_provider_id,
+                'method_code' => null,
                 'amount' => $grossAmount,
                 'currency' => 'IDR',
                 'status' => 'pending',
                 'provider_order_id' => $paymentCode,
-                'raw_response' => ['items' => $itemDetails] // Simpan item details untuk reference
+                'raw_response' => ['items' => $itemDetails] 
             ]);
 
-            // Hapus Item yang Dibeli dari Keranjang
             $cart->items()->whereIn('cart_item_id', $selectedItemIds)->delete();
             $cart->calculateTotal();
 
             DB::commit();
 
-            // Log Checkout
             \App\Models\WebhookLog::create([
                 'provider_code' => 'midtrans',
                 'event_type' => 'checkout_completed',
@@ -385,7 +340,6 @@ class CheckoutController extends Controller
                 'received_at' => now()
             ]);
 
-            // Redirect ke halaman payment custom (bukan Snap)
             return response()->json([
                 'status' => 'success',
                 'redirect_url' => route('payment.show', $payment->payment_id)

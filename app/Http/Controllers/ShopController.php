@@ -19,12 +19,8 @@ use Illuminate\Validation\Rules\Enum;
 
 class ShopController extends Controller
 {
-    /* ======================================================================
-     * PUBLIC SHOP PROFILE
-     * ====================================================================== */
     public function show($id)
     {
-        // Support ID or Username
         $seller = User::where('role', 'seller')
             ->where(function($query) use ($id) {
                 if (is_numeric($id)) {
@@ -35,27 +31,23 @@ class ShopController extends Controller
             })
             ->firstOrFail();
         
-        
         $query = Product::with(['category', 'seller.addresses', 'seller.profile', 'images'])
             ->withAvg('reviews', 'rating')
             ->where('seller_id', $seller->user_id)
             ->where('status', ProductStatus::Active);
         
-        // Search filter
         if ($searchTerm = request('search')) {
             $query->where('title', 'like', '%' . $searchTerm . '%');
         }
         
         $products = $query->latest()->paginate(12)->withQueryString();
 
-        // Stats (Optional)
         $totalSales = OrderItem::whereHas('product', function($q) use ($id) {
             $q->where('seller_id', $id);
         })->whereHas('order', function($q){
             $q->where('status', 'completed');
         })->count();
 
-        // Rating (Real)
         $ratingStats = \App\Models\Review::whereHas('product', function($q) use ($seller) {
             $q->where('seller_id', $seller->user_id);
         })->selectRaw('avg(rating) as average, count(*) as count')->first();
@@ -66,13 +58,6 @@ class ShopController extends Controller
         return view('shop.show', compact('seller', 'products', 'totalSales', 'rating'));
     }
 
-    /* ======================================================================
-     * DASHBOARD & STORE MANAGEMENT
-     * ====================================================================== */
-    
-    /**
-     * Helper to check if shop has default address
-     */
     private function ensureShopAddressSet()
     {
         $hasAddress = Auth::user()->addresses()->where('is_shop_default', true)->exists();
@@ -90,14 +75,8 @@ class ShopController extends Controller
             return view('shop.onboarding');
         }
 
-        // Access Control REMOVED for Dashboard
-        // if ($redirect = $this->ensureShopAddressSet()) return $redirect;
-
         $userId = $user->user_id;
 
-        $userId = $user->user_id;
-
-        // Dashboard Stats
         $stats = [
             'new' => Order::where('seller_id', $userId)->where('status', 'pending')->count(),
             'shipping' => Order::where('seller_id', $userId)->where('status', 'shipped')->count(),
@@ -106,14 +85,12 @@ class ShopController extends Controller
             'low_stock' => Product::where('seller_id', $userId)->where('stock', '<=', 3)->count(),
         ];
 
-        // Recent Orders (Limit 5)
         $recentOrders = Order::with('items')
             ->where('seller_id', $userId)
             ->latest()
             ->take(5)
             ->get();
 
-        // Chart Data (Last 7 Days)
         $chartData = Order::where('seller_id', $userId)
             ->where('status', 'completed')
             ->where('created_at', '>=', now()->subDays(7))
@@ -123,7 +100,6 @@ class ShopController extends Controller
             ->pluck('total', 'date')
             ->toArray();
             
-        // Fill missing dates with 0
         $dates = collect();
         $totals = collect();
         for ($i = 6; $i >= 0; $i--) {
@@ -135,9 +111,6 @@ class ShopController extends Controller
         return view('shop.index', compact('stats', 'recentOrders', 'dates', 'totals'));
     }
 
-    /* ======================================================================
-     * ADDRESS MANAGEMENT
-     * ====================================================================== */
     public function addressIndex()
     {
         $addresses = Auth::user()->addresses()
@@ -186,17 +159,13 @@ class ShopController extends Controller
             'postal_code' => $request->postal_code,
             'detail_address' => $request->detail_address,
             'country' => 'ID',
-            'is_default' => $isFirst, // Jika alamat pertama, set sebagai default user juga
-            'is_shop_default' => $isFirst // Dan default toko
+            'is_default' => $isFirst, 
+            'is_shop_default' => $isFirst 
         ]);
 
-        // Handle Manual Toggle from Form
         if ($request->has('is_shop_default') && $request->is_shop_default == '1') {
             \App\Models\Address::setShopDefault($address->address_id);
         }
-
-        // Jika ini bukan alamat pertama tapi user belum punya alamat toko, store logic could optionally set it.
-        // Tapi requirement bilang auto-set if first.
 
         return redirect()->route('shop.address.index')->with('success', 'Alamat baru berhasil ditambahkan.');
     }
@@ -235,7 +204,6 @@ class ShopController extends Controller
             'detail_address' => $request->detail_address,
         ]);
 
-        // Handle Manual Toggle from Form
         if ($request->has('is_shop_default') && $request->is_shop_default == '1') {
             \App\Models\Address::setShopDefault($address->address_id);
         }
@@ -255,26 +223,19 @@ class ShopController extends Controller
         return back()->with('success', 'Alamat berhasil dihapus.');
     }
 
-    /* ======================================================================
-     * PRODUCTS MANAGEMENT
-     * ====================================================================== */
     public function products(Request $request)
     {
-        // Access Control
         if ($redirect = $this->ensureShopAddressSet()) return $redirect;
 
         $userId = Auth::id();
         $tab = $request->query('tab', 'all');
 
-        // Base Query
         $query = Product::where('seller_id', $userId);
 
-        // Search Filter
         if ($search = $request->input('q')) {
             $query->where('title', 'like', "%{$search}%");
         }
 
-        // Calculate Stats
         $stats = [
             'total' => Product::where('seller_id', $userId)->count(),
             'active' => Product::where('seller_id', $userId)->where('status', ProductStatus::Active)->count(),
@@ -283,7 +244,6 @@ class ShopController extends Controller
             'empty' => Product::where('seller_id', $userId)->where('stock', '<=', 0)->count(),
         ];
 
-        // Apply Filters
         switch ($tab) {
             case 'active':
                 $query->where('status', ProductStatus::Active);
@@ -297,8 +257,7 @@ class ShopController extends Controller
             case 'empty':
                 $query->where('stock', '<=', 0);
                 break;
-            default: // 'all'
-                // No specific status filter
+            default:
                 break;
         }
 
@@ -307,19 +266,14 @@ class ShopController extends Controller
         return view('shop.products.index', compact('products', 'stats', 'tab'));
     }
 
-    /* ======================================================================
-     * REPORTS
-     * ====================================================================== */
     public function reports(Request $request)
     {
-        // Access Control
         if ($redirect = $this->ensureShopAddressSet()) return $redirect;
 
         $userId = Auth::id();
         $month = $request->input('month', date('m'));
         $year = $request->input('year', date('Y'));
 
-        // Query Sales per Day in selected month
         $dailySales = Order::where('seller_id', $userId)
             ->where('status', 'completed')
             ->whereYear('created_at', $year)
@@ -339,34 +293,25 @@ class ShopController extends Controller
         return view('shop.reports.index', compact('dailySales', 'totalRevenue', 'totalOrders', 'month', 'year'));
     }
 
-    /* ======================================================================
-     * PAYOUTS (SALDO & PENARIKAN)
-     * ====================================================================== */
     public function payouts()
     {
-        // Access Control
         if ($redirect = $this->ensureShopAddressSet()) return $redirect;
 
         $userId = Auth::id();
         $user = Auth::user();
 
-        // 1. Calculate Balance from Ledger (SSOT)
         $currentBalance = \App\Models\WalletLedger::where('user_id', $userId)
             ->orderBy('wallet_ledger_id', 'desc')
             ->value('balance_after') ?? 0;
 
-        // 2. Bank Accounts
         $bankAccounts = \App\Models\BankAccount::where('user_id', $userId)->get();
 
-        // 3. Payout History with Search/Filter
         $query = \App\Models\PayoutRequest::with('bankAccount')->where('seller_id', $userId);
         
-        // Filter by Date
         if (request('date')) {
             $query->whereDate('created_at', request('date'));
         }
         
-        // Filter by Bank Name or Amount
         if (request('q')) {
             $search = request('q');
             $query->where(function($q) use ($search) {
@@ -385,7 +330,6 @@ class ShopController extends Controller
 
     public function storePayout(Request $request)
     {
-        // Sanitize Input (Remove dots)
         $request->merge([
             'amount' => str_replace('.', '', $request->input('amount'))
         ]);
@@ -397,7 +341,6 @@ class ShopController extends Controller
 
         $userId = Auth::id();
 
-        // Get current balance from Ledger (SSOT)
         $lastBalance = \App\Models\WalletLedger::where('user_id', $userId)
             ->orderBy('wallet_ledger_id', 'desc')
             ->value('balance_after') ?? 0;
@@ -408,7 +351,6 @@ class ShopController extends Controller
             return back()->with('error', 'Saldo tidak mencukupi.');
         }
 
-        // Check Working Hours (Mon-Fri) - Optional soft check/warning
         $isWeekend = now()->isWeekend();
         
         $payout = \App\Models\PayoutRequest::create([
@@ -420,7 +362,6 @@ class ShopController extends Controller
             'notes' => $isWeekend ? 'Request dibuat saat weekend, akan diproses hari kerja.' : null
         ]);
 
-        // DEBIT WALLET IMMEDIATELY (Lock funds)
         \App\Models\WalletLedger::create([
              'user_id' => $userId,
              'direction' => 'debit',
@@ -448,7 +389,7 @@ class ShopController extends Controller
             'bank_name' => $request->bank_name,
             'account_no' => $request->account_no,
             'account_name' => $request->account_name,
-            'is_default' => !\App\Models\BankAccount::where('user_id', Auth::id())->exists() // First one is default
+            'is_default' => !\App\Models\BankAccount::where('user_id', Auth::id())->exists()
         ]);
 
         return back()->with('success', 'Rekening bank berhasil ditambahkan');
@@ -494,7 +435,6 @@ class ShopController extends Controller
     {
         $bank = \App\Models\BankAccount::where('user_id', Auth::id())->findOrFail($id);
         
-        // Handle pending payouts transfer if exists
         $transferToId = $request->input('transfer_to');
         if ($transferToId) {
             $targetBank = \App\Models\BankAccount::where('user_id', Auth::id())->findOrFail($transferToId);
@@ -521,30 +461,26 @@ class ShopController extends Controller
 
     public function orders(Request $request)
     {
-        // Access Control
         if ($redirect = $this->ensureShopAddressSet()) return $redirect;
 
         $userId = Auth::id();
         $tab = $request->query('tab', 'all');
         $search = $request->input('q');
 
-        // Base Query
         $query = Order::with(['buyer', 'items.product'])
             ->where('seller_id', $userId);
 
-        // Calculate Stats
         $stats = [
             'total'     => Order::where('seller_id', $userId)->count(),
             'pending'   => Order::where('seller_id', $userId)->where('status', 'pending')->count(),
             'paid'      => Order::where('seller_id', $userId)->where('status', 'paid')->count(),
-            'processed' => Order::where('seller_id', $userId)->where('status', 'processed')->count(), // Assuming 'processed' exists or will exist
+            'processed' => Order::where('seller_id', $userId)->where('status', 'processed')->count(), 
             'shipped'   => Order::where('seller_id', $userId)->where('status', 'shipped')->count(),
             'completed' => Order::where('seller_id', $userId)->where('status', 'completed')->count(),
             'cancelled' => Order::where('seller_id', $userId)->where('status', 'cancelled')->count(),
             'refunded'  => Order::where('seller_id', $userId)->where('status', 'refunded')->count(),
         ];
 
-        // Search Filter
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('code', 'like', "%{$search}%")
@@ -554,7 +490,6 @@ class ShopController extends Controller
             });
         }
 
-        // Status Filter
         switch ($tab) {
             case 'pending':
                 $query->where('status', 'pending');
@@ -578,7 +513,6 @@ class ShopController extends Controller
                 $query->where('status', 'refunded');
                 break;
             default:
-                // 'all' - no filter
                 break;
         }
         
@@ -589,8 +523,6 @@ class ShopController extends Controller
 
     public function orderDetail(Order $order)
     {
-        // 1. Author Check
-        // Fix: Cast to int to prevent type mismatch & Allow Admin
         $isSeller = (int)$order->seller_id === (int)Auth::id();
         $isAdmin = Auth::user() && Auth::user()->role === 'admin';
 
@@ -598,7 +530,6 @@ class ShopController extends Controller
             abort(403, 'Unauthorized access to shop order');
         }
 
-        // 2. Load Relations
         $order->load(['items.product.images', 'buyer', 'shippingAddress', 'shipment.carrier']);
 
         return view('shop.orders.show', compact('order'));
@@ -606,8 +537,6 @@ class ShopController extends Controller
 
     public function updateOrderStatus(Request $request, Order $order)
     {
-        // 1. Author Check
-        // Fix: Cast to int to prevent type mismatch & Allow Admin
         $isSeller = (int)$order->seller_id === (int)Auth::id();
         $isAdmin = Auth::user() && Auth::user()->role === 'admin';
 
@@ -617,39 +546,20 @@ class ShopController extends Controller
 
         $status = $request->input('status');
 
-        // Logic pergantian status
-        // paid -> processed -> shipped -> delivered (simulated) -> completed
-
         if ($status === 'paid') {
-            // Simulasi Pembayaran
             $order->status = 'paid';
             $order->payment_status = 'settlement';
         }
         elseif ($status === 'processed') {
-            // Harusnya input resi, disini kita dummy aja
             $order->status = 'shipped';
         }
         elseif ($status === 'delivered') {
-            // Pesanan Sampai
-            // Biasanya trigger otomatis dari kurir, ini manual by seller for testing
-            // Tapi user minta "Konfirmasi Pesanan Sampai" -> ini biasanya di sisi BUYER.
-            // Tapi seller bisa "Paksa Selesai" jika sudah lama.
-            // Asumsi: User minta tombol simulasi.
-            $order->status = 'delivered'; // Custom status or skip to completed? 
-            // Mari kita anggap 'delivered' belum completed.
+            $order->status = 'delivered'; 
         }
         elseif ($status === 'delivered') {
-            // Pesanan Sampai
-            // Biasanya trigger otomatis dari kurir, ini manual by seller for testing
-            // Tapi user minta "Konfirmasi Pesanan Sampai" -> ini biasanya di sisi BUYER.
-            // Tapi seller bisa "Paksa Selesai" jika sudah lama.
-            // Asumsi: User minta tombol simulasi.
-            $order->status = 'delivered'; // Custom status or skip to completed? 
-            // Mari kita anggap 'delivered' belum completed.
+            $order->status = 'delivered'; 
         }
         elseif ($status === 'completed') {
-            
-            // Prevent double ledger entry
             if ($order->status !== 'completed') {
                 $order->status = 'completed';
                 
@@ -657,8 +567,6 @@ class ShopController extends Controller
                     $order->payment_status = 'settlement';
                 }
 
-                // --- LEDGER CREDIT LOGIC ---
-                // Add money to seller wallet
                 $creditAmount = $order->seller_earnings;
                 $lastBalance = \App\Models\WalletLedger::where('user_id', $order->seller_id)
                     ->orderBy('wallet_ledger_id', 'desc')
@@ -685,18 +593,12 @@ class ShopController extends Controller
         return back()->with('success', 'Status pesanan berhasil diperbarui menjadi ' . ucfirst($status));
     }
 
-
-    /* ======================================================================
-     * PRODUCT CRUD
-     * ====================================================================== */
-
     public function createProduct()
     {
         if (Auth::user()->role !== 'seller') {
             return redirect()->route('shop.index')->with('error', 'Anda harus menjadi penjual untuk mengakses halaman ini.');
         }
 
-        // Access Control
         if ($redirect = $this->ensureShopAddressSet()) return $redirect;
 
         $categories = Category::all();
@@ -706,7 +608,6 @@ class ShopController extends Controller
 
     public function storeProduct(Request $request)
     {
-        // Sanitize Numeric Inputs (Remove dots)
         $request->merge([
             'price' => str_replace('.', '', $request->input('price')),
             'weight' => str_replace('.', '', $request->input('weight')),
@@ -732,19 +633,6 @@ class ShopController extends Controller
             'status_input'=> ['required', 'in:active,archived'],
             'images'      => 'required|array|min:1|max:5',
             'images.*'    => 'image|mimes:jpeg,png,jpg,webp|max:2048',
-        ], [
-'title.required' => 'Judul produk wajib diisi.',
-            'title.min' => 'Judul produk minimal 3 karakter.',
-            'price.required' => 'Harga produk wajib diisi.',
-            'price.min' => 'Harga produk minimal Rp 1.000.',
-            'weight.required' => 'Berat produk wajib diisi.',
-            'weight.min' => 'Berat produk minimal 1.000 gram.',
-            'stock.required' => 'Stok produk wajib diisi.',
-            'stock.min' => 'Stok produk minimal 1 unit.',
-            'images.required' => 'Wajib mengupload minimal 1 foto produk.',
-            'images.max'      => 'Maksimal 5 foto produk.',
-            'images.*.image'  => 'File harus berupa gambar.',
-            'images.*.max'    => 'Ukuran foto maksimal 2MB per file.',
         ]);
 
         try {
@@ -761,12 +649,11 @@ class ShopController extends Controller
                 'title'       => $request->title,
                 'description' => $request->description,
                 'price'       => $request->price,
-                'weight'      => $request->weight, // Added Create
+                'weight'      => $request->weight, 
                 'stock'       => $request->stock,
                 'condition'   => $request->condition,
                 'status'      => $statusEnum,
                 'main_image'  => null,
-                // 'location' => Dynamic from Address
             ]);
 
             if ($request->hasFile('images')) {
@@ -822,13 +709,8 @@ class ShopController extends Controller
         }
     }
 
-    /**
-     * EDIT PRODUCT FORM
-     */
     public function editProduct(Product $product)
     {
-        // Ensure availability (Author Check)
-        // Fix: Cast to int & Allow Admin
         $isSeller = (int)$product->seller_id === (int)Auth::id();
         $isAdmin = Auth::user() && Auth::user()->role === 'admin';
 
@@ -841,13 +723,8 @@ class ShopController extends Controller
         return view('shop.products.edit', compact('product', 'categories'));
     }
 
-    /**
-     * UPDATE PRODUCT (FIXED)
-     */
     public function updateProduct(Request $request, Product $product)
     {
-        // Author Check
-        // Fix: Cast to int & Allow Admin
         $isSeller = (int)$product->seller_id === (int)Auth::id();
         $isAdmin = Auth::user() && Auth::user()->role === 'admin';
 
@@ -855,15 +732,12 @@ class ShopController extends Controller
             abort(403);
         }
 
-        // Sanitize Numeric Inputs (Remove dots)
         $request->merge([
             'price' => str_replace('.', '', $request->input('price')),
             'weight' => str_replace('.', '', $request->input('weight')),
             'stock' => str_replace('.', '', $request->input('stock')),
         ]);
 
-        // Validasi
-        // Perhatikan 'images' nullable saat update
         $request->validate([
             'title'       => 'required|string|min:3|max:160',
             'category_id' => 'required|exists:categories,category_id',
@@ -883,18 +757,6 @@ class ShopController extends Controller
             'status_input'=> ['required', 'in:active,archived'],
             'images'      => 'nullable|array|max:5',
             'images.*'    => 'image|mimes:jpeg,png,jpg,webp|max:2048',
-        ], [
-            'title.required' => 'Judul produk wajib diisi.',
-            'title.min' => 'Judul produk minimal 3 karakter.',
-            'price.required' => 'Harga produk wajib diisi.',
-            'price.min' => 'Harga produk minimal Rp 1.000.',
-            'weight.required' => 'Berat produk wajib diisi.',
-            'weight.min' => 'Berat produk minimal 1.000 gram.',
-            'stock.required' => 'Stok produk wajib diisi.',
-            'stock.min' => 'Stok produk minimal 1 unit.',
-            'images.max' => 'Maksimal 5 foto produk.',
-            'images.*.image' => 'File harus berupa gambar.',
-            'images.*.max' => 'Ukuran foto maksimal 2MB per file.',
         ]);
 
         try {
@@ -907,13 +769,12 @@ class ShopController extends Controller
                 'title'       => $request->title,
                 'description' => $request->description,
                 'price'       => $request->price,
-                'weight'      => $request->weight, // Added Update
+                'weight'      => $request->weight, 
                 'stock'       => $request->stock,
                 'condition'   => $request->condition,
                 'status'      => $statusEnum,
             ]);
 
-            // Tambah Foto Baru (Jika Ada)
             if ($request->hasFile('images')) {
                 $folderName = 'uploads/products';
                 if (!Storage::disk('public')->exists($folderName)) {
@@ -935,7 +796,6 @@ class ShopController extends Controller
                 }
             }
 
-            // Cek integritas Main Image
             if (!$product->main_image || !ProductImage::where('url', $product->main_image)->exists()) {
                 $firstImg = $product->images()->orderBy('sort_order')->first();
                 if ($firstImg) {
@@ -946,7 +806,6 @@ class ShopController extends Controller
 
             DB::commit();
 
-            // PENTING: Response JSON untuk AJAX
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'status' => 'success',
@@ -959,7 +818,6 @@ class ShopController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            // Tangkap error dan return JSON jika AJAX
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'status' => 'error',
@@ -1005,7 +863,6 @@ class ShopController extends Controller
             abort(403);
         }
 
-        // Check for active transactions
         $hasActiveTransactions = OrderItem::where('product_id', $product->product_id)
             ->whereHas('order', function ($query) {
                 $query->whereNotIn('status', ['completed', 'cancelled']);
@@ -1018,10 +875,8 @@ class ShopController extends Controller
             return back()->with('error', 'Tidak bisa menghapus produk karena masih ada transaksi berjalan.');
         }
 
-        // Clear from all user carts
         CartItem::where('product_id', $product->product_id)->delete();
 
-        // 2. Hapus Gambr
         foreach ($product->images as $img) {
             if (Storage::disk('public')->exists($img->url)) {
                 Storage::disk('public')->delete($img->url);
@@ -1044,7 +899,6 @@ class ShopController extends Controller
 
         $product = Product::where('product_id', $image->product_id)->firstOrFail();
         
-        // Auth Check
         $isSeller = (int)$product->seller_id === (int)Auth::id();
         $isAdmin = Auth::user() && Auth::user()->role === 'admin';
 

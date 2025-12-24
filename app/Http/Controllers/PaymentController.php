@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Payment;
 use App\Models\Order;
 use App\Services\MidtransService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
 
 class PaymentController extends Controller
 {
@@ -18,12 +18,8 @@ class PaymentController extends Controller
         $this->midtrans = $midtrans;
     }
 
-    /**
-     * Show custom payment page
-     */
     public function show(Payment $payment)
     {
-        // Auth check
         $order = $payment->order;
         
         $isBuyer = $order && (int)$order->buyer_id === (int)Auth::id();
@@ -33,19 +29,15 @@ class PaymentController extends Controller
             abort(403, 'Unauthorized access to payment');
         }
         
-        // If already paid, redirect to success page
         if (in_array($payment->status, ['settlement', 'capture'])) {
             return redirect()->route('orders.show', $order->order_id)
                 ->with('success', 'Pembayaran sudah berhasil!');
         }
         
-        // Get available payment methods
         $methods = $this->getAvailableMethods();
         
-        // Get all orders with same payment code (grouped payment)
         $relatedOrders = Order::where('notes', 'LIKE', "%{$payment->provider_order_id}%")->get();
         
-        // Check if sandbox mode (from integration_keys)
         $isSandbox = false;
         try {
             $provider = \Illuminate\Support\Facades\DB::table('integration_providers')
@@ -62,15 +54,11 @@ class PaymentController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            // Silently fail
         }
         
         return view('payment.show', compact('payment', 'order', 'methods', 'relatedOrders', 'isSandbox'));
     }
 
-    /**
-     * Create charge via Midtrans Core API
-     */
     public function createCharge(Request $request, Payment $payment)
     {
         $request->validate([
@@ -79,17 +67,13 @@ class PaymentController extends Controller
 
         $methodCode = $request->input('method');
         
-        // Update payment method
         $payment->update(['method_code' => $methodCode]);
         
         try {
-            // Prepare charge parameters based on method
             $params = $this->prepareChargeParams($payment, $methodCode);
             
-            // Call Midtrans Core API
             $result = $this->midtrans->createCharge($params);
             
-            // Save response
             $payment->update([
                 'provider_txn_id' => $result['transaction_id'] ?? null,
                 'raw_response' => $result
@@ -114,15 +98,10 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Check payment status (for polling)
-     */
     public function checkStatus(Payment $payment)
     {
-        // Auth check
         $order = $payment->order;
         
-        // Fix: Cast to int & Allow Admin
         $isBuyer = (int)$order->buyer_id === (int)Auth::id();
         $isAdmin = Auth::user() && Auth::user()->role === 'admin';
 
@@ -136,15 +115,10 @@ class PaymentController extends Controller
         ]);
     }
 
-    /**
-     * Demo payment (sandbox only) - simulate successful payment
-     */
     public function demoPayment(Payment $payment)
     {
-        // Auth check
         $order = $payment->order;
         
-        // Fix: Cast to int & Allow Admin
         $isBuyer = (int)$order->buyer_id === (int)Auth::id();
         $isAdmin = Auth::user() && Auth::user()->role === 'admin';
 
@@ -152,7 +126,6 @@ class PaymentController extends Controller
             abort(403);
         }
 
-        // Only allow in sandbox - check from database
         try {
             $provider = \Illuminate\Support\Facades\DB::table('integration_providers')
                 ->where('code', 'midtrans')
@@ -176,21 +149,16 @@ class PaymentController extends Controller
                 ], 403);
             }
 
-            // Call Midtrans simulation API
             $result = $this->midtrans->simulatePaymentSuccess($payment->provider_order_id);
 
-            // FORCE update local database
             $payment->update([
                 'status' => 'settlement',
                 'paid_at' => now(),
                 'provider_txn_id' => $payment->provider_txn_id ?? 'demo-'.rand(1000,9999)
             ]);
 
-            // UPDATE RELATED ORDERS STATUS
-            // We find orders that match this payment's provider_order_id
             $relatedOrders = \App\Models\Order::where('notes', 'LIKE', "%{$payment->provider_order_id}%")->get();
             foreach ($relatedOrders as $relatedOrder) {
-                // Use the model's helper method if available, or manual update
                 if (method_exists($relatedOrder, 'confirmPayment')) {
                     $relatedOrder->confirmPayment();
                 } else {
@@ -219,9 +187,6 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Get available payment methods
-     */
     private function getAvailableMethods()
     {
         return [
@@ -284,9 +249,6 @@ class PaymentController extends Controller
         ];
     }
 
-    /**
-     * Prepare charge parameters for Midtrans
-     */
     private function prepareChargeParams(Payment $payment, string $methodCode)
     {
         $order = $payment->order;
@@ -303,7 +265,6 @@ class PaymentController extends Controller
             ]
         ];
 
-        // Add payment type specific params
         if ($methodCode === 'qris') {
             $baseParams['payment_type'] = 'qris';
             

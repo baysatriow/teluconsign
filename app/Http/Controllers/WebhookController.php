@@ -13,13 +13,9 @@ use Illuminate\Support\Facades\Log;
 
 class WebhookController extends Controller
 {
-    /**
-     * Handle Midtrans payment notification webhook
-     */
     public function midtransNotification(Request $request)
     {
         try {
-            // Log incoming webhook
             WebhookLog::create([
                 'provider_code' => 'midtrans',
                 'event_type' => 'payment_notification',
@@ -28,13 +24,11 @@ class WebhookController extends Controller
                 'received_at' => now()
             ]);
 
-            // Get transaction data
-            $orderId = $request->input('order_id'); // This is our payment_code (PAY-...)
+            $orderId = $request->input('order_id'); 
             $transactionStatus = $request->input('transaction_status');
             $fraudStatus = $request->input('fraud_status');
             $transactionId = $request->input('transaction_id');
 
-            // Find payment by provider_order_id
             $payment = Payment::where('provider_order_id', $orderId)->first();
 
             if (!$payment) {
@@ -42,12 +36,10 @@ class WebhookController extends Controller
                 return response()->json(['status' => 'payment_not_found'], 404);
             }
 
-            // Determine final status
             $status = $this->mapMidtransStatus($transactionStatus, $fraudStatus);
 
             DB::beginTransaction();
 
-            // Update payment record
             $payment->update([
                 'status' => $status,
                 'provider_txn_id' => $transactionId,
@@ -55,24 +47,19 @@ class WebhookController extends Controller
                 'paid_at' => ($status === 'settlement') ? now() : $payment->paid_at
             ]);
 
-            // Get all related orders (grouped payment)
             $orders = Order::where('notes', 'LIKE', "%{$orderId}%")->get();
 
             if ($status === 'settlement') {
-                // PAYMENT SUCCESS - Reduce stock & credit wallet
                 foreach ($orders as $order) {
-                    // Update order status
                     $order->update([
                         'payment_status' => 'settlement',
                         'status' => 'paid'
                     ]);
 
-                    // ⭐ REDUCE STOCK (Payment confirmed!)
                     foreach ($order->items as $item) {
                         $product = Product::find($item->product_id);
                         
                         if ($product) {
-                            // Check if stock is sufficient (should be, but double check)
                             if ($product->stock >= $item->quantity) {
                                 $product->decrement('stock', $item->quantity);
                                 
@@ -91,14 +78,10 @@ class WebhookController extends Controller
                         }
                     }
 
-                    // ⭐ CREDIT SELLER WALLET (when order completes, but for now on payment)
-                    // Note: You may want to credit wallet later when order status = 'completed'
-                    // For now, we'll credit immediately after payment
                     $this->creditSellerWallet($order);
                 }
 
             } elseif (in_array($status, ['cancel', 'expire', 'deny'])) {
-                // PAYMENT FAILED/CANCELLED - No stock was reduced, so nothing to restore
                 foreach ($orders as $order) {
                     $order->update([
                         'payment_status' => $status,
@@ -107,14 +90,12 @@ class WebhookController extends Controller
                 }
 
             } elseif ($status === 'refund') {
-                // REFUND - Restore stock
                 foreach ($orders as $order) {
                     $order->update([
                         'payment_status' => 'refund',
                         'status' => 'refunded'
                     ]);
 
-                    // ⭐ RESTORE STOCK (Refunded)
                     foreach ($order->items as $item) {
                         Product::where('product_id', $item->product_id)
                             ->increment('stock', $item->quantity);
@@ -125,7 +106,6 @@ class WebhookController extends Controller
                         ]);
                     }
 
-                    // Debit wallet (remove earnings) if already credited
                     $this->debitSellerWallet($order);
                 }
             }
@@ -145,9 +125,6 @@ class WebhookController extends Controller
         }
     }
 
-    /**
-     * Map Midtrans status to our payment status
-     */
     private function mapMidtransStatus(string $transactionStatus, ?string $fraudStatus = null): string
     {
         if ($transactionStatus === 'capture') {
@@ -166,19 +143,15 @@ class WebhookController extends Controller
         };
     }
 
-    /**
-     * Credit seller wallet
-     */
     private function creditSellerWallet(Order $order)
     {
-        // Check if already credited
         $existing = WalletLedger::where('source_type', 'order')
             ->where('source_id', $order->order_id)
             ->where('direction', 'credit')
             ->exists();
 
         if ($existing) {
-            return; // Already credited
+            return;
         }
 
         $creditAmount = $order->seller_earnings;
@@ -204,29 +177,24 @@ class WebhookController extends Controller
         ]);
     }
 
-    /**
-     * Debit seller wallet (for refunds)
-     */
     private function debitSellerWallet(Order $order)
     {
-        // Check if was credited before
         $creditEntry = WalletLedger::where('source_type', 'order')
             ->where('source_id', $order->order_id)
             ->where('direction', 'credit')
             ->first();
 
         if (!$creditEntry) {
-            return; // Was never credited
+            return; 
         }
 
-        // Check if already debited (refund already processed)
         $existing = WalletLedger::where('source_type', 'order_refund')
             ->where('source_id', $order->order_id)
             ->where('direction', 'debit')
             ->exists();
 
         if ($existing) {
-            return; // Already debited
+            return; 
         }
 
         $debitAmount = $order->seller_earnings;

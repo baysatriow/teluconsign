@@ -10,31 +10,14 @@ use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
-    /**
-     * ============================================================
-     *  CART OVERVIEW
-     * ============================================================
-     *  Menampilkan halaman keranjang belanja
-     *  Item dikelompokkan berdasarkan Toko (Seller)
-     */
     public function index()
     {
         $user = Auth::user();
 
-        /**
-         * --------------------------------------------------------
-         *  Ambil atau Buat Keranjang User
-         * --------------------------------------------------------
-         */
         $cart = Cart::firstOrCreate([
             'buyer_id' => $user->user_id,
         ]);
 
-        /**
-         * --------------------------------------------------------
-         *  Ambil Item Keranjang + Relasi
-         * --------------------------------------------------------
-         */
         $cartItems = CartItem::with([
                 'product.seller',
                 'product.images',
@@ -42,11 +25,6 @@ class CartController extends Controller
             ->where('cart_id', $cart->cart_id)
             ->get();
 
-        /**
-         * --------------------------------------------------------
-         *  Group Item berdasarkan Seller
-         * --------------------------------------------------------
-         */
         $groupedItems = $cartItems->groupBy(function ($item) {
             return $item->product->seller_id;
         });
@@ -54,15 +32,6 @@ class CartController extends Controller
         return view('cart.index', compact('cart', 'groupedItems'));
     }
 
-    /**
-     * ============================================================
-     *  ADD TO CART
-     * ============================================================
-     *  Rules:
-     *  - Validasi stok
-     *  - Tidak boleh beli produk sendiri
-     *  - Maksimal 20 toko berbeda
-     */
     public function addToCart(Request $request)
     {
         $request->validate([
@@ -73,11 +42,6 @@ class CartController extends Controller
         $user    = Auth::user();
         $product = Product::findOrFail($request->product_id);
 
-        /**
-         * --------------------------------------------------------
-         *  Ambil Keranjang & Item yang Sudah Ada
-         * --------------------------------------------------------
-         */
         $cart = Cart::firstOrCreate([
             'buyer_id' => $user->user_id,
         ]);
@@ -86,11 +50,6 @@ class CartController extends Controller
             ->where('product_id', $product->product_id)
             ->first();
 
-        /**
-         * --------------------------------------------------------
-         *  Validasi Stok (Termasuk Item di Keranjang)
-         * --------------------------------------------------------
-         */
         $existingQty = $existingItem ? $existingItem->quantity : 0;
         $totalQty    = $existingQty + $request->quantity;
 
@@ -111,11 +70,6 @@ class CartController extends Controller
             return back()->with('error', $msg);
         }
 
-        /**
-         * --------------------------------------------------------
-         *  Cegah User Membeli Produk Sendiri
-         * --------------------------------------------------------
-         */
         if ($product->seller_id == $user->user_id) {
             $msg = 'Anda tidak dapat membeli produk Anda sendiri.';
 
@@ -129,11 +83,6 @@ class CartController extends Controller
             return back()->with('error', $msg);
         }
 
-        /**
-         * --------------------------------------------------------
-         *  RULE: Maksimal 20 Toko Berbeda
-         * --------------------------------------------------------
-         */
         $existingSellerIds = CartItem::where('cart_id', $cart->cart_id)
             ->join('products', 'cart_items.product_id', '=', 'products.product_id')
             ->pluck('products.seller_id')
@@ -155,11 +104,6 @@ class CartController extends Controller
             return back()->with('error', $msg);
         }
 
-        /**
-         * --------------------------------------------------------
-         *  Tambahkan Item ke Keranjang
-         * --------------------------------------------------------
-         */
         $cart->addItem($product->product_id, $request->quantity);
 
         if ($request->ajax()) {
@@ -175,11 +119,6 @@ class CartController extends Controller
             ->with('success', 'Produk berhasil masuk keranjang!');
     }
 
-    /**
-     * ============================================================
-     *  UPDATE ITEM QUANTITY
-     * ============================================================
-     */
     public function updateItem(Request $request, $itemId)
     {
         $request->validate([
@@ -189,11 +128,6 @@ class CartController extends Controller
         $cartItem = CartItem::findOrFail($itemId);
         $product  = $cartItem->product;
 
-        /**
-         * --------------------------------------------------------
-         *  Validasi Stok
-         * --------------------------------------------------------
-         */
         if ($product->stock < $request->quantity) {
             return response()->json([
                 'status'  => 'error',
@@ -201,11 +135,6 @@ class CartController extends Controller
             ], 400);
         }
 
-        /**
-         * --------------------------------------------------------
-         *  Update Quantity & Recalculate Total
-         * --------------------------------------------------------
-         */
         $cartItem->updateQuantity($request->quantity);
 
         $cart = $cartItem->cart;
@@ -222,11 +151,6 @@ class CartController extends Controller
         ]);
     }
 
-    /**
-     * ============================================================
-     *  DELETE SINGLE ITEM
-     * ============================================================
-     */
     public function deleteItem($itemId)
     {
         $item = CartItem::findOrFail($itemId);
@@ -238,11 +162,6 @@ class CartController extends Controller
         return back()->with('success', 'Item berhasil dihapus.');
     }
 
-    /**
-     * ============================================================
-     *  DELETE ALL ITEMS FROM ONE STORE
-     * ============================================================
-     */
     public function deleteStoreItems($sellerId)
     {
         $user = Auth::user();

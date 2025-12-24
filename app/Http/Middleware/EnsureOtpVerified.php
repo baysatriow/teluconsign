@@ -19,19 +19,9 @@ class EnsureOtpVerified
 
     public function handle(Request $request, Closure $next): Response
     {
-        /**
-         * --------------------------------------------------------
-         *  Validasi Status Verifikasi User
-         * --------------------------------------------------------
-         */
         if (Auth::check()) {
             $user = Auth::user();
 
-            /**
-             * Edge Case:
-             * User berhasil login namun status verifikasi belum aktif
-             * (misalnya akibat bypass flow atau manipulasi data)
-             */
             if (!$user->is_verified) {
                 Auth::logout();
 

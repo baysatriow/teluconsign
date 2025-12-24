@@ -18,21 +18,10 @@ class AdminMiddleware
 
     public function handle(Request $request, Closure $next): Response
     {
-        /**
-         * --------------------------------------------------------
-         *  Validasi Autentikasi & Role
-         * --------------------------------------------------------
-         */
         if (Auth::check() && Auth::user()->role === 'admin') {
             return $next($request);
         }
 
-        /**
-         * --------------------------------------------------------
-         *  Akses Ditolak
-         * --------------------------------------------------------
-         *  Redirect ke halaman utama dengan pesan error
-         */
         return redirect('/')
             ->with('error', 'Akses ditolak. Halaman ini khusus Administrator.');
     }

@@ -24,7 +24,6 @@ class ReviewController extends Controller
         $productId = $request->product_id;
         $orderId = $request->order_id;
 
-        // 1. Verify User Purchased the Product in a Completed Order
         $hasPurchased = Order::where('order_id', $orderId)
             ->where('buyer_id', $user->user_id)
             ->where('status', 'completed')
@@ -40,7 +39,6 @@ class ReviewController extends Controller
             ], 403);
         }
 
-        // 2. Check if already reviewed
         $existingReview = Review::where('user_id', $user->user_id)
             ->where('product_id', $productId)
             ->first();
@@ -52,7 +50,6 @@ class ReviewController extends Controller
             ], 400);
         }
 
-        // 3. Create Review
         try {
             DB::beginTransaction();
 

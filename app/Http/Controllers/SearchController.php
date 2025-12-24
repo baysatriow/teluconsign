@@ -8,9 +8,6 @@ use Illuminate\Http\Request;
 
 class SearchController extends Controller
 {
-    /**
-     * Menampilkan halaman pencarian dengan filter.
-     */
     public function index(Request $request)
     {
         $query = Product::with('seller')
@@ -22,10 +19,8 @@ class SearchController extends Controller
                 });
             }], 'quantity');
 
-        // Initialize selected category variable
         $selectedCategory = null;
 
-        // 1. Keyword Search
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -34,26 +29,20 @@ class SearchController extends Controller
             });
         }
 
-        // 2. Category Filter (Handle Parent + Children Hierarchically)
         if ($request->has('category') && $request->category != '') {
             $categorySlug = $request->category;
             
-            // Find category by slug
             $category = Category::where('slug', $categorySlug)->first();
             
             if ($category) {
-                // Get all child IDs (including parent itself) recursively
                 $categoryIds = $category->getAllChildIds();
                 
-                // Filter products by category IDs
                 $query->whereIn('category_id', $categoryIds);
                 
-                // Pass to view for breadcrumb and subcategory filter
                 $selectedCategory = $category;
             }
         }
 
-        // 3. Price Filter
         if ($request->has('min_price') && is_numeric($request->min_price)) {
             $query->where('price', '>=', $request->min_price);
         }
@@ -61,12 +50,10 @@ class SearchController extends Controller
             $query->where('price', '<=', $request->max_price);
         }
 
-        // 4. Condition Filter
         if ($request->has('condition') && in_array($request->condition, ['new', 'used'])) {
             $query->where('condition', $request->condition);
         }
 
-        // 5. Sorting
         switch ($request->get('sort')) {
             case 'price_asc':
                 $query->orderBy('price', 'asc');
@@ -82,7 +69,6 @@ class SearchController extends Controller
 
         $products = $query->paginate(24)->withQueryString();
         
-        // Get all parent categories with children for filter sidebar
         $categories = Category::whereNull('parent_id')->with('children')->get();
         
         return view('search.index', compact('products', 'categories', 'selectedCategory'));

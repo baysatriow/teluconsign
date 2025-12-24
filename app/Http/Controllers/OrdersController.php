@@ -16,15 +16,11 @@ class OrdersController extends Controller
         $this->midtrans = $midtrans;
     }
 
-    /**
-     * Tampilkan Daftar Pesanan dengan Statistik
-     */
     public function index(Request $request)
     {
         $userId = auth()->id();
-        $status = $request->query('status', 'all'); // all, pending, processed, shipped, completed, cancelled
+        $status = $request->query('status', 'all'); 
 
-        // Calculate Statistics (Keep existing logic)
         $stats = [
             'total' => Order::where('buyer_id', $userId)->count(),
             'pending_payment' => Order::where('buyer_id', $userId)
@@ -42,29 +38,26 @@ class OrdersController extends Controller
                 ->count(),
         ];
         
-        // Base Query
         $query = Order::where('buyer_id', $userId)->with(['items.product.currentUserReview', 'seller.profile'])->latest();
 
-        // Apply Status Filter
         switch ($status) {
             case 'pending':
                 $query->where('payment_status', 'pending')->where('status', '!=', 'cancelled');
                 break;
-            case 'processed': // Dikemas
+            case 'processed': 
                 $query->where('status', 'processed');
                 break;
-            case 'shipped': // Dikirim
+            case 'shipped': 
                 $query->where('status', 'shipped');
                 break;
-            case 'completed': // Selesai
+            case 'completed': 
                 $query->where('status', 'completed');
                 break;
-            case 'cancelled': // Dibatalkan
+            case 'cancelled': 
                 $query->where('status', 'cancelled');
                 break;
             case 'all':
             default:
-                // No specific filter
                 break;
         }
 
@@ -73,13 +66,8 @@ class OrdersController extends Controller
         return view('orders.index', compact('orders', 'stats', 'status'));
     }
 
-    /**
-     * Tampilkan Detail Pesanan
-     */
     public function show(Order $order)
     {
-        // Ensure strictly buyer's order
-        // Ensure strictly buyer's order OR Admin
         $isBuyer = (int)$order->buyer_id === (int)auth()->id();
         $isAdmin = auth()->user() && auth()->user()->role === 'admin';
 
@@ -92,10 +80,6 @@ class OrdersController extends Controller
         return view('orders.show', compact('order'));
     }
 
-    /**
-     * Bayar Pesanan (Individual)
-     * Regenerate Snap Token untuk order spesifik
-     */
     public function pay($id)
     {
         $order = Order::where('buyer_id', auth()->id())
@@ -106,18 +90,16 @@ class OrdersController extends Controller
              return response()->json(['status' => 'error', 'message' => 'Pesanan sudah dibayar.'], 400);
         }
 
-        // 1. Cek Payment Record via Direct Relation (jika order ini induk/single)
         $payment = \App\Models\Payment::where('order_id', $order->order_id)
             ->whereIn('status', ['pending', 'challenge'])
             ->latest()
             ->first();
 
-        // 2. Cek via Group Code di Notes (jika order ini bagian dari group checkout)
         if (!$payment && preg_match('/Group Payment: (PAY-[\w\-]+)/', $order->notes, $matches)) {
             $groupCode = $matches[1];
             $payment = \App\Models\Payment::where('provider_order_id', $groupCode)
                 ->whereIn('status', ['pending', 'challenge'])
-                ->latest() // Ambil yang paling baru jika ada retry
+                ->latest() 
                 ->first();
         }
 
