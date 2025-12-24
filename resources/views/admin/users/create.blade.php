@@ -90,7 +90,7 @@
                         </ul>
                     </div>
                 `,
-                confirmButtonColor: '#EC1C25', // Telu Red
+                confirmButtonColor: '#EC1C25',
                 confirmButtonText: 'Perbaiki Data',
                 customClass: {
                     popup: 'rounded-2xl',
