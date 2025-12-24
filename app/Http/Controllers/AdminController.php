@@ -33,7 +33,7 @@ class AdminController extends Controller
             'total_products' => Product::count(),
             'total_orders' => Order::where('status', 'completed')->count(),
             'pending_payouts' => PayoutRequest::where('status', 'requested')->count(),
-            'total_revenue' => Order::where('status', 'completed')->sum('platform_fee'),
+            'total_revenue' => Order::where('status', 'completed')->sum(DB::raw('platform_fee_seller + platform_fee_buyer')),
         ];
 
         // 2. Data Grafik Penjualan (7 Hari Terakhir)

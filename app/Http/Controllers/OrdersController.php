@@ -79,7 +79,11 @@ class OrdersController extends Controller
     public function show(Order $order)
     {
         // Ensure strictly buyer's order
-        if ($order->buyer_id !== auth()->id()) {
+        // Ensure strictly buyer's order OR Admin
+        $isBuyer = (int)$order->buyer_id === (int)auth()->id();
+        $isAdmin = auth()->user() && auth()->user()->role === 'admin';
+
+        if (!$isBuyer && !$isAdmin) {
             abort(403);
         }
 

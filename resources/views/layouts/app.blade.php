@@ -64,6 +64,11 @@
                 }
             }
         }
+        }
+    </script>
+    <script>
+        console.log('DEBUG: Auth ID = {{ Auth::id() }}');
+        console.log('DEBUG: Auth Check = {{ Auth::check() ? "TRUE" : "FALSE" }}');
     </script>
 </head>
 <body class="flex flex-col min-h-screen text-gray-800">

@@ -590,8 +590,12 @@ class ShopController extends Controller
     public function orderDetail(Order $order)
     {
         // 1. Author Check
-        if ($order->seller_id !== Auth::id()) {
-            abort(403);
+        // Fix: Cast to int to prevent type mismatch & Allow Admin
+        $isSeller = (int)$order->seller_id === (int)Auth::id();
+        $isAdmin = Auth::user() && Auth::user()->role === 'admin';
+
+        if (!$isSeller && !$isAdmin) {
+            abort(403, 'Unauthorized access to shop order');
         }
 
         // 2. Load Relations
@@ -603,8 +607,12 @@ class ShopController extends Controller
     public function updateOrderStatus(Request $request, Order $order)
     {
         // 1. Author Check
-        if ($order->seller_id !== Auth::id()) {
-            abort(403);
+        // Fix: Cast to int to prevent type mismatch & Allow Admin
+        $isSeller = (int)$order->seller_id === (int)Auth::id();
+        $isAdmin = Auth::user() && Auth::user()->role === 'admin';
+
+        if (!$isSeller && !$isAdmin) {
+            abort(403, 'Unauthorized access to update order status');
         }
 
         $status = $request->input('status');
@@ -820,7 +828,11 @@ class ShopController extends Controller
     public function editProduct(Product $product)
     {
         // Ensure availability (Author Check)
-        if ($product->seller_id !== Auth::id()) {
+        // Fix: Cast to int & Allow Admin
+        $isSeller = (int)$product->seller_id === (int)Auth::id();
+        $isAdmin = Auth::user() && Auth::user()->role === 'admin';
+
+        if (!$isSeller && !$isAdmin) {
             abort(403);
         }
 
@@ -835,7 +847,11 @@ class ShopController extends Controller
     public function updateProduct(Request $request, Product $product)
     {
         // Author Check
-        if ($product->seller_id !== Auth::id()) {
+        // Fix: Cast to int & Allow Admin
+        $isSeller = (int)$product->seller_id === (int)Auth::id();
+        $isAdmin = Auth::user() && Auth::user()->role === 'admin';
+
+        if (!$isSeller && !$isAdmin) {
             abort(403);
         }
 
@@ -956,7 +972,10 @@ class ShopController extends Controller
 
     public function checkProductDeletion(Product $product)
     {
-        if ($product->seller_id !== Auth::id()) {
+        $isSeller = (int)$product->seller_id === (int)Auth::id();
+        $isAdmin = Auth::user() && Auth::user()->role === 'admin';
+
+        if (!$isSeller && !$isAdmin) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
         }
 
@@ -978,7 +997,10 @@ class ShopController extends Controller
     {
         $product = Product::findOrFail($id);
         
-        if ($product->seller_id !== Auth::id()) {
+        $isSeller = (int)$product->seller_id === (int)Auth::id();
+        $isAdmin = Auth::user() && Auth::user()->role === 'admin';
+
+        if (!$isSeller && !$isAdmin) {
             if (request()->ajax()) return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
             abort(403);
         }
@@ -1020,9 +1042,15 @@ class ShopController extends Controller
     {
         $image = ProductImage::findOrFail($id);
 
-        $product = Product::where('product_id', $image->product_id)
-                          ->where('seller_id', Auth::id())
-                          ->firstOrFail();
+        $product = Product::where('product_id', $image->product_id)->firstOrFail();
+        
+        // Auth Check
+        $isSeller = (int)$product->seller_id === (int)Auth::id();
+        $isAdmin = Auth::user() && Auth::user()->role === 'admin';
+
+        if (!$isSeller && !$isAdmin) {
+             abort(403, 'Unauthorized');
+        }
 
         if (Storage::disk('public')->exists($image->url)) {
             Storage::disk('public')->delete($image->url);

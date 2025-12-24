@@ -26,7 +26,10 @@ class PaymentController extends Controller
         // Auth check
         $order = $payment->order;
         
-        if (!$order || $order->buyer_id !== Auth::id()) {
+        $isBuyer = $order && (int)$order->buyer_id === (int)Auth::id();
+        $isAdmin = Auth::user() && Auth::user()->role === 'admin';
+
+        if (!$order || (!$isBuyer && !$isAdmin)) {
             abort(403, 'Unauthorized access to payment');
         }
         
@@ -118,7 +121,12 @@ class PaymentController extends Controller
     {
         // Auth check
         $order = $payment->order;
-        if ($order->buyer_id !== Auth::id()) {
+        
+        // Fix: Cast to int & Allow Admin
+        $isBuyer = (int)$order->buyer_id === (int)Auth::id();
+        $isAdmin = Auth::user() && Auth::user()->role === 'admin';
+
+        if (!$isBuyer && !$isAdmin) {
             abort(403);
         }
 
@@ -135,7 +143,12 @@ class PaymentController extends Controller
     {
         // Auth check
         $order = $payment->order;
-        if ($order->buyer_id !== Auth::id()) {
+        
+        // Fix: Cast to int & Allow Admin
+        $isBuyer = (int)$order->buyer_id === (int)Auth::id();
+        $isAdmin = Auth::user() && Auth::user()->role === 'admin';
+
+        if (!$isBuyer && !$isAdmin) {
             abort(403);
         }
 
