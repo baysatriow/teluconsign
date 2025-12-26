@@ -60,6 +60,51 @@ class User extends Authenticatable
         return $this->hasMany(Product::class, 'seller_id', 'user_id');
     }
 
+    public function shopProducts(): HasMany
+    {
+        return $this->products();
+    }
+
+    public function cart(): HasOne
+    {
+        return $this->hasOne(Cart::class, 'buyer_id', 'user_id');
+    }
+
+    public function ordersBought(): HasMany
+    {
+        return $this->hasMany(Order::class, 'buyer_id', 'user_id');
+    }
+
+    public function ordersSold(): HasMany
+    {
+        return $this->hasMany(Order::class, 'seller_id', 'user_id');
+    }
+
+    public function walletLedgers(): HasMany
+    {
+        return $this->hasMany(WalletLedger::class, 'user_id', 'user_id');
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isSeller(): bool
+    {
+        return $this->role === 'seller';
+    }
+
+    public function isBuyer(): bool
+    {
+        return $this->role === 'buyer';
+    }
+
+    public function scopeVerifiedSellers($query)
+    {
+        return $query->where('role', 'seller')->where('is_verified', true);
+    }
+
     public function generateOtp(): int
     {
         $this->update([

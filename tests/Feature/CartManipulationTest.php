@@ -53,7 +53,7 @@ class CartManipulationTest extends TestCase
 
         $response = $this->actingAs($user)->delete(route('cart.deleteItem', $cartItem->cart_item_id));
 
-        $response->assertStatus(200);
+        $response->assertRedirect();
         $this->assertDatabaseMissing('cart_items', [
             'cart_item_id' => $cartItem->cart_item_id
         ]);

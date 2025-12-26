@@ -24,7 +24,6 @@ class Order extends Model
         'payment_method_id',
         'subtotal_amount',
         'shipping_cost',
-        'shipping_cost',
         'platform_fee_buyer',
         'platform_fee_seller',
         'total_amount',

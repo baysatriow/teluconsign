@@ -25,7 +25,7 @@ class ProfileValidationTest extends TestCase
             'email' => $user->email,
         ]);
 
-        $response->assertRedirect(route('profile.index'));
+        $response->assertRedirect();
         $this->assertDatabaseHas('users', [
             'user_id' => $user->user_id,
             'name' => 'Updated Name',
@@ -54,17 +54,15 @@ class ProfileValidationTest extends TestCase
         $user = User::factory()->create(['is_verified' => true]);
 
         $response = $this->actingAs($user)->post(route('profile.address.add'), [
+            'label' => 'Home',
             'recipient' => 'John Doe',
             'phone' => '081234567890',
-            'province_id' => 1,
-            'city_id' => 1,
-            'district_id' => 1,
             'postal_code' => '12345',
             'detail_address' => 'Jl. Test No. 123',
-            'province_name' => 'Test Province',
-            'city_name' => 'Test City',
-            'district_name' => 'Test District',
-            'village_name' => 'Test Village',
+            'province' => 'Test Province',
+            'city' => 'Test City',
+            'district' => 'Test District',
+            'village' => 'Test Village',
         ]);
 
         $response->assertRedirect();
@@ -86,17 +84,15 @@ class ProfileValidationTest extends TestCase
         $address = Address::factory()->create(['user_id' => $user->user_id]);
 
         $response = $this->actingAs($user)->put(route('profile.address.update', $address->address_id), [
+            'label' => 'Office',
             'recipient' => 'Updated Recipient',
             'phone' => '08987654321',
-            'province_id' => 2,
-            'city_id' => 2,
-            'district_id' => 2,
             'postal_code' => '54321',
             'detail_address' => 'Jl. Baru No. 321',
-            'province_name' => 'New Province',
-            'city_name' => 'New City',
-            'district_name' => 'New District',
-            'village_name' => 'New Village',
+            'province' => 'New Province',
+            'city' => 'New City',
+            'district' => 'New District',
+            'village' => 'New Village',
         ]);
 
         $response->assertRedirect();

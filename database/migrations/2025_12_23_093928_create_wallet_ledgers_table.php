@@ -17,7 +17,7 @@ return new class extends Migration
             $table->decimal('amount', 14, 2);
             $table->decimal('balance_after', 14, 2);
             $table->text('memo')->nullable();
-            $table->timestamp('posted_at');
+            $table->timestamp('posted_at')->useCurrent();
         });
     }
 

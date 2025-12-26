@@ -43,6 +43,16 @@ class ShopPayoutTest extends TestCase
             'account_name' => 'Seller Name'
         ]);
 
+        // Seed initial balance
+        \App\Models\WalletLedger::create([
+             'user_id' => $seller->user_id,
+             'direction' => 'credit',
+             'source_type' => 'adjustment',
+             'amount' => 1000000,
+             'balance_after' => 1000000,
+             'memo' => 'Initial Balance'
+        ]);
+
         $response = $this->actingAs($seller)->post(route('shop.payouts.store'), [
             'amount' => 500000,
             'bank_account_id' => $bank->bank_account_id

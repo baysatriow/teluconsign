@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class WebhookLog extends Model
 {
     use HasFactory;
-
     protected $primaryKey = 'webhook_log_id';
     public $timestamps = false;
 

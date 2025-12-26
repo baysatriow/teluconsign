@@ -180,6 +180,12 @@ class CheckoutController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Item tidak ditemukan.'], 400);
         }
 
+        foreach ($cartItems as $item) {
+             if ($item->product->stock < $item->quantity) {
+                 return response()->json(['status' => 'error', 'message' => "Stok produk {$item->product->title} tidak mencukupi."], 400);
+             }
+        }
+
         if (!$user->addresses()->where('is_default', true)->exists()) {
             return response()->json(['status' => 'error', 'message' => 'Alamat utama belum diatur.'], 400);
         }

@@ -12,6 +12,7 @@ class ModerationAction extends Model
     protected $primaryKey = 'moderation_action_id';
     public $incrementing = true;
     protected $keyType = 'int';
+    public $timestamps = false;
 
     protected $fillable = [
         'admin_id',

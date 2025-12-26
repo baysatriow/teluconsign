@@ -31,12 +31,17 @@ class ReviewCoverageTest extends TestCase
             'buyer_id' => $buyer->user_id,
             'seller_id' => $seller->user_id,
             'total_amount' => 10000,
+            'subtotal_amount' => 10000,
             'status' => 'completed',
             'code' => 'ORD-REV-' . time()
         ]);
         
         // Explicitly linking item
-        // OrderItem creation skipped for brevity unless strictly required by controller validation 'exists:order_items'
+        \App\Models\OrderItem::factory()->create([
+            'order_id' => $order->order_id,
+            'product_id' => $product->product_id,
+            'quantity' => 1
+        ]);
         
         $response = $this->actingAs($buyer)->post(route('reviews.store'), [
             'product_id' => $product->product_id,
@@ -46,8 +51,8 @@ class ReviewCoverageTest extends TestCase
             // 'images' => [UploadedFile::fake()->image('review.jpg')] // If supported
         ]);
 
-        // Controller likely redirects back
-        $response->assertStatus(302);
+        // Controller return JSON 200
+        $response->assertStatus(200);
         
         $this->assertDatabaseHas('reviews', [
             'user_id' => $buyer->user_id,

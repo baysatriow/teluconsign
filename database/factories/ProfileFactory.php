@@ -20,7 +20,6 @@ class ProfileFactory extends Factory
             'user_id' => \App\Models\User::factory(),
             'phone' => fake()->phoneNumber(),
             'bio' => fake()->sentence(),
-            'photo_url' => null,
         ];
     }
 }

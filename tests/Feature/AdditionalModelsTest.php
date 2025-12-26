@@ -108,6 +108,7 @@ class AdditionalModelsTest extends TestCase
             'buyer_id' => $buyer->user_id,
             'seller_id' => $seller->user_id,
             'total_amount' => 10000,
+            'subtotal_amount' => 10000,
             'status' => 'pending',
             'code' => 'ORD-SHIP-' . time(),
         ]);
@@ -133,7 +134,8 @@ class AdditionalModelsTest extends TestCase
             'source_type' => 'adjustment',
             'amount' => 50000,
             'balance_after' => 50000,
-            'memo' => 'Bonus'
+            'memo' => 'Bonus',
+            'posted_at' => now()
         ]);
 
         $this->assertInstanceOf(User::class, $ledger->user);
@@ -144,13 +146,13 @@ class AdditionalModelsTest extends TestCase
     {
         // Assuming WebhookLog has payload column
         $log = WebhookLog::create([
-            'provider' => 'midtrans',
+            'provider_code' => 'midtrans',
             'payload' => json_encode(['data' => 'test']),
-            'status' => 200,
-            'response' => 'OK'
+            'event_type' => 'test_event'
+            // 'status' removed if not in schema (schema checks provider_code, event_type, related_id, payload)
         ]);
 
-        $this->assertEquals('midtrans', $log->provider);
+        $this->assertEquals('midtrans', $log->provider_code);
     }
     
     public function test_profile_relationship()

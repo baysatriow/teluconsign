@@ -27,10 +27,11 @@ class MidtransService extends BaseIntegrationService
             $cred = $this->getCredential($this->providerCode);
 
             $isProduction = $cred->config['environment'] === 'production';
+            
             $baseUrl = $isProduction
                 ? 'https://app.midtrans.com/snap/v1/transactions'
                 : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
-
+            
             $authKey = base64_encode($cred->secret_key . ':');
 
             $payload = isset($orderData['transaction_details'])

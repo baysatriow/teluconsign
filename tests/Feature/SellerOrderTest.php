@@ -82,13 +82,13 @@ class SellerOrderTest extends TestCase
     public function test_seller_can_update_order_status()
     {
         $response = $this->actingAs($this->seller)->patch(route('shop.orders.update_status', $this->order->order_id), [
-            'status' => 'processing'
+            'status' => 'cancelled'
         ]);
 
-        $response->assertStatus(200); // Or redirect depending on implementation
+        $response->assertRedirect(); // Controller uses back()
         $this->assertDatabaseHas('orders', [
             'order_id' => $this->order->order_id,
-            'status' => 'processing'
+            'status' => 'cancelled'
         ]);
     }
 

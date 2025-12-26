@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class IntegrationKey extends Model
 {
     use HasFactory;
-
+    public $timestamps = false;
     protected $primaryKey = 'integration_key_id';
 
     protected $fillable = [
@@ -24,6 +24,11 @@ class IntegrationKey extends Model
         'meta_json' => 'array',
         'created_at' => 'datetime',
     ];
+
+    public function provider()
+    {
+        return $this->belongsTo(IntegrationProvider::class, 'provider_id', 'integration_provider_id');
+    }
 
     public function addKey(int $provider_id, string $label, string $key): bool
     {

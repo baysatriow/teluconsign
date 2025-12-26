@@ -69,7 +69,7 @@ class BuyerOrderTest extends TestCase
             'subtotal' => $product->price
         ]);
 
-        $response = $this->actingAs($buyer)->get(route('orders.show', $order->code)); // Usually uses slug or code
+        $response = $this->actingAs($buyer)->get(route('orders.show', $order)); // Usually uses slug or code
 
         $response->assertStatus(200);
         $response->assertSee($product->title);
@@ -96,7 +96,7 @@ class BuyerOrderTest extends TestCase
         ]);
 
         // Buyer 2 tries to view Buyer 1's order
-        $response = $this->actingAs($buyer2)->get(route('orders.show', $order->code));
+        $response = $this->actingAs($buyer2)->get(route('orders.show', $order));
 
         if ($response->status() === 302) {
              $response->assertRedirect(); // Often redirects to index/home if unauthorized

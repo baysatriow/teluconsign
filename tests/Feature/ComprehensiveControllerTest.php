@@ -53,7 +53,7 @@ class ComprehensiveControllerTest extends TestCase
         // 5. Destroy
         $response = $this->actingAs($admin)->delete(route('admin.categories.destroy', $category->category_id));
         $response->assertRedirect();
-        $this->assertSoftDeleted('categories', ['category_id' => $category->category_id]);
+        $this->assertDatabaseMissing('categories', ['category_id' => $category->category_id]);
     }
 
     // --- WebhookController Tests ---

@@ -37,6 +37,11 @@ class Address extends Model
         'created_at'      => 'datetime',
     ];
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
+    }
+
     public static function setDefault(int $id): void
     {
         $address = self::find($id);

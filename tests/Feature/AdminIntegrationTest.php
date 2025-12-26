@@ -35,7 +35,7 @@ class AdminIntegrationTest extends TestCase
 
         $response = $this->actingAs($this->admin)->patch(route('admin.integrations.carrier.toggle', $id));
 
-        $response->assertStatus(200); // AJAX toggle often returns JSON
+        $response->assertRedirect(); // Controller uses back()
         $this->assertDatabaseHas('shipping_carriers', [
             'shipping_carrier_id' => $id,
             'is_enabled' => false // Should toggle to false
@@ -50,8 +50,15 @@ class AdminIntegrationTest extends TestCase
         // Let's check route... AdminController::updateWhatsappApi
         
         // Skip detailed logic assertion if implementation is unknown, but can test route access.
+        
+        // Seed provider
+        DB::table('integration_providers')->insert([
+            'code' => 'whatsapp',
+            'name' => 'Fonnte'
+        ]);
+
         $response = $this->actingAs($this->admin)->post(route('admin.integrations.whatsapp.update'), [
-            'api_key' => 'new_api_key',
+            'token' => 'new_api_key',
             'sender' => '08123456789'
         ]);
         

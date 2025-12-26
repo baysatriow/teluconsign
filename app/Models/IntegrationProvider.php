@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class IntegrationProvider extends Model
 {
     use HasFactory;
+    public $timestamps = false;
 
     protected $primaryKey = 'integration_provider_id';
 
@@ -15,8 +16,6 @@ class IntegrationProvider extends Model
         'code',
         'name',
     ];
-
-    public $timestamps = false;
 
     protected $casts = [
         'created_at' => 'datetime',

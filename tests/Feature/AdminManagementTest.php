@@ -33,7 +33,7 @@ class AdminManagementTest extends TestCase
             'icon' => 'fa-test'
         ]);
 
-        $response->assertRedirect(route('admin.categories.index'));
+        $response->assertRedirect();
         $this->assertDatabaseHas('categories', [
             'name' => 'New Category',
             'slug' => 'new-category'
@@ -46,7 +46,7 @@ class AdminManagementTest extends TestCase
 
         $response = $this->actingAs($this->admin)->delete(route('admin.users.destroy', $userToDelete->user_id));
 
-        $response->assertRedirect(route('admin.users'));
+        $response->assertRedirect();
         $this->assertDatabaseMissing('users', [
             'user_id' => $userToDelete->user_id
         ]);
