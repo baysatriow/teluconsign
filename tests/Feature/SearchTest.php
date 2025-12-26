@@ -16,14 +16,14 @@ class SearchTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
-        // Create a default shop address for the seller to avoid validation errors
+        
         $seller = User::factory()->create(['role' => 'seller']);
         Address::factory()->create([
             'user_id' => $seller->user_id,
             'is_shop_default' => true
         ]);
         
-        // Create dummy products
+        
         Product::factory()->create([
             'title' => 'Gaming Laptop',
             'description' => 'High performance laptop',

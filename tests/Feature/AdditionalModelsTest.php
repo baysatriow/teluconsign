@@ -7,16 +7,19 @@ use App\Models\Product;
 use App\Models\Cart;
 use App\Models\CartItem; 
 use App\Models\Order;
-use App\Models\IntegrationKey; // Assuming this exists based on prompt
+use App\Models\IntegrationKey;
 use App\Models\PayoutRequest; 
 use App\Models\ProductImage;
-use App\Models\Shipment; // Assuming this exists based on prompt
-use App\Models\WalletLedger; // Assuming this exists based on prompt
-use App\Models\WebhookLog; // Assuming this exists based on prompt
+use App\Models\Shipment;
+use App\Models\WalletLedger;
+use App\Models\WebhookLog;
 use App\Models\Profile;
 use App\Models\Review;
 use App\Models\Address;
 use App\Models\BankAccount;
+use App\Models\ModerationAction;
+use App\Models\OrderItem;
+use App\Enums\ProductStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -47,29 +50,18 @@ class AdditionalModelsTest extends TestCase
 
     public function test_integration_key_creation()
     {
-        // Assuming IntegrationKey table might be integration_keys or similar
-        // Since I don't see migration strictly for this, I'll attempt basic instantiation 
-        // If Model exists but table doesn't, this test will error, but user said "App\Models\IntegrationKey" exists.
-        
-        // If it's a model without a table (just logic), checking instance is enough.
-        // If it tracks api keys (provider_code, public_k, secret_key, etc)
-        
-        try {
-            $key = new IntegrationKey();
-            $this->assertInstanceOf(IntegrationKey::class, $key);
-        } catch (\Exception $e) {
-            $this->markTestSkipped('IntegrationKey model usage unclear or table missing.');
-        }
+        $key = new IntegrationKey();
+        $this->assertInstanceOf(IntegrationKey::class, $key);
     }
 
     public function test_payout_request_relationships()
     {
         $seller = User::factory()->create(['role' => 'seller']);
         $bank = BankAccount::create([
-             'user_id' => $seller->user_id,
-             'bank_name' => 'BCA',
-             'account_no' => '123',
-             'account_name' => 'Seller'
+            'user_id' => $seller->user_id,
+            'bank_name' => 'BCA',
+            'account_no' => '123',
+            'account_name' => 'Seller'
         ]);
 
         $payout = PayoutRequest::create([
@@ -144,12 +136,10 @@ class AdditionalModelsTest extends TestCase
 
     public function test_webhook_log_creation()
     {
-        // Assuming WebhookLog has payload column
         $log = WebhookLog::create([
             'provider_code' => 'midtrans',
             'payload' => json_encode(['data' => 'test']),
             'event_type' => 'test_event'
-            // 'status' removed if not in schema (schema checks provider_code, event_type, related_id, payload)
         ]);
 
         $this->assertEquals('midtrans', $log->provider_code);
@@ -158,8 +148,6 @@ class AdditionalModelsTest extends TestCase
     public function test_profile_relationship()
     {
         $user = User::factory()->create();
-        // Profile usually created via observer or manually.
-        // Assuming migration 2025_12_10_215122_create_core_users_tables.php creates profiles table with user_id PK/FK
         
         $profile = Profile::create([
             'user_id' => $user->user_id,
@@ -169,5 +157,55 @@ class AdditionalModelsTest extends TestCase
         
         $this->assertInstanceOf(User::class, $profile->user);
         $this->assertEquals('Tester', $profile->bio);
+    }
+
+    public function test_moderation_action_revert_non_existent()
+    {
+        $action = new ModerationAction();
+        $action->revertAction(99999);
+        $this->assertTrue(true);
+    }
+
+    public function test_order_item_link_non_existent_product()
+    {
+        $order = Order::factory()->create();
+        $item = OrderItem::create([
+            'order_id' => $order->order_id,
+            'unit_price' => 1000,
+            'quantity' => 1,
+            'subtotal' => 1000,
+            'product_title_snapshot' => 'Initial'
+        ]);
+
+        $item->linkProduct(99999);
+        $this->assertEquals('Initial', $item->product_title_snapshot);
+    }
+
+    public function test_product_change_status_logic()
+    {
+        $product = Product::factory()->create(['status' => ProductStatus::Active]);
+        
+        $product->changeStatus('suspended');
+        $this->assertEquals(ProductStatus::Suspended, $product->status);
+
+        $product->changeStatus(ProductStatus::Active);
+        $this->assertEquals(ProductStatus::Active, $product->status);
+    }
+
+    public function test_product_get_reviews()
+    {
+        $product = Product::factory()->create();
+        $user = User::factory()->create();
+        
+        Review::create([
+            'product_id' => $product->product_id,
+            'user_id' => $user->user_id,
+            'rating' => 5,
+            'comment' => 'Great!'
+        ]);
+
+        $reviews = $product->getReviews();
+        $this->assertCount(1, $reviews);
+        $this->assertEquals('Great!', $reviews->first()->comment);
     }
 }

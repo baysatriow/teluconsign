@@ -50,7 +50,8 @@ class ShopPayoutTest extends TestCase
              'source_type' => 'adjustment',
              'amount' => 1000000,
              'balance_after' => 1000000,
-             'memo' => 'Initial Balance'
+             'memo' => 'Initial Balance',
+             'posted_at' => now()
         ]);
 
         $response = $this->actingAs($seller)->post(route('shop.payouts.store'), [

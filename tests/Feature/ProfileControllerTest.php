@@ -25,7 +25,7 @@ class ProfileControllerTest extends TestCase
         $this->user = User::factory()->create();
     }
 
-    // ============ INDEX TESTS ============
+    
 
     public function test_profile_index_loads_with_relations()
     {
@@ -39,7 +39,7 @@ class ProfileControllerTest extends TestCase
                  ->assertViewHas('user');
     }
 
-    // ============ UPDATE PROFILE TESTS ============
+    
 
     public function test_update_profile_with_photo()
     {
@@ -57,7 +57,7 @@ class ProfileControllerTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('success');
         
-        // Check photo was stored
+        
         Storage::disk('public')->assertExists('profile-photos/' . $file->hashName());
     }
 
@@ -73,7 +73,7 @@ class ProfileControllerTest extends TestCase
         $this->assertEquals('Updated Name', $this->user->fresh()->name);
     }
 
-    // ============ CHANGE PASSWORD TESTS ============
+    
 
     public function test_change_password_with_wrong_current_password()
     {
@@ -105,7 +105,7 @@ class ProfileControllerTest extends TestCase
         $this->assertTrue(Hash::check('NewPassword123!', $this->user->fresh()->password));
     }
 
-    // ============ ADDRESS TESTS ============
+    
 
     public function test_store_address_sets_first_as_default()
     {
@@ -132,7 +132,7 @@ class ProfileControllerTest extends TestCase
 
     public function test_store_address_with_is_default_resets_others()
     {
-        // Create existing default address
+        
         Address::factory()->create([
             'user_id' => $this->user->user_id,
             'is_default' => true
@@ -155,15 +155,10 @@ class ProfileControllerTest extends TestCase
 
         $response->assertRedirect();
         
-        // Check only one default exists
+        
         $this->assertEquals(1, Address::where('user_id', $this->user->user_id)
                                       ->where('is_default', true)
                                       ->count());
-    }
-
-    public function test_edit_address_not_found()
-    {
-        $this->markTestSkipped('Route not used in current implementation');
     }
 
     public function test_update_address_with_is_default_resets_others()
@@ -190,9 +185,24 @@ class ProfileControllerTest extends TestCase
 
         $response->assertRedirect();
         
-        // Check address2 is now default
+        
         $this->assertTrue($address2->fresh()->is_default);
         $this->assertFalse($address1->fresh()->is_default);
+    }
+
+    public function test_update_address_not_found()
+    {
+        $response = $this->actingAs($this->user)
+                         ->put('/profile/address/999', [
+                             'label' => 'Valid',
+                             'recipient' => 'Valid',
+                             'phone' => '08123',
+                             'detail_address' => 'Valid',
+                             'postal_code' => '12345'
+                         ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', 'Alamat tidak ditemukan.');
     }
 
     public function test_delete_default_address_assigns_new_default()
@@ -212,7 +222,7 @@ class ProfileControllerTest extends TestCase
 
         $response->assertRedirect();
         
-        // Check address2 became default
+        
         $this->assertTrue($address2->fresh()->is_default);
     }
 
@@ -225,12 +235,7 @@ class ProfileControllerTest extends TestCase
         $response->assertSessionHas('error', 'Alamat tidak ditemukan.');
     }
 
-    // ============ PHONE UPDATE TESTS ============
-
-    public function test_request_phone_update_sends_otp()
-    {
-        $this->markTestSkipped('Requires Fonnte API mocking');
-    }
+    
 
     public function test_request_phone_update_validation()
     {
@@ -299,7 +304,7 @@ class ProfileControllerTest extends TestCase
 
     public function test_verify_phone_update_with_expired_otp()
     {
-        // No cache data - expired
+        
         $response = $this->actingAs($this->user)
                          ->postJson('/profile/phone/verify', [
                              'otp' => '123456'

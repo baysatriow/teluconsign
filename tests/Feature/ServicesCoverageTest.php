@@ -35,7 +35,7 @@ class ServicesCoverageTest extends TestCase
 
         parent::setUp();
         
-        // --- 1. MIDTRANS ---
+        
         $midtrans = IntegrationProvider::firstOrCreate(['code' => 'midtrans'], ['name' => 'Midtrans']);
         $midKey = IntegrationKey::firstOrCreate(['provider_id' => $midtrans->integration_provider_id], [
             'label' => 'Server Key',
@@ -46,7 +46,7 @@ class ServicesCoverageTest extends TestCase
         ]);
         $midKey->update(['meta_json' => ['environment' => 'sandbox'], 'is_active' => true]);
 
-        // --- 2. RAJAONGKIR ---
+        
         $rajaongkir = IntegrationProvider::firstOrCreate(['code' => 'rajaongkir'], ['name' => 'RajaOngkir']);
         $rajaKey = IntegrationKey::firstOrCreate(['provider_id' => $rajaongkir->integration_provider_id], [
              'label' => 'API Key',
@@ -56,7 +56,7 @@ class ServicesCoverageTest extends TestCase
              'is_active' => true
         ]);
 
-        // --- 3. BINDERBYTE ---
+        
         $binderbyte = IntegrationProvider::firstOrCreate(['code' => 'binderbyte'], ['name' => 'BinderByte']);
         IntegrationKey::firstOrCreate(['provider_id' => $binderbyte->integration_provider_id], [
             'label' => 'API Key',
@@ -65,7 +65,7 @@ class ServicesCoverageTest extends TestCase
             'is_active' => true
         ]);
 
-        // --- 4. FONNTE ---
+        
         $fonnte = IntegrationProvider::firstOrCreate(['code' => 'whatsapp'], ['name' => 'Fonnte']);
         IntegrationKey::firstOrCreate(['provider_id' => $fonnte->integration_provider_id], [
             'label' => 'Token',
@@ -74,7 +74,7 @@ class ServicesCoverageTest extends TestCase
             'is_active' => true
         ]);
 
-        // --- 5. GEMINI ---
+        
         $gemini = IntegrationProvider::firstOrCreate(['code' => 'gemini'], ['name' => 'Gemini AI']);
         IntegrationKey::firstOrCreate(['provider_id' => $gemini->integration_provider_id], [
              'label' => 'API Key',
@@ -84,7 +84,7 @@ class ServicesCoverageTest extends TestCase
         ]);
     }
 
-    // ... [Previous Midtrans Tests maintained] ...
+    
     public function test_midtrans_create_snap_token()
     {
         Http::fake([
@@ -147,7 +147,7 @@ class ServicesCoverageTest extends TestCase
         $this->assertEquals('Success', $result['status_message']);
     }
 
-    // ... [Previous RajaOngkir Tests maintained] ...
+    
     public function test_rajaongkir_check_cost()
     {
         Http::fake([
@@ -182,7 +182,7 @@ class ServicesCoverageTest extends TestCase
         $this->assertEquals('Bali', $provinces[0]['province']);
     }
 
-    // --- NEW TESTS FOR FULL COVERAGE ---
+    
 
     public function test_binderbyte_track_package_success()
     {
@@ -210,7 +210,7 @@ class ServicesCoverageTest extends TestCase
             'api.binderbyte.com/v1/track*' => Http::response([
                 'status' => 400,
                 'message' => 'AWB not found'
-            ], 200) // API might return 200 HTTP but 400 in body
+            ], 200) 
         ]);
 
         $service = app(BinderByteService::class);
@@ -239,11 +239,11 @@ class ServicesCoverageTest extends TestCase
             'api.fonnte.com/send' => Http::response(['status' => true], 200)
         ]);
 
-        // Using reflection to test private method or indirectly testing via sendMessage
-        // 0812... -> 62812...
+        
+        
         $service = app(FonnteService::class);
         
-        // We will intercept the request to verify the phone number was normalized
+        
         $result = $service->sendMessage('08123456789', 'Test Normalization');
         
         Http::assertSent(function ($request) {
@@ -279,7 +279,7 @@ class ServicesCoverageTest extends TestCase
             'generativelanguage.googleapis.com/*' => Http::response(['error' => 'quota_exceeded'], 429)
         ]);
 
-        // Mock logger to prevent clutter
+        
         Log::shouldReceive('error')->once();
 
         $service = app(GeminiService::class);
@@ -288,7 +288,7 @@ class ServicesCoverageTest extends TestCase
         $this->assertEquals('Maaf, AI sedang sibuk.', $text);
     }
 
-    // --- BASE INTEGRATION SERVICE EDGE CASES ---
+    
 
     public function test_base_service_provider_not_found()
     {
@@ -300,7 +300,7 @@ class ServicesCoverageTest extends TestCase
     public function test_base_service_key_not_found()
     {
         IntegrationProvider::create(['code' => 'test_provider', 'name' => 'Test']);
-        // No key created
+        
         $service = new TestIntegrationService();
         $cred = $service->retrieveCredential();
         $this->assertNull($cred);
@@ -313,14 +313,14 @@ class ServicesCoverageTest extends TestCase
             'provider_id' => $provider->integration_provider_id,
             'label' => 'Bad Key',
             'public_k' => 'pub',
-            'encrypted_k' => 'NOT_ENCRYPTED_STRING', // This will cause decryption fail
+            'encrypted_k' => 'NOT_ENCRYPTED_STRING', 
             'is_active' => true
         ]);
 
         $service = new TestIntegrationService();
         $cred = $service->retrieveCredential();
 
-        // Should fall back to raw string
+        
         $this->assertEquals('NOT_ENCRYPTED_STRING', $cred->secret_key);
     }
 
@@ -342,7 +342,7 @@ class ServicesCoverageTest extends TestCase
     }
 
 
-    // --- BINDERBYTE EDGE CASES ---
+    
 
     public function test_binderbyte_api_error_status_in_body()
     {
@@ -370,11 +370,11 @@ class ServicesCoverageTest extends TestCase
         $this->assertEquals('Connection Error', $result['message']);
     }
 
-    // --- FONNTE EDGE CASES ---
+    
 
     public function test_fonnte_simulation_mode_no_key()
     {
-        // Delete the key to trigger simulation mode
+        
         IntegrationKey::where('label', 'Token')->delete();
         
         $service = app(FonnteService::class);
@@ -397,7 +397,7 @@ class ServicesCoverageTest extends TestCase
         $this->assertEquals('Network Error', $result['error']);
     }
 
-    // --- GEMINI EDGE CASES ---
+    
 
     public function test_gemini_exception_handling()
     {
@@ -411,15 +411,12 @@ class ServicesCoverageTest extends TestCase
         $this->assertEquals('Fitur AI belum tersedia.', $text);
     }
 
-    // --- MIDTRANS EDGE CASES ---
+    
 
     public function test_midtrans_production_url_generation()
     {
-        // Update key config to production
-        // Debug:
-        // dump(IntegrationKey::all()->toArray());
         
-        // Use DB Facade to ensure raw update compatible with Query Builder in BaseIntegrationService
+
         $midtransProvider = IntegrationProvider::where('code', 'midtrans')->first();
         $keyId = IntegrationKey::where('provider_id', $midtransProvider->integration_provider_id)->where('is_active', true)->value('integration_key_id');
         
@@ -438,7 +435,7 @@ class ServicesCoverageTest extends TestCase
         $service = app(MidtransService::class);
         $result = $service->createSnapToken(['code' => 'ORD-PROD', 'total_amount' => 10000, 'customer_name' => 'John', 'customer_email' => 'j@d.com', 'customer_phone' => '081']);
 
-        // Assert url was correct by checking if fake returned data (dummy check as Http::fake matched)
+        
         $this->assertNotNull($result);
     }
 
@@ -469,10 +466,10 @@ class ServicesCoverageTest extends TestCase
         $service = app(MidtransService::class);
         $result = $service->simulatePaymentSuccess('ORD-123');
 
-        $this->assertNull($result); // Should be null due to caught exception "only available in sandbox"
+        $this->assertNull($result); 
     }
 
-    // --- RAJAONGKIR EDGE CASES ---
+    
     
     public function test_rajaongkir_client_error_handling()
     {
@@ -483,7 +480,7 @@ class ServicesCoverageTest extends TestCase
         $service = app(RajaOngkirService::class);
         $result = $service->checkCost(1, 'city', 2, 'city', 1000, 'jne');
 
-        // Client error (4xx) returns status true but empty data
+        
         $this->assertTrue($result['status']);
         $this->assertEmpty($result['data']);
     }
@@ -526,7 +523,7 @@ class ServicesCoverageTest extends TestCase
         $this->assertEmpty($result);
     }
 
-    // --- ADDITIONAL RAJAONGKIR TESTS ---
+    
 
     public function test_rajaongkir_get_cities_with_province()
     {
@@ -588,7 +585,7 @@ class ServicesCoverageTest extends TestCase
         $this->assertEquals([], $result);
     }
 
-    // --- ADDITIONAL FONNTE TESTS ---
+    
 
     public function test_fonnte_api_failed_response()
     {
@@ -607,7 +604,7 @@ class ServicesCoverageTest extends TestCase
     {
         $service = app(FonnteService::class);
         
-        // Use reflection to access private method
+        
         $reflection = new \ReflectionClass($service);
         $method = $reflection->getMethod('normalizePhoneNumber');
         $method->setAccessible(true);
@@ -617,7 +614,7 @@ class ServicesCoverageTest extends TestCase
         $this->assertEquals('6281234567890', $result);
     }
 
-    // --- ADDITIONAL MIDTRANS TESTS ---
+    
 
     public function test_midtrans_create_snap_token_with_transaction_details()
     {
@@ -707,12 +704,12 @@ class ServicesCoverageTest extends TestCase
     {
         $service = app(FonnteService::class);
         
-        // Use reflection to access private method
+        
         $reflection = new \ReflectionClass($service);
         $method = $reflection->getMethod('normalizePhoneNumber');
         $method->setAccessible(true);
 
-        // Phone already starting with 62 should return as-is
+        
         $result = $method->invoke($service, '6281234567890');
         
         $this->assertEquals('6281234567890', $result);

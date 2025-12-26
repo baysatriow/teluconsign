@@ -14,8 +14,6 @@ class MiddlewareCoverageTest extends TestCase
 {
     use RefreshDatabase;
 
-    // --- ADMIN MIDDLEWARE ---
-
     public function test_admin_middleware_allows_admin()
     {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -47,8 +45,6 @@ class MiddlewareCoverageTest extends TestCase
         $this->assertEquals(url('/'), $response->getTargetUrl());
     }
 
-    // --- OTP MIDDLEWARE ---
-
     public function test_otp_middleware_allows_verified_user()
     {
         $user = User::factory()->create(['is_verified' => true]);
@@ -78,6 +74,6 @@ class MiddlewareCoverageTest extends TestCase
 
         $this->assertTrue($response->isRedirect());
         $this->assertEquals(route('login'), $response->getTargetUrl());
-        $this->assertGuest(); // Auth::logout() called
+        $this->assertGuest();
     }
 }

@@ -23,20 +23,16 @@ class LoginTest extends TestCase
         $user = \App\Models\User::factory()->create(['password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi']); // password
 
         $this->mock(\App\Services\FonnteService::class, function ($mock) use ($user) {
-             // Expect sendMessage if user has phone, but factory creates null phone in profile?
-             // Need to ensure profile phone exists if testing that path.
-             // But LoginController sends OTP if phone exists.
-             // Let's create profile with phone.
              return;
         });
 
         $response = $this->post('/login', [
-            'login' => $user->email, // Controller uses 'login' field
+            'login' => $user->email,
             'password' => 'password',
         ]);
 
         $response->assertRedirect(route('otp.verify'));
-        $this->assertGuest(); // Not authenticated yet
+        $this->assertGuest();
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void

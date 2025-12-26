@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Address;
 use App\Models\PayoutRequest;
 use App\Models\BankAccount;
 use App\Models\IntegrationProvider;
@@ -32,13 +33,14 @@ class AdminControllerTest extends TestCase
         parent::setUp();
         $this->superAdmin = User::factory()->create(['user_id' => 1, 'role' => 'admin']);
         $this->admin = User::factory()->create(['role' => 'admin']);
+        
+        IntegrationProvider::create(['code' => 'midtrans', 'name' => 'Midtrans Payment Gateway']);
+        IntegrationProvider::create(['code' => 'rajaongkir', 'name' => 'RajaOngkir']);
+        IntegrationProvider::create(['code' => 'whatsapp', 'name' => 'WhatsApp (Fonnte)']);
     }
-
-    // ============ DASHBOARD TESTS ============
 
     public function test_dashboard_shows_sales_data()
     {
-        // Create some orders to generate sales data
         $seller = User::factory()->create(['role' => 'seller']);
         Order::factory()->count(3)->create([
             'seller_id' => $seller->user_id,
@@ -51,8 +53,6 @@ class AdminControllerTest extends TestCase
         $response->assertOk()
                  ->assertViewIs('admin.dashboard');
     }
-
-    // ============ PRODUCTS TESTS ============
 
     public function test_products_index_with_search()
     {
@@ -142,8 +142,6 @@ class AdminControllerTest extends TestCase
         $response->assertSessionHas('success');
         $this->assertEquals(ProductStatus::Suspended, $product->fresh()->status);
     }
-
-    // ============ USERS TESTS ============
 
     public function test_users_index_hides_super_admin_for_regular_admin()
     {
@@ -271,8 +269,27 @@ class AdminControllerTest extends TestCase
 
     public function test_store_admin_exception_handling()
     {
-        // Skip this test as it's difficult to force exceptions without mocking
-        $this->markTestSkipped('Requires DB mocking to test exception handling');
+        $this->actingAs($this->superAdmin)
+             ->post(route('admin.users.store_admin'), [
+                 'name' => 'Admin 1',
+                 'username' => 'admin1',
+                 'email' => 'admin1@test.com',
+                 'phone' => '0811111111',
+                 'password' => 'password',
+                 'password_confirmation' => 'password'
+             ]);
+
+        $response = $this->actingAs($this->superAdmin)
+             ->post(route('admin.users.store_admin'), [
+                 'name' => 'Admin 2',
+                 'username' => 'admin2',
+                 'email' => 'admin1@test.com', 
+                 'phone' => '0822222222',
+                 'password' => 'password',
+                 'password_confirmation' => 'password'
+             ]);
+        
+        $response->assertSessionHasErrors();
     }
 
     public function test_users_edit_only_super_admin_or_self()
@@ -325,7 +342,17 @@ class AdminControllerTest extends TestCase
 
     public function test_send_reset_link_with_phone()
     {
-        $this->markTestSkipped('Requires Fonnte API mocking');
+        $user = User::factory()->create();
+        Profile::factory()->create(['user_id' => $user->user_id, 'phone' => '08123456789']);
+
+        $this->mock(\App\Services\FonnteService::class, function ($mock) {
+            $mock->shouldReceive('sendMessage')->once()->andReturn(['status' => true]);
+        });
+
+        $response = $this->actingAs($this->admin)
+                         ->post(route('admin.users.send_reset_link', $user->user_id));
+
+        $response->assertSessionHas('success', 'Link reset password telah dikirim ke WhatsApp pengguna.');
     }
 
     public function test_send_reset_link_without_phone()
@@ -406,8 +433,6 @@ class AdminControllerTest extends TestCase
         $this->assertEquals('suspended', $user->fresh()->status);
     }
 
-    // ============ PAYOUTS TESTS ============
-
     public function test_payouts_index_with_search()
     {
         $seller = User::factory()->create(['name' => 'John Seller']);
@@ -470,7 +495,6 @@ class AdminControllerTest extends TestCase
             'amount' => 100000
         ]);
 
-        // Create a wallet ledger for calculating balance
         WalletLedger::create([
             'user_id' => $seller->user_id,
             'direction' => 'debit',
@@ -492,8 +516,6 @@ class AdminControllerTest extends TestCase
         $this->assertEquals(1, WalletLedger::where('user_id', $seller->user_id)->where('direction', 'credit')->count());
     }
 
-    // ============ INTEGRATIONS TESTS ============
-
     public function test_payment_gateway_page_creates_provider_if_not_exists()
     {
         $response = $this->actingAs($this->admin)->get(route('admin.integrations.payment'));
@@ -504,61 +526,272 @@ class AdminControllerTest extends TestCase
 
     public function test_shipping_page()
     {
-        $this->markTestSkipped('Integration tests - skip for now');
+        $response = $this->actingAs($this->admin)->get(route('admin.integrations.shipping'));
+        $response->assertOk();
     }
 
     public function test_whatsapp_page()
     {
-        $this->markTestSkipped('Integration tests - skip for now');
+        $response = $this->actingAs($this->admin)->get(route('admin.integrations.whatsapp'));
+        $response->assertOk();
     }
 
     public function test_get_payment_test_token_success()
     {
-        $this->markTestSkipped('Requires actual Midtrans setup');
+        $this->mock(\App\Services\MidtransService::class, function ($mock) {
+            $mock->shouldReceive('createSnapToken')->andReturn(['token' => 'TEST_TOKEN_123']);
+        });
+
+        $response = $this->actingAs($this->admin)
+                         ->get(route('admin.integrations.payment.test-token'));
+
+        $response->assertOk()
+                 ->assertJson(['token' => 'TEST_TOKEN_123']);
     }
 
     public function test_store_carrier()
     {
-        $this->markTestSkipped('Route not in standard admin paths');
+        $response = $this->actingAs($this->admin)
+                         ->post(route('admin.integrations.carrier.store'), [
+                             'name' => 'Test Carrier',
+                             'code' => 'TEST',
+                             'provider_type' => 'rates'
+                         ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('shipping_carriers', ['code' => 'test']);
     }
 
     public function test_update_carrier()
     {
-        $this->markTestSkipped('Route not in standard admin paths');
+        $carrier = ShippingCarrier::factory()->create(['name' => 'Old Name', 'provider_type' => 'rates']);
+
+        $response = $this->actingAs($this->admin)
+                         ->put(route('admin.integrations.carrier.update', $carrier->shipping_carrier_id), [
+                             'name' => 'New Name',
+                             'code' => $carrier->code,
+                             'provider_type' => 'rates'
+                         ]);
+
+        $response->assertRedirect();
+        $this->assertEquals('New Name', $carrier->fresh()->name);
     }
 
     public function test_delete_carrier()
     {
-        $this->markTestSkipped('Route not in standard admin paths');
+        $carrier = ShippingCarrier::factory()->create();
+
+        $response = $this->actingAs($this->admin)
+                         ->delete(route('admin.integrations.carrier.delete', $carrier->shipping_carrier_id));
+
+        $response->assertRedirect();
+        $this->assertNull(ShippingCarrier::find($carrier->shipping_carrier_id));
     }
 
     public function test_check_shipping_cost_test()
     {
-        $this->markTestSkipped('Requires RajaOngkir API');
+        $this->mock(\App\Services\RajaOngkirService::class, function ($mock) {
+            $mock->shouldReceive('checkCost')->andReturn([
+                'status' => true,
+                'data' => [
+                    [
+                        'code' => 'jne',
+                        'costs' => [
+                            ['service' => 'REG', 'cost' => [['value' => 10000, 'etd' => '2-3']]]
+                        ]
+                    ]
+                ]
+            ]);
+        });
+
+        $response = $this->actingAs($this->admin)
+                         ->post(route('admin.integrations.shipping.test-cost'), [
+                             'origin' => 1,
+                             'destination' => 2,
+                             'weight' => 1000,
+                             'courier' => 'jne'
+                         ]);
+
+        $response->assertRedirect()
+                 ->assertSessionHas('cost_results');
     }
 
     public function test_send_test_whatsapp()
     {
-        $this->markTestSkipped('Requires Fonnte API');
-    }
+        $this->mock(\App\Services\FonnteService::class, function ($mock) {
+            $mock->shouldReceive('sendMessage')->once()->andReturn(['status' => true]);
+        });
 
-    public function test_webhook_logs_with_filter()
-    {
-        $this->markTestSkipped('Route not in standard admin paths');
+        $response = $this->actingAs($this->admin)
+                         ->post(route('admin.integrations.whatsapp.test-send'), [
+                             'phone' => '08123456789'
+                         ]);
+
+        $response->assertRedirect()
+                 ->assertSessionHas('success');
     }
 
     public function test_update_payment_gateway()
     {
-        $this->markTestSkipped('Route not yet tested');
-    }
+        $response = $this->actingAs($this->admin)
+                         ->patch(route('admin.integrations.payment.update'), [
+                             'server_key' => 'SB-Mid-Server-NEW',
+                             'client_key' => 'SB-Mid-Client-NEW',
+                             'merchant_id' => 'G12345',
+                             'mode' => 'sandbox'
+                         ]);
 
-    public function test_test_payment_connection()
-    {
-        $this->markTestSkipped('Requires Midtrans API');
+        $response->assertRedirect();
+        
+        $provider = IntegrationProvider::where('code', 'midtrans')->first();
+        $this->assertDatabaseHas('integration_keys', ['provider_id' => $provider->integration_provider_id]);
+        
+        $keys = $provider->getActiveKeys(); 
+        $key = $keys->first(); 
+        
+        $this->assertNotNull($key, 'Active key not found for Midtrans');
+        $this->assertEquals('SB-Mid-Server-NEW', \Illuminate\Support\Facades\Crypt::decryptString($key->encrypted_k));
     }
 
     public function test_update_shipping_api()
     {
-        $this->markTestSkipped('Route not yet tested');
+        $response = $this->actingAs($this->admin)
+                         ->post(route('admin.integrations.shipping.update'), [
+                             'api_key' => 'key123',
+                             'base_url' => 'https://api.rajaongkir.com/starter'
+                         ]);
+
+        $response->assertRedirect();
+        
+        $provider = IntegrationProvider::where('code', 'rajaongkir')->first();
+        $keys = $provider->getActiveKeys();
+        $key = $keys->first();
+        
+        $this->assertEquals('key123', $key->public_k);
+    }
+
+    public function test_users_show_all_filters()
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->create();
+        Product::factory()->create([
+            'seller_id' => $user->user_id,
+            'title' => 'Filtered Product',
+            'category_id' => $category->category_id,
+            'status' => ProductStatus::Suspended
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('admin.users.show', [
+            'id' => $user->user_id,
+            'category' => $category->category_id,
+            'status' => ProductStatus::Suspended->value,
+            'q' => 'Filtered'
+        ]));
+
+        $response->assertOk()->assertSee('Filtered Product');
+    }
+
+    public function test_send_reset_link_failure()
+    {
+        $user = User::factory()->create();
+        Profile::factory()->create(['user_id' => $user->user_id, 'phone' => '08123456789']);
+
+        $this->mock(\App\Services\FonnteService::class, function ($mock) {
+            $mock->shouldReceive('sendMessage')->once()->andReturn(['status' => false, 'error' => 'API Down']);
+        });
+
+        $response = $this->actingAs($this->admin)
+                         ->post(route('admin.users.send_reset_link', $user->user_id));
+
+        $response->assertSessionHas('error', 'Gagal kirim WA: API Down');
+    }
+
+    public function test_destroy_user_full_cleanup()
+    {
+        $user = User::factory()->create(['role' => 'seller']);
+        $buyer = User::factory()->create(['role' => 'buyer']);
+        
+        Profile::factory()->create(['user_id' => $user->user_id]);
+        Address::factory()->create(['user_id' => $user->user_id]);
+        $product = Product::factory()->create(['seller_id' => $user->user_id]);
+        $order = Order::factory()->create(['seller_id' => $user->user_id, 'buyer_id' => $buyer->user_id]);
+        WalletLedger::create([
+            'user_id' => $user->user_id,
+            'direction' => 'credit',
+            'amount' => 1000,
+            'balance_after' => 1000,
+            'source_type' => 'test',
+            'posted_at' => now()
+        ]);
+
+        $response = $this->actingAs($this->superAdmin)
+                         ->delete(route('admin.users.destroy', $user->user_id));
+
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('users', ['user_id' => $user->user_id]);
+        $this->assertDatabaseMissing('profiles', ['user_id' => $user->user_id]);
+        $this->assertDatabaseMissing('products', ['seller_id' => $user->user_id]);
+        $this->assertDatabaseMissing('orders', ['seller_id' => $user->user_id]);
+        $this->assertDatabaseMissing('wallet_ledgers', ['user_id' => $user->user_id]);
+    }
+
+    public function test_toggle_carrier_status()
+    {
+        $carrier = ShippingCarrier::factory()->create(['is_enabled' => true]);
+
+        $response = $this->actingAs($this->admin)
+                         ->patch(route('admin.integrations.carrier.toggle', $carrier->shipping_carrier_id));
+
+        $response->assertSessionHas('success');
+        $this->assertEquals(0, $carrier->fresh()->is_enabled);
+    }
+
+    public function test_webhook_logs_index()
+    {
+        $response = $this->actingAs($this->admin)->get(route('admin.integrations.webhook-logs'));
+        $response->assertOk();
+    }
+
+    public function test_check_shipping_cost_test_failure()
+    {
+        $this->mock(\App\Services\RajaOngkirService::class, function ($mock) {
+            $mock->shouldReceive('checkCost')->andReturn(['status' => false, 'message' => 'Empty Results']);
+        });
+
+        $response = $this->actingAs($this->admin)
+                         ->post(route('admin.integrations.shipping.test-cost'), [
+                             'origin' => 1,
+                             'destination' => 2,
+                             'weight' => 1000,
+                             'courier' => 'jne'
+                         ]);
+
+        $response->assertSessionHas('error');
+    }
+
+    public function test_send_test_whatsapp_failure()
+    {
+        $this->mock(\App\Services\FonnteService::class, function ($mock) {
+            $mock->shouldReceive('sendMessage')->andReturn(['status' => false, 'error' => 'API Limit']);
+        });
+
+        $response = $this->actingAs($this->admin)
+                         ->post(route('admin.integrations.whatsapp.test-send'), [
+                             'phone' => '08123456789'
+                         ]);
+
+        $response->assertSessionHas('error');
+    }
+
+    public function test_get_payment_test_token_failure()
+    {
+        $this->mock(\App\Services\MidtransService::class, function ($mock) {
+            $mock->shouldReceive('createSnapToken')->andReturn(null);
+        });
+
+        $response = $this->actingAs($this->admin)
+                         ->get(route('admin.integrations.payment.test-token'));
+
+        $response->assertStatus(500);
     }
 }

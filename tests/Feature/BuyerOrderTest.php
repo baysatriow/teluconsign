@@ -95,11 +95,10 @@ class BuyerOrderTest extends TestCase
             'code' => 'ORD-SEC-' . time(),
         ]);
 
-        // Buyer 2 tries to view Buyer 1's order
         $response = $this->actingAs($buyer2)->get(route('orders.show', $order));
 
         if ($response->status() === 302) {
-             $response->assertRedirect(); // Often redirects to index/home if unauthorized
+             $response->assertRedirect();
         } else {
              $response->assertStatus(403);
         }

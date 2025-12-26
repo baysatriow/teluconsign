@@ -57,7 +57,6 @@ class AdminManagementTest extends TestCase
         $user = User::factory()->create(['role' => 'buyer']);
         
         $response = $this->actingAs($user)->get(route('admin.categories.index'));
-        // Middleware redirects to home
         $response->assertRedirect('/');
 
         $response = $this->actingAs($user)->post(route('admin.categories.store'), [

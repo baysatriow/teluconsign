@@ -20,8 +20,6 @@ class AdminCategoryControllerTest extends TestCase
         $this->admin = User::factory()->create(['role' => 'admin']);
     }
 
-    // ============ INDEX TESTS ============
-
     public function test_admin_can_view_categories_index()
     {
         Category::factory()->count(3)->create();
@@ -44,8 +42,6 @@ class AdminCategoryControllerTest extends TestCase
 
         $response->assertRedirect('/');
     }
-
-    // ============ STORE TESTS ============
 
     public function test_admin_can_create_category()
     {
@@ -102,8 +98,6 @@ class AdminCategoryControllerTest extends TestCase
         $response->assertSessionHasErrors('parent_id');
     }
 
-    // ============ UPDATE TESTS ============
-
     public function test_admin_can_update_category()
     {
         $category = Category::factory()->create(['name' => 'Old Name']);
@@ -147,9 +141,6 @@ class AdminCategoryControllerTest extends TestCase
 
         $response->assertSessionHas('success');
     }
-
-
-    // ============ DESTROY TESTS ============
 
     public function test_admin_can_delete_empty_category()
     {
@@ -236,7 +227,6 @@ class AdminCategoryControllerTest extends TestCase
 
         $response->assertSessionHas('success');
         
-        // Products should still exist with old category_id (orphaned)
         $this->assertDatabaseMissing('categories', [
             'category_id' => $category->category_id
         ]);
@@ -246,8 +236,6 @@ class AdminCategoryControllerTest extends TestCase
     {
         $category = Category::factory()->create();
 
-        // Mock a scenario that would throw exception
-        // We'll use a non-existent category ID to trigger findOrFail exception
         $response = $this->actingAs($this->admin)
                          ->delete("/admin/categories/99999");
 

@@ -67,8 +67,6 @@ class ProfileValidationTest extends TestCase
 
         $response->assertRedirect();
         
-        // Sometimes address creation fails silently if validation fails.
-        // Let's assert database count first or check session errors.
         if (session('errors')) {
              dump(session('errors')->all());
         }

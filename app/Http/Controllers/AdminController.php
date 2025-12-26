@@ -314,7 +314,7 @@ class AdminController extends Controller
         $phone = $user->profile->phone ?? null;
         
         if ($phone) {
-            $fonnte = new \App\Services\FonnteService();
+            $fonnte = app(\App\Services\FonnteService::class);
             $message = "*RESET PASSWORD ADMIN REQUEST*\n\nHalo {$user->name},\nAdmin telah merequest reset password untuk akun Anda.\n\nSilakan klik link berikut untuk membuat password baru:\n{$resetLink}\n\nLink ini valid untuk 60 menit.";
             
             $result = $fonnte->sendMessage($phone, $message);
@@ -536,7 +536,7 @@ class AdminController extends Controller
     public function getPaymentTestToken(Request $request) 
     {
         try {
-            $midtrans = new \App\Services\MidtransService();
+            $midtrans = app(\App\Services\MidtransService::class);
             
             $amount = $request->input('amount', 10000); 
             $dummyId = 'TEST-' . time();
@@ -589,10 +589,15 @@ class AdminController extends Controller
 
     public function storeCarrier(Request $request)
     {
-        $request->validate(['code' => 'required', 'name' => 'required']);
+        $request->validate([
+            'code' => 'required', 
+            'name' => 'required',
+            'provider_type' => 'required|in:aggregator,tracking,rates'
+        ]);
         \App\Models\ShippingCarrier::create([
             'code' => strtolower($request->code),
             'name' => $request->name,
+            'provider_type' => $request->provider_type,
             'is_enabled' => true
         ]);
         return back()->with('success', 'Kurir berhasil ditambahkan.');
@@ -600,11 +605,16 @@ class AdminController extends Controller
 
     public function updateCarrier(Request $request, $id)
     {
-        $request->validate(['code' => 'required', 'name' => 'required']);
+        $request->validate([
+            'code' => 'required', 
+            'name' => 'required',
+            'provider_type' => 'required|in:aggregator,tracking,rates'
+        ]);
         $carrier = \App\Models\ShippingCarrier::findOrFail($id);
         $carrier->update([
             'code' => strtolower($request->code),
-            'name' => $request->name
+            'name' => $request->name,
+            'provider_type' => $request->provider_type
         ]);
         return back()->with('success', 'Informasi kurir berhasil diperbarui.');
     }
@@ -635,7 +645,7 @@ class AdminController extends Controller
         ]);
 
         try {
-            $rajaOngkir = new \App\Services\RajaOngkirService();
+            $rajaOngkir = app(\App\Services\RajaOngkirService::class);
             $result = $rajaOngkir->checkCost(
                 $request->origin,
                 'subdistrict',
@@ -697,7 +707,7 @@ class AdminController extends Controller
             'message' => 'nullable|string'
         ]);
 
-        $fonnte = new \App\Services\FonnteService();
+        $fonnte = app(\App\Services\FonnteService::class);
         $target = $request->phone;
         $message = $request->message ?? "Test Notification from Admin Panel.\nTime: " . now();
 
@@ -776,7 +786,7 @@ class AdminController extends Controller
     public function testPaymentConnection()
     {
         try {
-            $midtrans = new \App\Services\MidtransService();
+            $midtrans = app(\App\Services\MidtransService::class);
             
             $dummyId = 'TEST-CONN-' . time();
             $params = [

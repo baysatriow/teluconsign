@@ -15,18 +15,31 @@ class SearchControllerTest extends TestCase
 
     public function test_search_with_category_hierarchy()
     {
-        $parentCategory = Category::factory()->create(['parent_id' => null]);
-        $childCategory = Category::factory()->create(['parent_id' => $parentCategory->category_id]);
+        $parentCategory = Category::factory()->create(['slug' => 'parent-cat']);
+        $childCategory = Category::factory()->create([
+            'parent_id' => $parentCategory->category_id,
+            'slug' => 'child-cat'
+        ]);
         
-        Product::factory()->create([
+        $itemInChild = Product::factory()->create([
             'category_id' => $childCategory->category_id,
             'status' => ProductStatus::Active
         ]);
 
-        $response = $this->get("/search?category={$parentCategory->category_id}");
+        $itemOutside = Product::factory()->create([
+            'status' => ProductStatus::Active
+        ]);
+
+        
+        $response = $this->get("/search?category={$parentCategory->slug}");
 
         $response->assertOk();
         $response->assertViewHas('selectedCategory');
+        $response->assertViewHas('products');
+        $products = $response->viewData('products');
+        
+        $this->assertTrue($products->contains('product_id', $itemInChild->product_id), 'Product in child category not found in search results.');
+        $this->assertFalse($products->contains('product_id', $itemOutside->product_id), 'Product outside category found in search results.');
     }
 
     public function test_search_filter_by_condition_new()

@@ -23,23 +23,23 @@ class SellerOrderTest extends TestCase
     {
         parent::setUp();
 
-        // Create Seller and Shop Address
+        
         $this->seller = User::factory()->create(['role' => 'seller']);
         Address::factory()->create([
             'user_id' => $this->seller->user_id,
             'is_shop_default' => true
         ]);
 
-        // Create Buyer
+        
         $this->buyer = User::factory()->create(['role' => 'buyer']);
 
-        // Create Product
+        
         $this->product = Product::factory()->create([
             'seller_id' => $this->seller->user_id,
             'price' => 100000
         ]);
 
-        // Create Order
+        
         $this->order = Order::create([
             'buyer_id' => $this->buyer->user_id,
             'seller_id' => $this->seller->user_id,
@@ -53,7 +53,7 @@ class SellerOrderTest extends TestCase
             'code' => 'ORD-' . time(),
         ]);
 
-        // Create Order Item
+        
         OrderItem::create([
             'order_id' => $this->order->order_id,
             'product_id' => $this->product->product_id,
@@ -85,7 +85,7 @@ class SellerOrderTest extends TestCase
             'status' => 'cancelled'
         ]);
 
-        $response->assertRedirect(); // Controller uses back()
+        $response->assertRedirect(); 
         $this->assertDatabaseHas('orders', [
             'order_id' => $this->order->order_id,
             'status' => 'cancelled'
@@ -97,10 +97,10 @@ class SellerOrderTest extends TestCase
         $otherSeller = User::factory()->create(['role' => 'seller']);
         $response = $this->actingAs($otherSeller)->get(route('shop.orders.show', $this->order->order_id));
         
-        // Should be 403 or 404 depending on policy, or redirect.
-        // Assuming implementation authorizes this.
+        
+        
         if ($response->status() === 302) {
-             // Sometimes redirects to index if not found/unauthorized
+             
              $response->assertRedirect(); 
         } else {
              $response->assertStatus(403);

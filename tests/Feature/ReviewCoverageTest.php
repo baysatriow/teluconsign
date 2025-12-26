@@ -23,10 +23,6 @@ class ReviewCoverageTest extends TestCase
         $seller = User::factory()->create(['role' => 'seller']);
         $product = Product::factory()->create(['seller_id' => $seller->user_id]);
         
-        // Order must exist and be completed? (Controller logic usually requires it but let's check basic route access/validation)
-        // Usually review requires 'order_id' or checking if user bought product.
-        // Assuming controller just validates input for now or we mock requirement.
-        
         $order = Order::create([
             'buyer_id' => $buyer->user_id,
             'seller_id' => $seller->user_id,
@@ -36,7 +32,7 @@ class ReviewCoverageTest extends TestCase
             'code' => 'ORD-REV-' . time()
         ]);
         
-        // Explicitly linking item
+        
         \App\Models\OrderItem::factory()->create([
             'order_id' => $order->order_id,
             'product_id' => $product->product_id,
@@ -48,10 +44,10 @@ class ReviewCoverageTest extends TestCase
             'order_id' => $order->order_id,
             'rating' => 5,
             'comment' => 'Great product!',
-            // 'images' => [UploadedFile::fake()->image('review.jpg')] // If supported
+            
         ]);
 
-        // Controller return JSON 200
+        
         $response->assertStatus(200);
         
         $this->assertDatabaseHas('reviews', [

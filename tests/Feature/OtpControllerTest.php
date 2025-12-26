@@ -21,11 +21,11 @@ class OtpControllerTest extends TestCase
         parent::setUp();
     }
 
-    // ============ SHOW VERIFY FORM TESTS ============
+    
 
     public function test_show_verify_form_without_session_redirects()
     {
-        $response = $this->get('/otp/verify');
+        $response = $this->get('/otp-verify');
 
         $response->assertRedirect(route('login'));
     }
@@ -35,7 +35,7 @@ class OtpControllerTest extends TestCase
         $user = User::factory()->create();
         session(['otp_user_id' => $user->user_id]);
 
-        $response = $this->get('/otp/verify');
+        $response = $this->get('/otp-verify');
 
         $response->assertOk()
                  ->assertViewIs('auth.otp')
@@ -47,11 +47,12 @@ class OtpControllerTest extends TestCase
         $user = User::factory()->create();
         session(['otp_user_id' => $user->user_id]);
 
-        // Set cooldown in cache
+        
         $cacheKey = 'otp_resend_cooldown_' . $user->user_id;
-        Cache::put($cacheKey, Carbon::now()->addMinutes(2), Carbon::now()->addMinutes(2));
+        $expiresAt = Carbon::now()->addMinutes(2);
+        Cache::put($cacheKey, $expiresAt, $expiresAt);
 
-        $response = $this->get('/otp/verify');
+        $response = $this->get('/otp-verify');
 
         $response->assertOk();
         $cooldown = $response->viewData('cooldown');
@@ -63,18 +64,42 @@ class OtpControllerTest extends TestCase
         $user = User::factory()->create();
         session(['otp_user_id' => $user->user_id]);
 
-        // Set expired cooldown
+        
         $cacheKey = 'otp_resend_cooldown_' . $user->user_id;
-        Cache::put($cacheKey, Carbon::now()->subMinutes(1), Carbon::now()->addHour());
+        Cache::forget($cacheKey);
 
-        $response = $this->get('/otp/verify');
+        $response = $this->get('/otp-verify');
 
+        $response->assertOk();
+        $cooldown = $response->viewData('cooldown');
         $response->assertOk();
         $cooldown = $response->viewData('cooldown');
         $this->assertEquals(0, $cooldown);
     }
 
-    // ============ VERIFY OTP TESTS ============
+    public function test_show_verify_form_cooldown_calculation_logic()
+    {
+        $user = User::factory()->create();
+        session(['otp_user_id' => $user->user_id]);
+
+        $cacheKey = 'otp_resend_cooldown_' . $user->user_id;
+        
+        $pastTime = Carbon::now()->subSeconds(10);
+        Cache::put($cacheKey, $pastTime, 60); 
+
+        $response = $this->get('/otp-verify');
+        $this->assertEquals(0, $response->viewData('cooldown'));
+
+        
+        $futureTime = Carbon::now()->addSeconds(30);
+        Cache::put($cacheKey, $futureTime, 60);
+
+        $response = $this->get('/otp-verify');
+        
+        $this->assertEqualsWithDelta(30, $response->viewData('cooldown'), 1);
+    }
+
+    
 
     public function test_verify_otp_success()
     {
@@ -87,7 +112,7 @@ class OtpControllerTest extends TestCase
             'otp_remember' => false
         ]);
 
-        $response = $this->post('/otp/verify', [
+        $response = $this->post('/otp-verify', [
             'otp' => $otp
         ]);
 
@@ -111,7 +136,7 @@ class OtpControllerTest extends TestCase
         
         session(['otp_user_id' => $admin->user_id, 'otp_context' => 'login']);
 
-        $response = $this->post('/otp/verify', [
+        $response = $this->post('/otp-verify', [
             'otp' => $otp
         ]);
 
@@ -125,8 +150,8 @@ class OtpControllerTest extends TestCase
         
         session(['otp_user_id' => $user->user_id]);
 
-        $response = $this->post('/otp/verify', [
-            'otp' => '123456' // Wrong OTP
+        $response = $this->post('/otp-verify', [
+            'otp' => '123456' 
         ]);
 
         $response->assertRedirect();
@@ -139,13 +164,12 @@ class OtpControllerTest extends TestCase
         $user = User::factory()->create();
         $otp = $user->generateOtp();
         
-        // Manually set expired time
-        $user->otp_expires_at = Carbon::now()->subMinutes(10);
-        $user->save();
+        
+        $user->update(['otp_expires_at' => Carbon::now()->subMinutes(10)]);
         
         session(['otp_user_id' => $user->user_id]);
 
-        $response = $this->post('/otp/verify', [
+        $response = $this->post('/otp-verify', [
             'otp' => $otp
         ]);
 
@@ -155,7 +179,7 @@ class OtpControllerTest extends TestCase
 
     public function test_verify_otp_without_session()
     {
-        $response = $this->post('/otp/verify', [
+        $response = $this->post('/otp-verify', [
             'otp' => '123456'
         ]);
 
@@ -174,7 +198,7 @@ class OtpControllerTest extends TestCase
             'otp_remember' => true
         ]);
 
-        $this->post('/otp/verify', ['otp' => $otp]);
+        $this->post('/otp-verify', ['otp' => $otp]);
 
         $this->assertNull(session('otp_user_id'));
         $this->assertNull(session('otp_context'));
@@ -188,14 +212,16 @@ class OtpControllerTest extends TestCase
         
         session(['otp_user_id' => $user->user_id]);
 
-        // Set cache keys
-        Cache::put('otp_resend_cooldown_' . $user->user_id, now()->addMinutes(2), now()->addMinutes(2));
-        Cache::put('otp_resend_attempts_' . $user->user_id, 3, now()->addHour());
+        
+        $cooldownKey = 'otp_resend_cooldown_' . $user->user_id;
+        $attemptsKey = 'otp_resend_attempts_' . $user->user_id;
+        Cache::put($cooldownKey, now()->addMinutes(2), now()->addMinutes(2));
+        Cache::put($attemptsKey, 3, now()->addHour());
 
-        $this->post('/otp/verify', ['otp' => $otp]);
+        $this->post('/otp-verify', ['otp' => $otp]);
 
-        $this->assertFalse(Cache::has('otp_resend_cooldown_' . $user->user_id));
-        $this->assertFalse(Cache::has('otp_resend_attempts_' . $user->user_id));
+        $this->assertFalse(Cache::has($cooldownKey));
+        $this->assertFalse(Cache::has($attemptsKey));
     }
 
     public function test_verify_otp_with_remember_me()
@@ -208,13 +234,13 @@ class OtpControllerTest extends TestCase
             'otp_remember' => true
         ]);
 
-        $this->post('/otp/verify', ['otp' => $otp]);
+        $this->post('/otp-verify', ['otp' => $otp]);
 
-        // Should be logged in with remember
+        
         $this->assertTrue(Auth::check());
     }
 
-    // ============ RESEND OTP TESTS ============
+    
 
     public function test_resend_otp_without_session()
     {
@@ -225,7 +251,21 @@ class OtpControllerTest extends TestCase
 
     public function test_resend_otp_success()
     {
-        $this->markTestSkipped('Requires Fonnte API mocking');
+        $user = User::factory()->create();
+        Profile::factory()->create(['user_id' => $user->user_id, 'phone' => '628123456789']);
+        session(['otp_user_id' => $user->user_id]);
+
+        $this->mock(FonnteService::class, function ($mock) {
+            $mock->shouldReceive('sendMessage')->once();
+        });
+
+        $response = $this->post('/otp-resend');
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+        
+        $user->refresh();
+        $this->assertNotNull($user->otp_code);
     }
 
     public function test_resend_otp_with_cooldown()
@@ -233,7 +273,7 @@ class OtpControllerTest extends TestCase
         $user = User::factory()->create();
         session(['otp_user_id' => $user->user_id]);
 
-        // Set active cooldown
+        
         $cooldownKey = 'otp_resend_cooldown_' . $user->user_id;
         Cache::put($cooldownKey, Carbon::now()->addMinutes(2), Carbon::now()->addMinutes(2));
 
@@ -243,23 +283,34 @@ class OtpControllerTest extends TestCase
         $response->assertSessionHas('error');
     }
 
-    public function test_resend_otp_increments_cooldown()
+    public function test_resend_otp_increments_attempts()
     {
-        $this->markTestSkipped('Requires Fonnte API mocking');
-    }
+        $user = User::factory()->create();
+        Profile::factory()->create(['user_id' => $user->user_id, 'phone' => '628123456789']);
+        session(['otp_user_id' => $user->user_id]);
 
-    public function test_resend_otp_max_cooldown()
-    {
-        $this->markTestSkipped('Requires Fonnte API mocking');
+        $this->mock(FonnteService::class, function ($mock) {
+            $mock->shouldReceive('sendMessage')->twice();
+        });
+
+        $this->post('/otp-resend');
+        $this->assertEquals(1, Cache::get('otp_resend_attempts_' . $user->user_id));
+
+        Cache::forget('otp_resend_cooldown_' . $user->user_id);
+        
+        $this->post('/otp-resend');
+        $this->assertEquals(2, Cache::get('otp_resend_attempts_' . $user->user_id));
     }
 
     public function test_resend_otp_without_phone()
     {
-        $this->markTestSkipped('Route issue - 405 error');
-    }
+        $user = User::factory()->create();
+        
+        session(['otp_user_id' => $user->user_id]);
 
-    public function test_resend_otp_sets_cache_expiry()
-    {
-        $this->markTestSkipped('Requires Fonnte API mocking');
+        $response = $this->post('/otp-resend');
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', 'Nomor telepon tidak ditemukan.');
     }
 }

@@ -64,7 +64,7 @@ class ProductController extends Controller
              return back()->with('error', 'Total di keranjang melebihi stok tersedia.');
         }
 
-        $cart->addItem($product->product_id, 1);
+        $cart->addItem($product->product_id, $request->input('quantity', 1));
         
         return redirect()->route('cart.index', ['selected_item' => $product->product_id]); 
     }

@@ -17,7 +17,6 @@ class CartManipulationTest extends TestCase
         $user = User::factory()->create();
         $product = Product::factory()->create(['stock' => 10, 'price' => 10000]);
 
-        // Add to cart first
         $response = $this->actingAs($user)->post(route('cart.add'), [
             'product_id' => $product->product_id,
             'quantity' => 1,
@@ -26,12 +25,11 @@ class CartManipulationTest extends TestCase
         $cart = Cart::where('buyer_id', $user->user_id)->first();
         $cartItem = $cart->items()->first();
 
-        // Update quantity
         $response = $this->actingAs($user)->post(route('cart.update', $cartItem->cart_item_id), [
             'quantity' => 3
         ]);
 
-        $response->assertStatus(200); // Usually AJAX JSON response
+        $response->assertStatus(200);
         $this->assertDatabaseHas('cart_items', [
             'cart_item_id' => $cartItem->cart_item_id,
             'quantity' => 3

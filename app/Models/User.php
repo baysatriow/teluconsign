@@ -133,10 +133,6 @@ class User extends Authenticatable
             ->exists();
     }
 
-    public function logout(): void
-    {
-    }
-
     public function updateProfile(string $name, string $photo_url): void
     {
         $this->update([

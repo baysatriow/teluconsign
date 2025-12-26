@@ -29,7 +29,7 @@ class RegisterTest extends TestCase
             'username' => 'testuser',
             'email' => 'testuser@gmail.com',
             'phone' => '081234567890',
-            'password' => 'Password@123', // Strong password for regex
+            'password' => 'Password@123', 
             'password_confirmation' => 'Password@123',
             'terms' => true,
         ]);

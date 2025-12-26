@@ -29,7 +29,7 @@ class ReviewControllerTest extends TestCase
 
     public function test_store_review_duplicate()
     {
-        // Create completed order with product
+        
         $order = Order::factory()->create([
             'buyer_id' => $this->user->user_id,
             'seller_id' => $this->seller->user_id,
@@ -41,7 +41,7 @@ class ReviewControllerTest extends TestCase
             'product_id' => $this->product->product_id
         ]);
 
-        // Create existing review
+        
         Review::create([
             'user_id' => $this->user->user_id,
             'product_id' => $this->product->product_id,
@@ -67,7 +67,7 @@ class ReviewControllerTest extends TestCase
 
     public function test_store_review_success()
     {
-        // Create completed order with product
+        
         $order = Order::factory()->create([
             'buyer_id' => $this->user->user_id,
             'seller_id' => $this->seller->user_id,
@@ -101,11 +101,11 @@ class ReviewControllerTest extends TestCase
 
     public function test_store_review_without_purchase()
     {
-        // Create order but not completed
+        
         $order = Order::factory()->create([
             'buyer_id' => $this->user->user_id,
             'seller_id' => $this->seller->user_id,
-            'status' => 'pending' //  Not completed
+            'status' => 'pending' 
         ]);
 
         OrderItem::factory()->create([
@@ -128,8 +128,4 @@ class ReviewControllerTest extends TestCase
                  ]);
     }
 
-    public function test_store_review_exception_handling()
-    {
-        $this->markTestSkipped('Exception handling tested via success path');
-    }
 }

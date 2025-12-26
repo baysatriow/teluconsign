@@ -26,7 +26,7 @@ class CheckoutTest extends TestCase
             'quantity' => 1,
         ]);
 
-        $response->assertRedirect(route('cart.index')); // Or success response check
+        $response->assertRedirect(route('cart.index')); 
         $this->assertDatabaseHas('cart_items', [
             'product_id' => $product->product_id,
             'quantity' => 1,
@@ -40,11 +40,9 @@ class CheckoutTest extends TestCase
         
         $product = Product::factory()->create(['title' => 'Test Product', 'price' => 100000]);
         
-        // Seed necessary data
         ShippingCarrier::create(['code' => 'jne', 'name' => 'JNE', 'is_enabled' => true, 'provider_type' => 'rates']);
         IntegrationProvider::firstOrCreate(['code' => 'midtrans'], ['name' => 'Midtrans']);
 
-        // Add to cart first
         $this->actingAs($buyer)->post(route('cart.add'), [
             'product_id' => $product->product_id,
             'quantity' => 1,
@@ -53,7 +51,6 @@ class CheckoutTest extends TestCase
         $cart = \App\Models\Cart::where('buyer_id', $buyer->user_id)->first();
         $cartItem = $cart->items()->first();
 
-        // Simulate Checkout Session
         session(['checkout_item_ids' => [$cartItem->cart_item_id]]);
 
         $response = $this->actingAs($buyer)->postJson(route('checkout.process'), [
@@ -75,10 +72,9 @@ class CheckoutTest extends TestCase
 
         $this->assertDatabaseHas('orders', [
             'buyer_id' => $buyer->user_id,
-            'total_amount' => 100000 + 10000 + 2500, // Price + Shipping + Platform Fee (2500)
+            'total_amount' => 100000 + 10000 + 2500, 
         ]);
 
-        // Cart item should be removed
         $this->assertDatabaseMissing('cart_items', [
             'cart_item_id' => $cartItem->cart_item_id,
         ]);
@@ -91,21 +87,15 @@ class CheckoutTest extends TestCase
         
         $product = Product::factory()->create(['title' => 'Low Stock Product', 'stock' => 1]);
         
-        // Add to cart with quantity 5
-        // Since cart add might not check stock strictly (some implementations check at checkout), 
-        // we'll try to checkout with quantity > stock.
-        
-        // Force add to cart even if validation exists there, or just create in DB
         $cart = \App\Models\Cart::create(['buyer_id' => $buyer->user_id]);
         $cartItem = $cart->items()->create([
             'product_id' => $product->product_id,
-            'quantity' => 5, // Exceeds stock of 1
+            'quantity' => 5, 
             'unit_price' => $product->price,
             'subtotal' => $product->price * 5,
             'price_at_add' => $product->price
         ]);
 
-        // Simulate Checkout Session
         session(['checkout_item_ids' => [$cartItem->cart_item_id]]);
 
         $response = $this->actingAs($buyer)->postJson(route('checkout.process'), [
@@ -119,7 +109,6 @@ class CheckoutTest extends TestCase
             ]
         ]);
         
-        // Should fail
-        $response->assertStatus(400); // or 422 depending on controller logic
+        $response->assertStatus(400);
     }
 }

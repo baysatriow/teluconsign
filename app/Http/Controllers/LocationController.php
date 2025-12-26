@@ -33,27 +33,22 @@ class LocationController extends Controller
         $targetUrl  = $baseApiUrl . '/destination/domestic-destination';
 
         try {
-            $ch  = curl_init();
-            $url = $targetUrl . '?search=' . urlencode($query);
+            $response = Http::withHeaders([
+                'key' => $apiKey
+            ])->get($targetUrl, [
+                'search' => $query
+            ]);
 
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ["key: $apiKey"]);
-
-            $result = curl_exec($ch);
-
-            if (curl_errno($ch)) {
+            if ($response->failed()) {
                 return response()->json([
-                    'error' => curl_error($ch)
+                    'error' => $response->body()
                 ], 500);
             }
 
-            curl_close($ch);
-
-            $data = json_decode($result, true);
+            $data = $response->json();
 
             if (isset($data['status']) && $data['status'] === 'error') {
-                return response()->json([], 200);
+                 return response()->json([], 200);
             }
 
             return response()->json($data['data'] ?? []);

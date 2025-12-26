@@ -24,8 +24,6 @@ class CartControllerTest extends TestCase
         $this->seller = User::factory()->create(['role' => 'seller']);
     }
 
-    // ============ INDEX TESTS ============
-
     public function test_cart_index_creates_cart_if_not_exists()
     {
         $response = $this->actingAs($this->user)->get('/cart');
@@ -52,8 +50,6 @@ class CartControllerTest extends TestCase
                  ->assertViewHas('groupedItems');
     }
 
-    // ============ ADD TO CART TESTS ============
-
     public function test_add_to_cart_insufficient_stock()
     {
         $product = Product::factory()->create([
@@ -77,15 +73,33 @@ class CartControllerTest extends TestCase
         $response->assertSessionHas('error');
     }
 
-    public function test_add_to_cart_insufficient_stock_ajax()
+    public function test_add_to_cart_full_stock_already_in_cart_non_ajax()
     {
-        $this->markTestSkipped('AJAX handling differs in test environment');
+        $product = Product::factory()->create([
+            'seller_id' => $this->seller->user_id,
+            'stock' => 5
+        ]);
+        $cart = Cart::factory()->create(['buyer_id' => $this->user->user_id]);
+        CartItem::factory()->create([
+            'cart_id' => $cart->cart_id,
+            'product_id' => $product->product_id,
+            'quantity' => 5
+        ]);
+
+        $response = $this->actingAs($this->user)
+                         ->post('/cart/add', [
+                             'product_id' => $product->product_id,
+                             'quantity' => 1
+                         ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', "Stok produk habis atau seluruh stok sudah ada di keranjang Anda.");
     }
 
-    public function test_add_own_product_to_cart()
+    public function test_add_to_cart_own_product_non_ajax()
     {
         $product = Product::factory()->create(['seller_id' => $this->user->user_id]);
-
+        
         $response = $this->actingAs($this->user)
                          ->post('/cart/add', [
                              'product_id' => $product->product_id,
@@ -96,16 +110,10 @@ class CartControllerTest extends TestCase
         $response->assertSessionHas('error', 'Anda tidak dapat membeli produk Anda sendiri.');
     }
 
-    public function test_add_own_product_to_cart_ajax()
-    {
-        $this->markTestSkipped('AJAX handling differs in test environment');
-    }
-
-    public function test_add_to_cart_exceeds_seller_limit()
+    public function test_add_to_cart_limit_non_ajax()
     {
         $cart = Cart::factory()->create(['buyer_id' => $this->user->user_id]);
         
-        // Create items from 20 different sellers
         for ($i = 0; $i < 20; $i++) {
             $seller = User::factory()->create(['role' => 'seller']);
             $product = Product::factory()->create(['seller_id' => $seller->user_id]);
@@ -114,8 +122,7 @@ class CartControllerTest extends TestCase
                 'product_id' => $product->product_id
             ]);
         }
-
-        // Try to add from a 21st seller
+        
         $newSeller = User::factory()->create(['role' => 'seller']);
         $newProduct = Product::factory()->create(['seller_id' => $newSeller->user_id]);
 
@@ -129,24 +136,106 @@ class CartControllerTest extends TestCase
         $response->assertSessionHas('error', 'Keranjang penuh! Maksimal belanja dari 20 toko berbeda. Hapus salah satu toko terlebih dahulu.');
     }
 
+    public function test_add_to_cart_insufficient_stock_ajax()
+    {
+        $product = Product::factory()->create([
+            'seller_id' => $this->seller->user_id,
+            'stock' => 5
+        ]);
+        $cart = Cart::factory()->create(['buyer_id' => $this->user->user_id]);
+        CartItem::factory()->create([
+            'cart_id' => $cart->cart_id,
+            'product_id' => $product->product_id,
+            'quantity' => 3
+        ]);
+
+        $response = $this->actingAs($this->user)
+                         ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+                         ->postJson('/cart/add', [
+                             'product_id' => $product->product_id,
+                             'quantity' => 5
+                         ]);
+
+        $response->assertStatus(400)
+                 ->assertJson(['status' => 'error']);
+    }
+
+    public function test_add_own_product_to_cart_ajax()
+    {
+        $product = Product::factory()->create(['seller_id' => $this->user->user_id]);
+
+        $response = $this->actingAs($this->user)
+                         ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+                         ->postJson('/cart/add', [
+                             'product_id' => $product->product_id,
+                             'quantity' => 1
+                         ]);
+
+        $response->assertStatus(400)
+                 ->assertJson(['status' => 'error', 'message' => 'Anda tidak dapat membeli produk Anda sendiri.']);
+    }
+
     public function test_add_to_cart_exceeds_seller_limit_ajax()
     {
-        $this->markTestSkipped('AJAX handling differs in test environment');
+        $cart = Cart::factory()->create(['buyer_id' => $this->user->user_id]);
+        
+        for ($i = 0; $i < 20; $i++) {
+            $seller = User::factory()->create(['role' => 'seller']);
+            $product = Product::factory()->create(['seller_id' => $seller->user_id]);
+            CartItem::factory()->create([
+                'cart_id' => $cart->cart_id,
+                'product_id' => $product->product_id
+            ]);
+        }
+
+        $newSeller = User::factory()->create(['role' => 'seller']);
+        $newProduct = Product::factory()->create(['seller_id' => $newSeller->user_id]);
+
+        $response = $this->actingAs($this->user)
+                         ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+                         ->postJson('/cart/add', [
+                             'product_id' => $newProduct->product_id,
+                             'quantity' => 1
+                         ]);
+
+        $response->assertStatus(422)
+                 ->assertJson(['status' => 'error']);
     }
 
     public function test_add_to_cart_success_ajax()
     {
-        $this->markTestSkipped('AJAX handling differs in test environment');
-    }
+        $product = Product::factory()->create(['seller_id' => $this->seller->user_id, 'stock' => 10]);
 
-    // ============ UPDATE QUANTITY TESTS ============
+        $response = $this->actingAs($this->user)
+                         ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+                         ->postJson('/cart/add', [
+                             'product_id' => $product->product_id,
+                             'quantity' => 1
+                         ]);
+
+        $response->assertOk()
+                 ->assertJson(['status' => 'success', 'message' => 'Produk berhasil masuk keranjang!']);
+    }
 
     public function test_update_quantity_exceeds_stock()
     {
-        $this->markTestSkipped('Route not found or method  not allowed');
-    }
+        $cart = Cart::factory()->create(['buyer_id' => $this->user->user_id]);
+        $product = Product::factory()->create(['seller_id' => $this->seller->user_id, 'stock' => 5]);
+        $item = CartItem::factory()->create([
+            'cart_id' => $cart->cart_id,
+            'product_id' => $product->product_id,
+            'quantity' => 1
+        ]);
 
-    // ============ DELETE STORE ITEMS TESTS ============
+        $response = $this->actingAs($this->user)
+                         ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+                         ->postJson(route('cart.update', $item->cart_item_id), [
+                             'quantity' => 10
+                         ]);
+        
+        $response->assertStatus(400)
+                 ->assertJson(['status' => 'error']);
+    }
 
     public function test_delete_store_items()
     {

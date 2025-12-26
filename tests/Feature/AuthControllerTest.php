@@ -9,6 +9,7 @@ use App\Models\Profile;
 use App\Services\FonnteService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Mockery;
 
 class AuthControllerTest extends TestCase
@@ -20,8 +21,6 @@ class AuthControllerTest extends TestCase
         parent::setUp();
     }
 
-    // ============ REGISTRATION TESTS ============
-
     public function test_show_register_form()
     {
         $response = $this->get('/register');
@@ -32,17 +31,63 @@ class AuthControllerTest extends TestCase
 
     public function test_register_with_valid_data()
     {
-        $this->markTestSkipped('Requires Fonnte API mocking that conflicts with DB transactions');
+        $this->mock(FonnteService::class, function ($mock) {
+            $mock->shouldReceive('sendMessage')->once()->andReturn(['status' => true]);
+        });
+
+        $response = $this->post('/register', [
+            'name' => 'John Doe',
+            'username' => 'johndoe',
+            'email' => 'john@example.com',
+            'phone' => '628123456789',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!'
+        ]);
+
+        $response->assertRedirect(route('otp.verify'));
+        $this->assertDatabaseHas('users', ['email' => 'john@example.com']);
+        $this->assertDatabaseHas('profiles', ['phone' => '628123456789']);
+        $this->assertEquals('activation', session('otp_context'));
     }
 
     public function test_register_creates_otp()
     {
-        $this->markTestSkipped('Requires Fonnte API mocking');
+        $this->mock(FonnteService::class, function ($mock) {
+            $mock->shouldReceive('sendMessage')->once();
+        });
+
+        $this->post('/register', [
+            'name' => 'John Doe',
+            'username' => 'johndoe',
+            'email' => 'john@example.com',
+            'phone' => '628123456789',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!'
+        ]);
+
+        $user = User::where('email', 'john@example.com')->first();
+        $this->assertNotNull($user->otp_code);
+        $this->assertNotNull($user->otp_expires_at);
     }
 
     public function test_register_sets_session_data()
     {
-        $this->markTestSkipped('Requires Fonnte API mocking');
+        $this->mock(FonnteService::class, function ($mock) {
+            $mock->shouldReceive('sendMessage')->once();
+        });
+
+        $this->post('/register', [
+            'name' => 'John Doe',
+            'username' => 'johndoe',
+            'email' => 'john@example.com',
+            'phone' => '628123456789',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!'
+        ]);
+
+        $user = User::where('email', 'john@example.com')->first();
+        $this->assertEquals($user->user_id, session('otp_user_id'));
+        $this->assertEquals('activation', session('otp_context'));
     }
 
     public function test_register_with_invalid_password()
@@ -93,10 +138,23 @@ class AuthControllerTest extends TestCase
 
     public function test_register_exception_handling()
     {
-        $this->markTestSkipped('Requires Fonnte API mocking');
-    }
+        $this->mock(FonnteService::class, function ($mock) {
+            $mock->shouldReceive('sendMessage')->andThrow(new \Exception('Fonnte error'));
+        });
 
-    // ============ LOGIN TESTS ============
+        $response = $this->post('/register', [
+            'name' => 'John Doe',
+            'username' => 'johndoe',
+            'email' => 'john@example.com',
+            'phone' => '628123456789',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!'
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+        $this->assertDatabaseMissing('users', ['email' => 'john@example.com']);
+    }
 
     public function test_show_login_form()
     {
@@ -110,7 +168,7 @@ class AuthControllerTest extends TestCase
     {
         $user = User::factory()->create([
             'email' => 'user@test.com',
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('Password123!'),
             'status' => 'active'
         ]);
         Profile::factory()->create(['user_id' => $user->user_id, 'phone' => '628123456789']);
@@ -121,18 +179,19 @@ class AuthControllerTest extends TestCase
 
         $response = $this->post('/login', [
             'login' => 'user@test.com',
-            'password' => 'password123'
+            'password' => 'Password123!'
         ]);
 
         $response->assertRedirect(route('otp.verify'));
         $this->assertEquals('login', session('otp_context'));
+        $this->assertEquals($user->user_id, session('otp_user_id'));
     }
 
     public function test_login_with_username()
     {
         $user = User::factory()->create([
             'username' => 'testuser',
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('Password123!'),
             'status' => 'active'
         ]);
         Profile::factory()->create(['user_id' => $user->user_id, 'phone' => '628123456789']);
@@ -143,7 +202,7 @@ class AuthControllerTest extends TestCase
 
         $response = $this->post('/login', [
             'login' => 'testuser',
-            'password' => 'password123'
+            'password' => 'Password123!'
         ]);
 
         $response->assertRedirect(route('otp.verify'));
@@ -181,13 +240,13 @@ class AuthControllerTest extends TestCase
     {
         User::factory()->create([
             'email' => 'suspended@test.com',
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('Password123!'),
             'status' => 'suspended'
         ]);
 
         $response = $this->post('/login', [
             'login' => 'suspended@test.com',
-            'password' => 'password123'
+            'password' => 'Password123!'
         ]);
 
         $response->assertRedirect();
@@ -198,7 +257,7 @@ class AuthControllerTest extends TestCase
     {
         $user = User::factory()->create([
             'email' => 'user@test.com',
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('Password123!'),
             'status' => 'active'
         ]);
         Profile::factory()->create(['user_id' => $user->user_id, 'phone' => '628123456789']);
@@ -209,7 +268,7 @@ class AuthControllerTest extends TestCase
 
         $this->post('/login', [
             'login' => 'user@test.com',
-            'password' => 'password123'
+            'password' => 'Password123!'
         ]);
 
         $user->refresh();
@@ -221,18 +280,15 @@ class AuthControllerTest extends TestCase
     {
         $user = User::factory()->create([
             'email' => 'nophone@test.com',
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('Password123!'),
             'status' => 'active'
         ]);
 
-        // Don't create profile with phone
-
         $response = $this->post('/login', [
             'login' => 'nophone@test.com',
-            'password' => 'password123'
+            'password' => 'Password123!'
         ]);
 
-        // Should still redirect to OTP verify even without phone
         $response->assertRedirect(route('otp.verify'));
     }
 
@@ -240,7 +296,7 @@ class AuthControllerTest extends TestCase
     {
         $user = User::factory()->create([
             'email' => 'user@test.com',
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('Password123!'),
             'status' => 'active'
         ]);
         Profile::factory()->create(['user_id' => $user->user_id, 'phone' => '628123456789']);
@@ -249,16 +305,14 @@ class AuthControllerTest extends TestCase
             $mock->shouldReceive('sendMessage')->once();
         });
 
-        $response = $this->post('/login', [
+        $this->post('/login', [
             'login' => 'user@test.com',
-            'password' => 'password123',
+            'password' => 'Password123!',
             'remember' => true
         ]);
 
         $this->assertTrue(session('otp_remember'));
     }
-
-    // ============ LOGOUT TESTS ============
 
     public function test_logout()
     {
@@ -276,13 +330,10 @@ class AuthControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user);
-        
-        // Set some session data
         session(['test_key' => 'test_value']);
-        
+
         $response = $this->post('/logout');
 
-        // Session should be invalidated
         $this->assertNull(session('test_key'));
     }
 }

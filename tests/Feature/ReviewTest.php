@@ -16,7 +16,7 @@ class ReviewTest extends TestCase
 
     public function test_buyer_can_review_purchased_product()
     {
-        // 1. Setup Seller & Product
+        
         $seller = User::factory()->create(['role' => 'seller']);
         Address::factory()->create(['user_id' => $seller->user_id, 'is_shop_default' => true]);
         
@@ -24,10 +24,10 @@ class ReviewTest extends TestCase
             'seller_id' => $seller->user_id,
         ]);
 
-        // 2. Setup Buyer
+        
         $buyer = User::factory()->create(['role' => 'buyer']);
 
-        // 3. Create Completed Order
+        
         $order = Order::create([
             'buyer_id' => $buyer->user_id,
             'seller_id' => $seller->user_id,
@@ -37,7 +37,7 @@ class ReviewTest extends TestCase
             'platform_fee_buyer' => 0,
             'platform_fee_seller' => 0,
             'seller_earnings' => $product->price,
-            'status' => 'completed', // Valid status for review
+            'status' => 'completed', 
             'code' => 'ORD-REV-' . time(),
         ]);
 
@@ -50,7 +50,7 @@ class ReviewTest extends TestCase
             'subtotal' => $product->price
         ]);
 
-        // 4. Submit Review
+        
         $response = $this->actingAs($buyer)->postJson(route('reviews.store'), [
             'product_id' => $product->product_id,
             'order_id' => $order->order_id,
@@ -58,7 +58,7 @@ class ReviewTest extends TestCase
             'comment' => 'Great product, highly recommended!',
         ]);
 
-        // 5. Assertions
+        
         $response->assertStatus(200);
         $response->assertJson(['status' => 'success']);
         
@@ -72,7 +72,7 @@ class ReviewTest extends TestCase
 
     public function test_buyer_cannot_review_incomplete_order()
     {
-        // Setup similar to above but status 'pending'
+        
         $seller = User::factory()->create(['role' => 'seller']);
         Address::factory()->create(['user_id' => $seller->user_id, 'is_shop_default' => true]);
         $product = Product::factory()->create(['seller_id' => $seller->user_id]);
@@ -87,7 +87,7 @@ class ReviewTest extends TestCase
             'platform_fee_buyer' => 0,
             'platform_fee_seller' => 0,
             'seller_earnings' => $product->price,
-            'status' => 'pending', // Invalid status
+            'status' => 'pending', 
             'code' => 'ORD-PEND-' . time(),
         ]);
 

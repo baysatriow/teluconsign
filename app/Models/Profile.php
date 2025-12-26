@@ -18,7 +18,6 @@ class Profile extends Model
         'user_id',
         'phone',
         'bio',
-        'photo_url',
     ];
 
     public function user(): BelongsTo
@@ -30,12 +29,6 @@ class Profile extends Model
     {
         $this->fill($data->only($this->fillable));
         return $this->save();
-    }
-
-    public function uploadPhoto(string $photo_path): void
-    {
-        $this->photo_url = $photo_path;
-        $this->save();
     }
 
     public function getProfileSummary(): string

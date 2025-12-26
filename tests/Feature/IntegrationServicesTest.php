@@ -17,7 +17,6 @@ class IntegrationServicesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Seeding removed as tests use partialMock for credentials
     }
 
     public function test_fonnte_service_send_message()

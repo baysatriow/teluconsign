@@ -421,8 +421,8 @@
                             @forelse($payouts as $payout)
                             <tr class="bg-white hover:bg-gray-50 transition-colors">
                                 <td class="px-6 py-4">
-                                    <span class="block font-medium text-gray-900">{{ $payout->created_at->format('d M Y') }}</span>
-                                    <span class="text-xs text-gray-500">{{ $payout->created_at->format('H:i') }} WIB</span>
+                                    <span class="block font-medium text-gray-900">{{ $payout->requested_at ? $payout->requested_at->format('d M Y') : '-' }}</span>
+                                    <span class="text-xs text-gray-500">{{ $payout->requested_at ? $payout->requested_at->format('H:i') : '' }} WIB</span>
                                 </td>
                                 <td class="px-6 py-4 font-bold text-gray-900">
                                     Rp{{ number_format($payout->amount, 0, ',', '.') }}
