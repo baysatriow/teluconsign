@@ -25,3 +25,4 @@ Thumbs.db
 /public/report
 /public/phpunit
 *.zip
+/public/phpunit-coverage

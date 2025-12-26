@@ -70,9 +70,6 @@ class CheckoutTest extends TestCase
         if ($response->status() !== 200) {
             $response->dump();
         }
-        if ($response->status() !== 200) {
-            $response->dump();
-        }
         $response->assertStatus(200);
         $response->assertJson(['status' => 'success']);
 
@@ -85,5 +82,44 @@ class CheckoutTest extends TestCase
         $this->assertDatabaseMissing('cart_items', [
             'cart_item_id' => $cartItem->cart_item_id,
         ]);
+    }
+    
+    public function test_user_cannot_checkout_if_stock_insufficient()
+    {
+        $buyer = User::factory()->create(['role' => 'buyer']);
+        Address::factory()->create(['user_id' => $buyer->user_id, 'is_default' => true]);
+        
+        $product = Product::factory()->create(['title' => 'Low Stock Product', 'stock' => 1]);
+        
+        // Add to cart with quantity 5
+        // Since cart add might not check stock strictly (some implementations check at checkout), 
+        // we'll try to checkout with quantity > stock.
+        
+        // Force add to cart even if validation exists there, or just create in DB
+        $cart = \App\Models\Cart::create(['buyer_id' => $buyer->user_id]);
+        $cartItem = $cart->items()->create([
+            'product_id' => $product->product_id,
+            'quantity' => 5, // Exceeds stock of 1
+            'unit_price' => $product->price,
+            'subtotal' => $product->price * 5,
+            'price_at_add' => $product->price
+        ]);
+
+        // Simulate Checkout Session
+        session(['checkout_item_ids' => [$cartItem->cart_item_id]]);
+
+        $response = $this->actingAs($buyer)->postJson(route('checkout.process'), [
+            'shipping_data' => [
+                $product->seller_id => [
+                    'courier' => 'jne',
+                    'service' => 'REG',
+                    'cost' => 10000,
+                    'etd' => '2-3'
+                ]
+            ]
+        ]);
+        
+        // Should fail
+        $response->assertStatus(400); // or 422 depending on controller logic
     }
 }
