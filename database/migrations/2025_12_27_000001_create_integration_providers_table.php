@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::dropIfExists('notifications');
-        Schema::dropIfExists('banner_slides');
+        Schema::create('integration_providers', function (Blueprint $table) {
+            $table->bigIncrements('integration_provider_id');
+            $table->string('code', 40);
+            $table->string('name', 120);
+            $table->timestamp('created_at')->useCurrent();
+        });
     }
 
     /**
@@ -20,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        
+        Schema::dropIfExists('integration_providers');
     }
 };
