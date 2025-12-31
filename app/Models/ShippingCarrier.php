@@ -12,7 +12,7 @@ class ShippingCarrier extends Model
     protected $primaryKey = 'shipping_carrier_id';
     protected $keyType = 'int';
     public $incrementing = true;
-
+    
     protected $fillable = [
         'code',
         'name',

@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class OrderItem extends Model
 {
     use HasFactory;
-    public $timestamps = false;
 
     protected $primaryKey = 'order_item_id';
     public $incrementing = true;
