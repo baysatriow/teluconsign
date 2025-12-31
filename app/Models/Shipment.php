@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Shipment extends Model
 {
     use HasFactory;
-    public $timestamps = false;
+    use HasFactory;
 
     protected $primaryKey = 'shipment_id';
     protected $keyType = 'int';

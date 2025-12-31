@@ -10,7 +10,6 @@ class PayoutRequest extends Model
     use HasFactory;
 
     protected $primaryKey = 'payout_request_id';
-    public $timestamps = false;
 
     protected $fillable = [
         'seller_id',
