@@ -69,13 +69,20 @@ DB_USERNAME=root
 DB_PASSWORD=
 ```
 
-Serta konfigurasi API (Midtrans, RajaOngkir, Fonnte, Gemini) sesuai dengan key yang Anda miliki.
+Serta konfigurasi database. Note: Konfigurasi API Key (Midtrans, RajaOngkir, dll) tersimpan di database (tabel `integration_keys`), bukan di `.env`. Anda dapat mengubahnya melalui `database/seeders/IntegrationKeysSeeder.php` sebelum seeding atau edit langsung di database.
 
 ### 5. Migrasi & Seeding
 Jalankan migrasi database untuk membuat tabel dan data awal:
 ```bash
 php artisan migrate --seed
 ```
+
+## 🔑 Akun Default (Seeder)
+Jika menjalankan seeding, berikut adalah akun default yang dapat digunakan:
+
+- **Admin**: `admin@gmail.com`
+- **Seller**: `bayusatriowid@gmail.com`
+- **Password**: `password` (Default)
 
 ### 6. Menjalankan Aplikasi
 ```bash
